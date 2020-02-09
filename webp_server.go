@@ -2,22 +2,47 @@ package main
 
 import (
 	"bytes"
-	"github.com/gofiber/fiber"
 	"encoding/json"
 	"fmt"
-	"strings"
-	"path"
+	"github.com/chai2010/webp"
+	"github.com/gofiber/fiber"
+	"image"
+	"image/jpeg"
+	"image/png"
+	"io/ioutil"
+	"log"
 	"os"
-	"os/exec"
+	"path"
+	"strconv"
+	"strings"
 )
 
 type Config struct {
-	HOST string
-	PORT string
-	IMG_PATH string
-	QUALITY string
+	HOST          string
+	PORT          string
+	IMG_PATH      string
+	QUALITY       string
 	ALLOWED_TYPES []string
+}
 
+func webpEncoder(p1, p2 string, quality float32) {
+	var buf bytes.Buffer
+	var img image.Image
+	data, _ := ioutil.ReadFile(p1)
+	if strings.Contains(p1, "jpg") || strings.Contains(p1, "jpeg") {
+		img, _ = jpeg.Decode(bytes.NewReader(data))
+	} else if strings.Contains(p1, "png") {
+		img, _ = png.Decode(bytes.NewReader(data))
+	}
+
+	if err := webp.Encode(&buf, img, &webp.Options{Lossless: true, Quality: quality}); err != nil {
+		log.Println(err)
+	}
+	if err := ioutil.WriteFile(p2, buf.Bytes(), 0666); err != nil {
+		log.Println(err)
+	}
+
+	fmt.Println("Save output.webp ok")
 }
 
 func main() {
@@ -49,8 +74,8 @@ func main() {
 		IMG_PATH := c.Path()
 
 		// jpg
-		IMG_EXT := strings.Split(path.Ext(IMG_PATH),".")[1]
-		
+		IMG_EXT := strings.Split(path.Ext(IMG_PATH), ".")[1]
+
 		// tsuki.jpg
 		IMG_NAME := path.Base(IMG_PATH)
 
@@ -80,9 +105,9 @@ func main() {
 			return
 		}
 
-    	// Check the original image for existence
+		// Check the original image for existence
 		if !imageExists(IMG_ABSOLUTE_PATH) {
-        	// The original image doesn't exist, check the webp image, delete if processed.
+			// The original image doesn't exist, check the webp image, delete if processed.
 			if imageExists(WEBP_ABSOLUTE_PATH) {
 				os.Remove(WEBP_ABSOLUTE_PATH)
 			}
@@ -93,22 +118,14 @@ func main() {
 
 		if imageExists(WEBP_ABSOLUTE_PATH) {
 			c.SendFile(WEBP_ABSOLUTE_PATH)
-		} else{
+		} else {
 			// Mkdir
-			os.MkdirAll(DIR_ABSOLUTE_PATH , os.ModePerm)
+			os.MkdirAll(DIR_ABSOLUTE_PATH, os.ModePerm)
 
 			// cwebp -q 60 Cute-Baby-Girl.png -o Cute-Baby-Girl.webp
-			OS_CMD := exec.Command("./webp/cwebp","-q",QUALITY,IMG_ABSOLUTE_PATH,"-o",WEBP_ABSOLUTE_PATH)
-			var out bytes.Buffer
-			var stderr bytes.Buffer
-			OS_CMD.Stdout = &out
-			OS_CMD.Stderr = &stderr
-			err := OS_CMD.Run()
-			if err != nil {
-				fmt.Println(stderr.String())
-				fmt.Println(err.Error())
-			}
 
+			q, _ := strconv.ParseFloat(QUALITY, 32)
+			webpEncoder(IMG_ABSOLUTE_PATH, WEBP_ABSOLUTE_PATH, float32(q))
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -121,10 +138,10 @@ func main() {
 
 func load_config(path string) Config {
 	var config Config
-	json_object,err := os.Open(path)
+	json_object, err := os.Open(path)
 	if err != nil {
-        fmt.Println(err.Error())
-    }
+		fmt.Println(err.Error())
+	}
 	defer json_object.Close()
 	decoder := json.NewDecoder(json_object)
 	decoder.Decode(&config)
@@ -132,18 +149,18 @@ func load_config(path string) Config {
 }
 
 func imageExists(filename string) bool {
-    info, err := os.Stat(filename)
-    if os.IsNotExist(err) {
-        return false
-    }
-    return !info.IsDir()
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
 
 func Find(slice []string, val string) (int, bool) {
-    for i, item := range slice {
-        if item == val {
-            return i, true
-        }
-    }
-    return -1, false
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
 }
