@@ -6,7 +6,8 @@
 
 After the [n0vad3v/webp_server](https://github.com/n0vad3v/webp_server), I decide to rewrite the whole program with Go, as there will be no more `npm install`s or `docker-compose`s.
 
-This is a Server based on Go and a precompiled cwebp(libwebp-1.1.0-rc2-linux-x86-64), which allows you to serve WebP images on the fly, it will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.js`.. 
+This is a Server based on Golang, which allows you to serve WebP images on the fly. 
+It will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.json`.. 
 
 > e.g When you visit `https://a.com/1.jpg`，it will serve as `image/webp` without changing the URL.
 >
@@ -17,7 +18,7 @@ This is a Server based on Go and a precompiled cwebp(libwebp-1.1.0-rc2-linux-x86
 ### Size
 
 * `webp_server` with `node_modules`: 43M
-* `webp_server_go` single binary: 9.5M
+* `webp_server_go` single binary: 15M
 
 ### Performance
 
@@ -38,5 +39,13 @@ Regarding the `IMG_PATH` section in `config.json`, if you are serving images at 
 
 ## TODO
 
-* This version doesn't support header-based-output, which means Safari users will not see the converted `webp` images, this should be fixed in later releases.
-* Multi platform support.
+- [] This version doesn't support header-based-output, which means Safari users will not see the converted `webp` images, this should be fixed in later releases.
+- [] Multi platform support.
+
+## build your own binary
+Install golang, enable go module, and then...
+```shell script
+go get github.com/gofiber/fiber
+go get github.com/chai2010/webp
+go build webp_server.go
+```
