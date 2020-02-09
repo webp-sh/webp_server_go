@@ -74,7 +74,14 @@ func main() {
 		IMG_PATH := c.Path()
 
 		// jpg
-		IMG_EXT := strings.Split(path.Ext(IMG_PATH), ".")[1]
+		seps := strings.Split(path.Ext(IMG_PATH), ".")
+		var IMG_EXT string
+		if len(seps) >= 2 {
+			IMG_EXT = seps[1]
+		} else {
+			c.Send("Invalid request")
+			return
+		}
 
 		// tsuki.jpg
 		IMG_NAME := path.Base(IMG_PATH)
