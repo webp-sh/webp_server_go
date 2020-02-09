@@ -123,6 +123,13 @@ func main() {
 			return
 		}
 
+		// Check for Safari users
+		UA := c.Get("User-Agent")
+		if strings.Contains(UA,"Safari") && !strings.Contains(UA,"Chrome") && !strings.Contains(UA,"Firefox"){
+			c.SendFile(ImgAbsolutePath)
+			return
+		}
+
 		if imageExists(WebpAbsolutePath) {
 			c.SendFile(WebpAbsolutePath)
 		} else {

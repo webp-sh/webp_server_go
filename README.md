@@ -40,7 +40,7 @@ your files are at `/var/www/image/pics/tsuki.jpg`, then `IMG_PATH` shall be `/va
 3. Let Nginx to `proxy_pass http://localhost:3333/;`
 
 ## TODO
-- [ ] This version doesn't support header-based-output, which means Safari users will not see the converted `webp` images, this should be fixed in later releases.
+- [x] This version doesn't support header-based-output, which means Safari users will not see the converted `webp` images, this should be fixed in later releases.
 - [ ] Multi platform support.
 
 ## build your own binary
