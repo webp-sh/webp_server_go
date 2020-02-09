@@ -18,11 +18,11 @@ import (
 )
 
 type Config struct {
-	HOST          string
-	PORT          string
-	IMG_PATH      string
-	QUALITY       string
-	ALLOWED_TYPES []string
+	HOST         string
+	PORT         string
+	ImgPath      string `json:"IMG_PATH"`
+	QUALITY      string
+	AllowedTypes []string `json:"ALLOWED_TYPES"`
 }
 
 func webpEncoder(p1, p2 string, quality float32) {
@@ -55,57 +55,57 @@ func main() {
 
 	HOST := config.HOST
 	PORT := config.PORT
-	IMG_PATH := config.IMG_PATH
+	ImgPath := config.ImgPath
 	QUALITY := config.QUALITY
-	ALLOWED_TYPES := config.ALLOWED_TYPES
+	AllowedTypes := config.AllowedTypes
 
-	LISTEN_ADDRESS := HOST + ":" + PORT
+	ListenAddress := HOST + ":" + PORT
 
 	// Server Info
-	SERVER_INFO := "WebP Server is running at " + LISTEN_ADDRESS
-	fmt.Println(SERVER_INFO)
+	ServerInfo := "WebP Server is running at " + ListenAddress
+	fmt.Println(ServerInfo)
 
 	app.Get("/*", func(c *fiber.Ctx) {
 
 		// /var/www/IMG_PATH/path/to/tsuki.jpg
-		IMG_ABSOLUTE_PATH := IMG_PATH + c.Path()
+		ImgAbsolutePath := ImgPath + c.Path()
 
 		// /path/to/tsuki.jpg
-		IMG_PATH := c.Path()
+		ImgPath := c.Path()
 
 		// jpg
-		seps := strings.Split(path.Ext(IMG_PATH), ".")
-		var IMG_EXT string
+		seps := strings.Split(path.Ext(ImgPath), ".")
+		var ImgExt string
 		if len(seps) >= 2 {
-			IMG_EXT = seps[1]
+			ImgExt = seps[1]
 		} else {
 			c.Send("Invalid request")
 			return
 		}
 
 		// tsuki.jpg
-		IMG_NAME := path.Base(IMG_PATH)
+		ImgName := path.Base(ImgPath)
 
 		// /path/to
-		DIR_PATH := path.Dir(IMG_PATH)
+		DirPath := path.Dir(ImgPath)
 
 		// /path/to/tsuki.jpg.webp
-		WEBP_IMG_PATH := DIR_PATH + "/" + IMG_NAME + ".webp"
+		WebpImgPath := DirPath + "/" + ImgName + ".webp"
 
 		// /home/webp_server
-		CURRENT_PATH, err := os.Getwd()
+		CurrentPath, err := os.Getwd()
 		if err != nil {
 			fmt.Println(err.Error())
 		}
 
 		// /home/webp_server/exhaust/path/to/tsuki.webp
-		WEBP_ABSOLUTE_PATH := CURRENT_PATH + "/exhaust" + WEBP_IMG_PATH
+		WebpAbsolutePath := CurrentPath + "/exhaust" + WebpImgPath
 
 		// /home/webp_server/exhaust/path/to
-		DIR_ABSOLUTE_PATH := CURRENT_PATH + "/exhaust" + DIR_PATH
+		DirAbsolutePath := CurrentPath + "/exhaust" + DirPath
 
 		// Check file extension
-		_, found := Find(ALLOWED_TYPES, IMG_EXT)
+		_, found := Find(AllowedTypes, ImgExt)
 		if !found {
 			c.Send("File extension not allowed!")
 			c.SendStatus(403)
@@ -113,44 +113,44 @@ func main() {
 		}
 
 		// Check the original image for existence
-		if !imageExists(IMG_ABSOLUTE_PATH) {
+		if !imageExists(ImgAbsolutePath) {
 			// The original image doesn't exist, check the webp image, delete if processed.
-			if imageExists(WEBP_ABSOLUTE_PATH) {
-				os.Remove(WEBP_ABSOLUTE_PATH)
+			if imageExists(WebpAbsolutePath) {
+				os.Remove(WebpAbsolutePath)
 			}
 			c.Send("File not found!")
 			c.SendStatus(404)
 			return
 		}
 
-		if imageExists(WEBP_ABSOLUTE_PATH) {
-			c.SendFile(WEBP_ABSOLUTE_PATH)
+		if imageExists(WebpAbsolutePath) {
+			c.SendFile(WebpAbsolutePath)
 		} else {
 			// Mkdir
-			os.MkdirAll(DIR_ABSOLUTE_PATH, os.ModePerm)
+			os.MkdirAll(DirAbsolutePath, os.ModePerm)
 
 			// cwebp -q 60 Cute-Baby-Girl.png -o Cute-Baby-Girl.webp
 
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			webpEncoder(IMG_ABSOLUTE_PATH, WEBP_ABSOLUTE_PATH, float32(q))
+			webpEncoder(ImgAbsolutePath, WebpAbsolutePath, float32(q))
 			if err != nil {
 				fmt.Println(err)
 			}
-			c.SendFile(WEBP_ABSOLUTE_PATH)
+			c.SendFile(WebpAbsolutePath)
 		}
 	})
 
-	app.Listen(LISTEN_ADDRESS)
+	app.Listen(ListenAddress)
 }
 
 func load_config(path string) Config {
 	var config Config
-	json_object, err := os.Open(path)
+	jsonObject, err := os.Open(path)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	defer json_object.Close()
-	decoder := json.NewDecoder(json_object)
+	defer jsonObject.Close()
+	decoder := json.NewDecoder(jsonObject)
 	decoder.Decode(&config)
 	return config
 }
