@@ -3,9 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
-	"github.com/chai2010/webp"
-	"github.com/gofiber/fiber"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -15,6 +14,9 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/chai2010/webp"
+	"github.com/gofiber/fiber"
 )
 
 type Config struct {
@@ -24,6 +26,8 @@ type Config struct {
 	QUALITY      string
 	AllowedTypes []string `json:"ALLOWED_TYPES"`
 }
+
+var configPath string
 
 func webpEncoder(p1, p2 string, quality float32) {
 	var buf bytes.Buffer
@@ -45,13 +49,19 @@ func webpEncoder(p1, p2 string, quality float32) {
 	fmt.Println("Save output.webp ok")
 }
 
+func init() {
+	// Config Here
+	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
+	flag.Parse()
+	//flag.PrintDefaults()
+}
+
 func main() {
 	app := fiber.New()
 	app.Banner = false
 	app.Server = "WebP Server Go"
 
-	// Config Here
-	config := load_config("config.json")
+	config := load_config(configPath)
 
 	HOST := config.HOST
 	PORT := config.PORT
@@ -125,7 +135,7 @@ func main() {
 
 		// Check for Safari users
 		UA := c.Get("User-Agent")
-		if strings.Contains(UA,"Safari") && !strings.Contains(UA,"Chrome") && !strings.Contains(UA,"Firefox"){
+		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") && !strings.Contains(UA, "Firefox") {
 			c.SendFile(ImgAbsolutePath)
 			return
 		}
@@ -154,7 +164,7 @@ func load_config(path string) Config {
 	var config Config
 	jsonObject, err := os.Open(path)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Fatal(err)
 	}
 	defer jsonObject.Close()
 	decoder := json.NewDecoder(jsonObject)
