@@ -3,9 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
-	"github.com/chai2010/webp"
-	"github.com/gofiber/fiber"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -15,6 +14,9 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/chai2010/webp"
+	"github.com/gofiber/fiber"
 )
 
 type Config struct {
@@ -51,7 +53,12 @@ func main() {
 	app.Server = "WebP Server Go"
 
 	// Config Here
-	config := load_config("config.json")
+	var config_path string
+	flag.StringVar(&config_path, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
+	flag.Parse()
+	flag.PrintDefaults()
+
+	config := load_config(config_path)
 
 	HOST := config.HOST
 	PORT := config.PORT
@@ -125,7 +132,7 @@ func main() {
 
 		// Check for Safari users
 		UA := c.Get("User-Agent")
-		if strings.Contains(UA,"Safari") && !strings.Contains(UA,"Chrome") && !strings.Contains(UA,"Firefox"){
+		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") && !strings.Contains(UA, "Firefox") {
 			c.SendFile(ImgAbsolutePath)
 			return
 		}
