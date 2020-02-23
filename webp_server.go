@@ -27,6 +27,8 @@ type Config struct {
 	AllowedTypes []string `json:"ALLOWED_TYPES"`
 }
 
+var configPath string
+
 func webpEncoder(p1, p2 string, quality float32) {
 	var buf bytes.Buffer
 	var img image.Image
@@ -47,18 +49,19 @@ func webpEncoder(p1, p2 string, quality float32) {
 	fmt.Println("Save output.webp ok")
 }
 
+func init() {
+	// Config Here
+	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
+	flag.Parse()
+	//flag.PrintDefaults()
+}
+
 func main() {
 	app := fiber.New()
 	app.Banner = false
 	app.Server = "WebP Server Go"
 
-	// Config Here
-	var config_path string
-	flag.StringVar(&config_path, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
-	flag.Parse()
-	flag.PrintDefaults()
-
-	config := load_config(config_path)
+	config := load_config(configPath)
 
 	HOST := config.HOST
 	PORT := config.PORT
@@ -161,7 +164,7 @@ func load_config(path string) Config {
 	var config Config
 	jsonObject, err := os.Open(path)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Fatal(err)
 	}
 	defer jsonObject.Close()
 	decoder := json.NewDecoder(jsonObject)
