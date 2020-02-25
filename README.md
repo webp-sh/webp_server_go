@@ -18,7 +18,7 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 ### Size
 
 * `webp_server` with `node_modules`: 43M
-* `webp_server_go` single binary: 15M
+* `webp-server(go)` single binary: 15M
 
 ### Performance
 
@@ -27,7 +27,7 @@ It's basically between `ExpressJS` and `Fiber`, much faster than the `http` pack
 ### Convenience
 
 * `webp_server`: Clone -> `npm install` -> run with `pm2`
-* `webp_server_go`: Download -> Run
+* `webp-server(go)`: Download -> Run
 
 ## Usage
 
@@ -36,7 +36,7 @@ If you are serving images at `https://example.com/pics/tsuki.jpg` and
 your files are at `/var/www/image/pics/tsuki.jpg`, then `IMG_PATH` shall be `/var/www/image`.
 
 1. Edit the `config.json` to face your need, default convert quality is 80%.
-2. Run the binary like this: `./webp_server`, use `screen` or `tmux` to hold it currently.
+2. Run the binary like this: `./webp-server --config /path/to/config.json`, use `screen` or `tmux` to hold it currently.
 3. Let Nginx to `proxy_pass http://localhost:3333/;`
 
 ## TODO
