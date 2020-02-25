@@ -169,11 +169,13 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
+			
+			ImgNameCopy := string([]byte(ImgName))
 			c.SendFile(WebpAbsolutePath)
 			
 			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
 			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
-			WebpCachedImgPath := path.Clean(fmt.Sprintf("%s/exhaust%s/%s.*.webp", CurrentPath, DirPath, ImgName))
+			WebpCachedImgPath := path.Clean(fmt.Sprintf("%s/exhaust%s/%s.*.webp", CurrentPath, DirPath, ImgNameCopy))
 			matches, err := filepath.Glob(WebpCachedImgPath)
 			if err != nil {
 				fmt.Println(err.Error())
