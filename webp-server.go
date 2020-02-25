@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -99,8 +100,15 @@ func main() {
 		// /path/to
 		DirPath := path.Dir(ImgPath)
 
-		// /path/to/tsuki.jpg.webp
-		WebpImgPath := DirPath + "/" + ImgName + ".webp"
+		// 1582558990
+		STAT, err := os.Stat(ImgAbsolutePath)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		ModifiedTime := STAT.ModTime().Unix()
+
+		// /path/to/tsuki.jpg.1582558990.webp
+		WebpImgPath := fmt.Sprintf("%s/%s.%d.webp", DirPath, ImgName, ModifiedTime)
 
 		// /home/webp_server
 		CurrentPath, err := os.Getwd()
@@ -108,11 +116,11 @@ func main() {
 			fmt.Println(err.Error())
 		}
 
-		// /home/webp_server/exhaust/path/to/tsuki.webp
-		WebpAbsolutePath := CurrentPath + "/exhaust" + WebpImgPath
+		// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+		WebpAbsolutePath := path.Clean(CurrentPath + "/exhaust" + WebpImgPath)
 
 		// /home/webp_server/exhaust/path/to
-		DirAbsolutePath := CurrentPath + "/exhaust" + DirPath
+		DirAbsolutePath := path.Clean(CurrentPath + "/exhaust" + DirPath)
 
 		// Check file extension
 		_, found := Find(AllowedTypes, ImgExt)
@@ -154,6 +162,20 @@ func main() {
 				fmt.Println(err)
 			}
 			c.SendFile(WebpAbsolutePath)
+			
+			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
+			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
+			WebpCachedImgPath := path.Clean(fmt.Sprintf("%s/exhaust%s/%s-*.webp", CurrentPath, DirPath, ImgName))
+			matches, err := filepath.Glob(WebpCachedImgPath)
+			if err != nil {
+				fmt.Println(err.Error())
+			} else {
+				for _, path := range matches {
+					if strings.Compare(WebpAbsolutePath, path) != 0 {
+						os.Remove(path)
+					}
+				}
+			}
 		}
 	})
 
