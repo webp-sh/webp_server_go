@@ -10,6 +10,7 @@ import (
 	"image/png"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"strconv"
@@ -29,13 +30,22 @@ type Config struct {
 
 var configPath string
 
+func GetFileContentType(buffer []byte) (string, error) {
+	// Use the net/http package's handy DectectContentType function. Always returns a valid
+	// content-type by returning "application/octet-stream" if no others seemed to match.
+	contentType := http.DetectContentType(buffer)
+	return contentType, nil
+}
+
 func webpEncoder(p1, p2 string, quality float32) {
 	var buf bytes.Buffer
 	var img image.Image
+
 	data, _ := ioutil.ReadFile(p1)
-	if strings.Contains(p1, "jpg") || strings.Contains(p1, "jpeg") {
+	contentType, _ := GetFileContentType(data[:512])
+	if strings.Contains(contentType, "jpeg") {
 		img, _ = jpeg.Decode(bytes.NewReader(data))
-	} else if strings.Contains(p1, "png") {
+	} else if strings.Contains(contentType, "png") {
 		img, _ = png.Decode(bytes.NewReader(data))
 	}
 
