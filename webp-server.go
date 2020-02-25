@@ -10,6 +10,7 @@ import (
 	"image/png"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"strconv"
@@ -32,11 +33,19 @@ var configPath string
 func webpEncoder(p1, p2 string, quality float32) {
 	var buf bytes.Buffer
 	var img image.Image
-	data, _ := ioutil.ReadFile(p1)
-	if strings.Contains(p1, "jpg") || strings.Contains(p1, "jpeg") {
-		img, _ = jpeg.Decode(bytes.NewReader(data))
-	} else if strings.Contains(p1, "png") {
-		img, _ = png.Decode(bytes.NewReader(data))
+
+	file_data, err := os.Open(p1)
+	if err != nil {
+		panic(err)
+	}
+	img_data, _ := ioutil.ReadFile(p1)
+	defer file_data.Close()
+
+	contentType, err := GetFileContentType(file_data)
+	if strings.Contains(contentType, "jpg") || strings.Contains(contentType, "jpeg") {
+		img, _ = jpeg.Decode(bytes.NewReader(img_data))
+	} else if strings.Contains(contentType, "png") {
+		img, _ = png.Decode(bytes.NewReader(img_data))
 	}
 
 	if err := webp.Encode(&buf, img, &webp.Options{Lossless: true, Quality: quality}); err != nil {
@@ -187,4 +196,19 @@ func Find(slice []string, val string) (int, bool) {
 		}
 	}
 	return -1, false
+}
+
+func GetFileContentType(out *os.File) (string, error) {
+
+	buffer := make([]byte, 512)
+
+	_, err := out.Read(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	// content-type by returning "application/octet-stream" if no others seemed to match.
+	contentType := http.DetectContentType(buffer)
+
+	return contentType, nil
 }
