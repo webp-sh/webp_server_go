@@ -100,6 +100,14 @@ func main() {
 		// /path/to
 		DirPath := path.Dir(ImgPath)
 
+		// Check the original image for existence
+		OriginalImgExists := imageExists(ImgAbsolutePath)
+		if !OriginalImgExists {
+			c.Send("File not found!")
+			c.SendStatus(404)
+			return
+		}
+		
 		// 1582558990
 		STAT, err := os.Stat(ImgAbsolutePath)
 		if err != nil {
@@ -131,7 +139,7 @@ func main() {
 		}
 
 		// Check the original image for existence
-		if !imageExists(ImgAbsolutePath) {
+		if !OriginalImgExists {
 			// The original image doesn't exist, check the webp image, delete if processed.
 			if imageExists(WebpAbsolutePath) {
 				os.Remove(WebpAbsolutePath)
