@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/gofiber/fiber"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -19,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/chai2010/webp"
-	"github.com/gofiber/fiber"
 )
 
 type Config struct {
@@ -32,11 +32,80 @@ type Config struct {
 
 var configPath string
 
+func loadConfig(path string) Config {
+	var config Config
+	jsonObject, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer jsonObject.Close()
+	decoder := json.NewDecoder(jsonObject)
+	_ = decoder.Decode(&config)
+	return config
+}
+
+func imageExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func Find(slice []string, val string) (int, bool) {
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func GetFileContentType(buffer []byte) string {
+	// Use the net/http package's handy DectectContentType function. Always returns a valid
+	// content-type by returning "application/octet-stream" if no others seemed to match.
+	contentType := http.DetectContentType(buffer)
+	return contentType
+}
+
+func webpEncoder(p1, p2 string, quality float32) (err error) {
+	// if convert fails, return error; success nil
+	var buf bytes.Buffer
+	var img image.Image
+
+	data, err := ioutil.ReadFile(p1)
+	if err != nil {
+		return
+	}
+	contentType := GetFileContentType(data[:512])
+	if strings.Contains(contentType, "jpeg") {
+		img, _ = jpeg.Decode(bytes.NewReader(data))
+	} else if strings.Contains(contentType, "png") {
+		img, _ = png.Decode(bytes.NewReader(data))
+	}
+
+	if img == nil {
+		log.Println("Image file is corrupted or not supported!")
+		err = errors.New("image file is corrupted or not supported")
+		return
+	}
+
+	if err = webp.Encode(&buf, img, &webp.Options{Lossless: true, Quality: quality}); err != nil {
+		log.Println(err)
+		return
+	}
+	if err = ioutil.WriteFile(p2, buf.Bytes(), 0666); err != nil {
+		log.Println(err)
+		return
+	}
+
+	fmt.Println("Save to webp ok")
+	return nil
+}
+
 func init() {
-	// Config Here
 	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
 	flag.Parse()
-	//flag.PrintDefaults()
 }
 
 func main() {
@@ -44,7 +113,7 @@ func main() {
 	app.Banner = false
 	app.Server = "WebP Server Go"
 
-	config := load_config(configPath)
+	config := loadConfig(configPath)
 
 	HOST := config.HOST
 	PORT := config.PORT
@@ -124,7 +193,7 @@ func main() {
 		if !OriginalImgExists {
 			// The original image doesn't exist, check the webp image, delete if processed.
 			if imageExists(WebpAbsolutePath) {
-				os.Remove(WebpAbsolutePath)
+				_ = os.Remove(WebpAbsolutePath)
 			}
 			c.Send("File not found!")
 			c.SendStatus(404)
@@ -142,7 +211,7 @@ func main() {
 			c.SendFile(WebpAbsolutePath)
 		} else {
 			// Mkdir
-			os.MkdirAll(DirAbsolutePath, os.ModePerm)
+			_ = os.MkdirAll(DirAbsolutePath, os.ModePerm)
 
 			// cwebp -q 60 Cute-Baby-Girl.png -o Cute-Baby-Girl.webp
 			q, _ := strconv.ParseFloat(QUALITY, 32)
@@ -165,9 +234,9 @@ func main() {
 			if err != nil {
 				fmt.Println(err.Error())
 			} else {
-				for _, path := range matches {
-					if strings.Compare(WebpAbsolutePath, path) != 0 {
-						os.Remove(path)
+				for _, p := range matches {
+					if strings.Compare(WebpAbsolutePath, p) != 0 {
+						_ = os.Remove(p)
 					}
 				}
 			}
@@ -175,75 +244,5 @@ func main() {
 	})
 
 	app.Listen(ListenAddress)
-}
 
-func load_config(path string) Config {
-	var config Config
-	jsonObject, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer jsonObject.Close()
-	decoder := json.NewDecoder(jsonObject)
-	decoder.Decode(&config)
-	return config
-}
-
-func imageExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
-}
-
-func Find(slice []string, val string) (int, bool) {
-	for i, item := range slice {
-		if item == val {
-			return i, true
-		}
-	}
-	return -1, false
-}
-
-func GetFileContentType(buffer []byte) string {
-	// Use the net/http package's handy DectectContentType function. Always returns a valid
-	// content-type by returning "application/octet-stream" if no others seemed to match.
-	contentType := http.DetectContentType(buffer)
-	return contentType
-}
-
-func webpEncoder(p1, p2 string, quality float32) (err error) {
-	// if convert fails, return error; success nil
-	var buf bytes.Buffer
-	var img image.Image
-
-	data, err := ioutil.ReadFile(p1)
-	if err != nil {
-		return
-	}
-	contentType := GetFileContentType(data[:512])
-	if strings.Contains(contentType, "jpeg") {
-		img, _ = jpeg.Decode(bytes.NewReader(data))
-	} else if strings.Contains(contentType, "png") {
-		img, _ = png.Decode(bytes.NewReader(data))
-	}
-
-	if img == nil {
-		log.Println("Image file is corrupted or not supported!")
-		err = errors.New("image file is corrupted or not supported")
-		return
-	}
-
-	if err = webp.Encode(&buf, img, &webp.Options{Lossless: true, Quality: quality}); err != nil {
-		log.Println(err)
-		return
-	}
-	if err = ioutil.WriteFile(p2, buf.Bytes(), 0666); err != nil {
-		log.Println(err)
-		return
-	}
-
-	fmt.Println("Save to webp ok")
-	return nil
 }
