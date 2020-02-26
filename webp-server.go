@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/gofiber/fiber"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/chai2010/webp"
+	"github.com/gofiber/fiber"
 )
 
 type Config struct {
@@ -31,6 +32,7 @@ type Config struct {
 }
 
 var configPath string
+var prefetch bool
 
 func loadConfig(path string) Config {
 	var config Config
@@ -52,15 +54,6 @@ func imageExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func Find(slice []string, val string) (int, bool) {
-	for i, item := range slice {
-		if item == val {
-			return i, true
-		}
-	}
-	return -1, false
-}
-
 func GetFileContentType(buffer []byte) string {
 	// Use the net/http package's handy DectectContentType function. Always returns a valid
 	// content-type by returning "application/octet-stream" if no others seemed to match.
@@ -68,7 +61,7 @@ func GetFileContentType(buffer []byte) string {
 	return contentType
 }
 
-func webpEncoder(p1, p2 string, quality float32) (err error) {
+func webpEncoder(p1, p2 string, quality float32, Log bool) (err error) {
 	// if convert fails, return error; success nil
 	var buf bytes.Buffer
 	var img image.Image
@@ -83,10 +76,14 @@ func webpEncoder(p1, p2 string, quality float32) (err error) {
 	} else if strings.Contains(contentType, "png") {
 		img, _ = png.Decode(bytes.NewReader(data))
 	}
+	// TODO should we add bmp and tiff support? Need more packages.
+	// import "golang.org/x/image/bmp"
+	// import "golang.org/x/image/tiff"
 
 	if img == nil {
-		log.Println("Image file is corrupted or not supported!")
-		err = errors.New("image file is corrupted or not supported")
+		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
+		log.Println(msg)
+		err = errors.New(msg)
 		return
 	}
 
@@ -94,128 +91,85 @@ func webpEncoder(p1, p2 string, quality float32) (err error) {
 		log.Println(err)
 		return
 	}
-	if err = ioutil.WriteFile(p2, buf.Bytes(), 0666); err != nil {
+	if err = ioutil.WriteFile(p2, buf.Bytes(), os.ModePerm); err != nil {
 		log.Println(err)
 		return
 	}
 
-	fmt.Println("Save to webp ok")
+	if Log {
+		fmt.Printf("Save to %s ok\n", p2)
+	}
 	return nil
 }
 
 func init() {
 	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
+	flag.BoolVar(&prefetch, "prefetch", false, "Prefetch and convert image to webp")
 	flag.Parse()
 }
 
-func main() {
-	app := fiber.New()
-	app.Banner = false
-	app.Server = "WebP Server Go"
-
-	config := loadConfig(configPath)
-
-	HOST := config.HOST
-	PORT := config.PORT
-	ImgPath := config.ImgPath
-	QUALITY := config.QUALITY
-	AllowedTypes := config.AllowedTypes
-
-	ListenAddress := HOST + ":" + PORT
-
-	// Server Info
-	ServerInfo := "WebP Server is running at " + ListenAddress
-	fmt.Println(ServerInfo)
-
-	app.Get("/*", func(c *fiber.Ctx) {
-
-		// /var/www/IMG_PATH/path/to/tsuki.jpg
-		ImgAbsolutePath := ImgPath + c.Path()
-
-		// /path/to/tsuki.jpg
-		ImgPath := c.Path()
-
-		// jpg
-		seps := strings.Split(path.Ext(ImgPath), ".")
-		var ImgExt string
-		if len(seps) >= 2 {
-			ImgExt = seps[1]
-		} else {
-			c.Send("Invalid request")
-			return
-		}
-
-		// tsuki.jpg
-		ImgName := path.Base(ImgPath)
-
-		// /path/to
-		DirPath := path.Dir(ImgPath)
-
-		// Check the original image for existence
-		OriginalImgExists := imageExists(ImgAbsolutePath)
-		if !OriginalImgExists {
-			c.Send("File not found!")
-			c.SendStatus(404)
-			return
-		}
-
-		// 1582558990
-		STAT, err := os.Stat(ImgAbsolutePath)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		ModifiedTime := STAT.ModTime().Unix()
-
-		// /path/to/tsuki.jpg.1582558990.webp
-		WebpImgPath := fmt.Sprintf("%s/%s.%d.webp", DirPath, ImgName, ModifiedTime)
-
-		// /home/webp_server
-		CurrentPath, err := os.Getwd()
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-		WebpAbsolutePath := path.Clean(CurrentPath + "/exhaust" + WebpImgPath)
-
-		// /home/webp_server/exhaust/path/to
-		DirAbsolutePath := path.Clean(CurrentPath + "/exhaust" + DirPath)
-
-		// Check file extension
-		_, found := Find(AllowedTypes, ImgExt)
-		if !found {
-			c.Send("File extension not allowed!")
-			c.SendStatus(403)
-			return
-		}
-
-		// Check the original image for existence
-		if !OriginalImgExists {
-			// The original image doesn't exist, check the webp image, delete if processed.
-			if imageExists(WebpAbsolutePath) {
-				_ = os.Remove(WebpAbsolutePath)
-			}
-			c.Send("File not found!")
-			c.SendStatus(404)
-			return
-		}
-
-		// Check for Safari users
+func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fiber.Ctx) {
+	return func(c *fiber.Ctx) {
+		//basic vars
+		var reqURI = c.Path()                        // mypic/123.jpg
+		var RawImageAbs = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg
+		var ImgFilename = path.Base(reqURI)          // pure filename, 123.jpg
+		var finalFile string                         // We'll only need one c.sendFile()
+		// Check for Safari users. If they're Safari, just simply ignore everything.
 		UA := c.Get("User-Agent")
-		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") && !strings.Contains(UA, "Firefox") {
-			c.SendFile(ImgAbsolutePath)
+		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") &&
+			!strings.Contains(UA, "Firefox") {
+			finalFile = RawImageAbs
 			return
 		}
 
-		if imageExists(WebpAbsolutePath) {
-			c.SendFile(WebpAbsolutePath)
-		} else {
-			// Mkdir
-			_ = os.MkdirAll(DirAbsolutePath, os.ModePerm)
+		// check ext
+		// TODO: should remove this function. Check in Nginx.
+		for _, ext := range AllowedTypes {
+			haystack := strings.ToLower(ImgFilename)
+			needle := strings.ToLower("." + ext)
+			if strings.HasSuffix(haystack, needle) {
+				break
+			} else {
+				c.Send("File extension not allowed!")
+				c.SendStatus(403)
+				return
+			}
+		}
 
-			// cwebp -q 60 Cute-Baby-Girl.png -o Cute-Baby-Girl.webp
+		// Check the original image for existence,
+		if !imageExists(RawImageAbs) {
+			c.Send("Image not found!")
+			c.SendStatus(404)
+			return
+		}
+
+		cwd, WebpAbsPath := genWebpAbs(RawImageAbs, ImgFilename, reqURI)
+
+		if imageExists(WebpAbsPath) {
+			finalFile = WebpAbsPath
+		} else {
+			// we don't have abc.jpg.png1582558990.webp
+			// delete the old pic and convert a new one.
+			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+			destHalfFile := path.Clean(path.Join(cwd, "exhaust", path.Dir(reqURI), ImgFilename))
+			matches, err := filepath.Glob(destHalfFile + "*")
+			if err != nil {
+				fmt.Println(err.Error())
+			} else {
+				// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
+				// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
+				for _, p := range matches {
+					if strings.Compare(destHalfFile, p) != 0 {
+						_ = os.Remove(p)
+					}
+				}
+			}
+
+			//for webp, we need to create dir first
+			_ = os.MkdirAll(path.Dir(WebpAbsPath), os.ModePerm)
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			err = webpEncoder(ImgAbsolutePath, WebpAbsolutePath, float32(q))
+			err = webpEncoder(RawImageAbs, WebpAbsPath, float32(q), true)
 
 			if err != nil {
 				fmt.Println(err)
@@ -223,26 +177,95 @@ func main() {
 				c.Send("Bad file!")
 				return
 			}
-
-			ImgNameCopy := string([]byte(ImgName))
-			c.SendFile(WebpAbsolutePath)
-
-			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
-			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
-			WebpCachedImgPath := path.Clean(fmt.Sprintf("%s/exhaust%s/%s.*.webp", CurrentPath, DirPath, ImgNameCopy))
-			matches, err := filepath.Glob(WebpCachedImgPath)
-			if err != nil {
-				fmt.Println(err.Error())
-			} else {
-				for _, p := range matches {
-					if strings.Compare(WebpAbsolutePath, p) != 0 {
-						_ = os.Remove(p)
-					}
-				}
-			}
+			finalFile = WebpAbsPath
 		}
-	})
+		c.SendFile(finalFile)
+	}
+}
 
+func fileCount(dir string) int {
+	count := 0
+	_ = filepath.Walk(dir,
+		func(path string, info os.FileInfo, err error) error {
+			if !info.IsDir() {
+				count += 1
+			}
+			return nil
+		})
+	return count
+}
+
+func genWebpAbs(RawImagePath string, ImgFilename string, reqURI string) (string, string) {
+	// get file mod time
+	STAT, err := os.Stat(RawImagePath)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	ModifiedTime := STAT.ModTime().Unix()
+	// webpFilename: abc.jpg.png -> abc.jpg.png1582558990.webp
+	var WebpFilename = fmt.Sprintf("%s.%d.webp", ImgFilename, ModifiedTime)
+	cwd, _ := os.Getwd()
+
+	// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+	WebpAbsolutePath := path.Clean(path.Join(cwd, "exhaust", path.Dir(reqURI), WebpFilename))
+	return cwd, WebpAbsolutePath
+}
+
+func prefetchImages(confImgPath string, QUALITY string) {
+	fmt.Println(`Prefetch will convert all your images to webp, it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/n)`)
+	reader := bufio.NewReader(os.Stdin)
+	char, _, _ := reader.ReadRune() //y Y enter
+	if char == 121 || char == 10 || char == 89 {
+		//prefetch, recursive through the dir
+		all := fileCount(confImgPath)
+		count := 0
+		err := filepath.Walk(confImgPath,
+			func(picAbsPath string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				// RawImagePath string, ImgFilename string, reqURI string
+				proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
+				_, p2 := genWebpAbs(picAbsPath, info.Name(), proposedURI)
+				q, _ := strconv.ParseFloat(QUALITY, 32)
+				_ = os.MkdirAll(path.Dir(p2), os.ModePerm)
+				_ = webpEncoder(picAbsPath, p2, float32(q), false)
+				count += 1
+				// progress bar
+				_, _ = fmt.Fprintf(os.Stdout, "Convert in progress: %d/%d\r", count, all)
+				return nil
+			})
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	fmt.Fprintf(os.Stdout, "Prefetch complete,")
+}
+
+func main() {
+	config := loadConfig(configPath)
+
+	HOST := config.HOST
+	PORT := config.PORT
+	confImgPath := path.Clean(config.ImgPath)
+	QUALITY := config.QUALITY
+	AllowedTypes := config.AllowedTypes
+
+	if prefetch {
+		prefetchImages(confImgPath, QUALITY)
+	}
+
+	app := fiber.New()
+	app.Banner = false
+	app.Server = "WebP Server Go"
+
+	ListenAddress := HOST + ":" + PORT
+
+	// Server Info
+	ServerInfo := "WebP Server is running at " + ListenAddress
+	fmt.Println(ServerInfo)
+
+	app.Get("/*", Convert(confImgPath, AllowedTypes, QUALITY))
 	app.Listen(ListenAddress)
 
 }
