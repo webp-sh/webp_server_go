@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -80,8 +81,23 @@ func main() {
 		// /path/to
 		DirPath := path.Dir(ImgPath)
 
-		// /path/to/tsuki.jpg.webp
-		WebpImgPath := DirPath + "/" + ImgName + ".webp"
+		// Check the original image for existence
+		OriginalImgExists := imageExists(ImgAbsolutePath)
+		if !OriginalImgExists {
+			c.Send("File not found!")
+			c.SendStatus(404)
+			return
+		}
+		
+		// 1582558990
+		STAT, err := os.Stat(ImgAbsolutePath)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		ModifiedTime := STAT.ModTime().Unix()
+
+		// /path/to/tsuki.jpg.1582558990.webp
+		WebpImgPath := fmt.Sprintf("%s/%s.%d.webp", DirPath, ImgName, ModifiedTime)
 
 		// /home/webp_server
 		CurrentPath, err := os.Getwd()
@@ -89,11 +105,11 @@ func main() {
 			fmt.Println(err.Error())
 		}
 
-		// /home/webp_server/exhaust/path/to/tsuki.webp
-		WebpAbsolutePath := CurrentPath + "/exhaust" + WebpImgPath
+		// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+		WebpAbsolutePath := path.Clean(CurrentPath + "/exhaust" + WebpImgPath)
 
 		// /home/webp_server/exhaust/path/to
-		DirAbsolutePath := CurrentPath + "/exhaust" + DirPath
+		DirAbsolutePath := path.Clean(CurrentPath + "/exhaust" + DirPath)
 
 		// Check file extension
 		_, found := Find(AllowedTypes, ImgExt)
@@ -104,7 +120,7 @@ func main() {
 		}
 
 		// Check the original image for existence
-		if !imageExists(ImgAbsolutePath) {
+		if !OriginalImgExists {
 			// The original image doesn't exist, check the webp image, delete if processed.
 			if imageExists(WebpAbsolutePath) {
 				os.Remove(WebpAbsolutePath)
@@ -134,7 +150,23 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			}
+			
+			ImgNameCopy := string([]byte(ImgName))
 			c.SendFile(WebpAbsolutePath)
+			
+			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
+			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
+			WebpCachedImgPath := path.Clean(fmt.Sprintf("%s/exhaust%s/%s.*.webp", CurrentPath, DirPath, ImgNameCopy))
+			matches, err := filepath.Glob(WebpCachedImgPath)
+			if err != nil {
+				fmt.Println(err.Error())
+			} else {
+				for _, path := range matches {
+					if strings.Compare(WebpAbsolutePath, path) != 0 {
+						os.Remove(path)
+					}
+				}
+			}
 		}
 	})
 
