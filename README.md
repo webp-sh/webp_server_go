@@ -1,6 +1,7 @@
 <p align="center">
 	<img src="./pics/webp_server.png"/>
 </p>
+<img src="https://api.travis-ci.org/webp-sh/webp_server_go.svg?branch=master"/>
 
 **THIS PROJECT IS UNDER DEVELOPMENT, DON'T USE IT ON PRODUCTION ENVIRONMENT.**
 
