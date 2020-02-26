@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/chai2010/webp"
 	"github.com/gofiber/fiber"
 	"image"
 	"image/jpeg"
@@ -18,8 +20,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/chai2010/webp"
 )
 
 type Config struct {
@@ -31,6 +31,7 @@ type Config struct {
 }
 
 var configPath string
+var prefetch bool
 
 func loadConfig(path string) Config {
 	var config Config
@@ -105,10 +106,21 @@ func webpEncoder(p1, p2 string, quality float32) (err error) {
 
 func init() {
 	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
+	flag.BoolVar(&prefetch, "prefetch", false, "Prefetch and convert image to webp")
 	flag.Parse()
 }
 
 func main() {
+
+	if prefetch {
+		fmt.Println(`Prefetch will convert all your images to webp, 
+it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/N)`)
+		reader := bufio.NewReader(os.Stdin)
+		char, _, _ := reader.ReadRune() //121 10 89
+		if char == 121 || char == 10 || char == 89 {
+			//TODO prefetch
+		}
+	}
 	app := fiber.New()
 	app.Banner = false
 	app.Server = "WebP Server Go"
