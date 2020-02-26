@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -88,7 +89,7 @@ func main() {
 			c.SendStatus(404)
 			return
 		}
-		
+
 		// 1582558990
 		STAT, err := os.Stat(ImgAbsolutePath)
 		if err != nil {
@@ -144,16 +145,19 @@ func main() {
 			os.MkdirAll(DirAbsolutePath, os.ModePerm)
 
 			// cwebp -q 60 Cute-Baby-Girl.png -o Cute-Baby-Girl.webp
-
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			webpEncoder(ImgAbsolutePath, WebpAbsolutePath, float32(q))
+			err = webpEncoder(ImgAbsolutePath, WebpAbsolutePath, float32(q))
+
 			if err != nil {
 				fmt.Println(err)
+				c.SendStatus(400)
+				c.Send("Bad file!")
+				return
 			}
-			
+
 			ImgNameCopy := string([]byte(ImgName))
 			c.SendFile(WebpAbsolutePath)
-			
+
 			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
 			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
 			WebpCachedImgPath := path.Clean(fmt.Sprintf("%s/exhaust%s/%s.*.webp", CurrentPath, DirPath, ImgNameCopy))
@@ -209,11 +213,15 @@ func GetFileContentType(buffer []byte) string {
 	return contentType
 }
 
-func webpEncoder(p1, p2 string, quality float32) {
+func webpEncoder(p1, p2 string, quality float32) (err error) {
+	// if convert fails, return error; success nil
 	var buf bytes.Buffer
 	var img image.Image
 
-	data, _ := ioutil.ReadFile(p1)
+	data, err := ioutil.ReadFile(p1)
+	if err != nil {
+		return
+	}
 	contentType := GetFileContentType(data[:512])
 	if strings.Contains(contentType, "jpeg") {
 		img, _ = jpeg.Decode(bytes.NewReader(data))
@@ -221,12 +229,21 @@ func webpEncoder(p1, p2 string, quality float32) {
 		img, _ = png.Decode(bytes.NewReader(data))
 	}
 
-	if err := webp.Encode(&buf, img, &webp.Options{Lossless: true, Quality: quality}); err != nil {
-		log.Println(err)
+	if img == nil {
+		log.Println("Image file is corrupted or not supported!")
+		err = errors.New("image file is corrupted or not supported")
+		return
 	}
-	if err := ioutil.WriteFile(p2, buf.Bytes(), 0666); err != nil {
+
+	if err = webp.Encode(&buf, img, &webp.Options{Lossless: true, Quality: quality}); err != nil {
 		log.Println(err)
+		return
+	}
+	if err = ioutil.WriteFile(p2, buf.Bytes(), 0666); err != nil {
+		log.Println(err)
+		return
 	}
 
 	fmt.Println("Save to webp ok")
+	return nil
 }
