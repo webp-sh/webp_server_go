@@ -19,3 +19,4 @@ jobs:
         on:
             repo: webp-sh/webp_server_go
             tags: false
+            branch: add-travis-ci
