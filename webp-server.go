@@ -53,15 +53,6 @@ func imageExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func Find(slice []string, val string) (int, bool) {
-	for i, item := range slice {
-		if item == val {
-			return i, true
-		}
-	}
-	return -1, false
-}
-
 func GetFileContentType(buffer []byte) string {
 	// Use the net/http package's handy DectectContentType function. Always returns a valid
 	// content-type by returning "application/octet-stream" if no others seemed to match.
@@ -95,12 +86,12 @@ func webpEncoder(p1, p2 string, quality float32) (err error) {
 		log.Println(err)
 		return
 	}
-	if err = ioutil.WriteFile(p2, buf.Bytes(), 0666); err != nil {
+	if err = ioutil.WriteFile(p2, buf.Bytes(), os.ModePerm); err != nil {
 		log.Println(err)
 		return
 	}
 
-	fmt.Println("Save to webp ok")
+	fmt.Printf("Save to %s ok\n", p2)
 	return nil
 }
 
@@ -116,7 +107,7 @@ func main() {
 		fmt.Println(`Prefetch will convert all your images to webp, 
 it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/N)`)
 		reader := bufio.NewReader(os.Stdin)
-		char, _, _ := reader.ReadRune() //121 10 89
+		char, _, _ := reader.ReadRune() //y Y ente
 		if char == 121 || char == 10 || char == 89 {
 			//TODO prefetch
 		}
@@ -140,94 +131,76 @@ it may take some time and consume a lot of CPU resource. Do you want to proceed(
 	fmt.Println(ServerInfo)
 
 	app.Get("/*", func(c *fiber.Ctx) {
-
-		// /var/www/IMG_PATH/path/to/tsuki.jpg
-		ImgAbsolutePath := ImgPath + c.Path()
-
-		// /path/to/tsuki.jpg
-		ImgPath := c.Path()
-
-		// jpg
-		seps := strings.Split(path.Ext(ImgPath), ".")
-		var ImgExt string
-		if len(seps) >= 2 {
-			ImgExt = seps[1]
-		} else {
-			c.Send("Invalid request")
+		//basic vars
+		var reqURI = c.Path()                         // mypic/123.jpg
+		var RawImagePath = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg
+		var ImgFilename = path.Base(reqURI)           // pure filename, 123.jpg
+		var finalFile string                          // We'll only need one c.sendFile()
+		// Check for Safari users. If they're Safari, just simply ignore everything.
+		UA := c.Get("User-Agent")
+		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") &&
+			!strings.Contains(UA, "Firefox") {
+			finalFile = RawImagePath
 			return
 		}
 
-		// tsuki.jpg
-		ImgName := path.Base(ImgPath)
+		// check ext
+		for _, ext := range AllowedTypes {
+			haystack := strings.ToLower(ImgFilename)
+			needle := strings.ToLower("." + ext)
+			if strings.HasSuffix(haystack, needle) {
+				break
+			} else {
+				c.Send("File extension not allowed!")
+				c.SendStatus(403)
+				return
+			}
+		}
 
-		// /path/to
-		DirPath := path.Dir(ImgPath)
-
-		// Check the original image for existence
-		OriginalImgExists := imageExists(ImgAbsolutePath)
-		if !OriginalImgExists {
-			c.Send("File not found!")
+		// Check the original image for existence,
+		if !imageExists(RawImagePath) {
+			c.Send("Image not found!")
 			c.SendStatus(404)
 			return
 		}
 
-		// 1582558990
-		STAT, err := os.Stat(ImgAbsolutePath)
+		// get file mod time
+		STAT, err := os.Stat(RawImagePath)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
 		ModifiedTime := STAT.ModTime().Unix()
-
-		// /path/to/tsuki.jpg.1582558990.webp
-		WebpImgPath := fmt.Sprintf("%s/%s.%d.webp", DirPath, ImgName, ModifiedTime)
-
-		// /home/webp_server
-		CurrentPath, err := os.Getwd()
-		if err != nil {
-			fmt.Println(err.Error())
-		}
+		// webpFilename: abc.jpg.png -> abc.jpg.png1582558990.webp
+		var WebpFilename = fmt.Sprintf("%s.%d.webp", ImgFilename, ModifiedTime)
+		cwd, _ := os.Getwd()
 
 		// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-		WebpAbsolutePath := path.Clean(CurrentPath + "/exhaust" + WebpImgPath)
-
-		// /home/webp_server/exhaust/path/to
-		DirAbsolutePath := path.Clean(CurrentPath + "/exhaust" + DirPath)
-
-		// Check file extension
-		_, found := Find(AllowedTypes, ImgExt)
-		if !found {
-			c.Send("File extension not allowed!")
-			c.SendStatus(403)
-			return
-		}
-
-		// Check the original image for existence
-		if !OriginalImgExists {
-			// The original image doesn't exist, check the webp image, delete if processed.
-			if imageExists(WebpAbsolutePath) {
-				_ = os.Remove(WebpAbsolutePath)
-			}
-			c.Send("File not found!")
-			c.SendStatus(404)
-			return
-		}
-
-		// Check for Safari users
-		UA := c.Get("User-Agent")
-		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") && !strings.Contains(UA, "Firefox") {
-			c.SendFile(ImgAbsolutePath)
-			return
-		}
+		WebpAbsolutePath := path.Clean(path.Join(cwd, "exhaust", path.Dir(reqURI), WebpFilename))
 
 		if imageExists(WebpAbsolutePath) {
-			c.SendFile(WebpAbsolutePath)
+			finalFile = WebpAbsolutePath
 		} else {
-			// Mkdir
-			_ = os.MkdirAll(DirAbsolutePath, os.ModePerm)
+			// we don't have abc.jpg.png1582558990.webp
+			// delete the old pic and convert a new one.
+			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+			destHalfFile := path.Clean(path.Join(cwd, "exhaust", path.Dir(reqURI), ImgFilename))
+			matches, err := filepath.Glob(destHalfFile + "*")
+			if err != nil {
+				fmt.Println(err.Error())
+			} else {
+				// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
+				// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
+				for _, p := range matches {
+					if strings.Compare(destHalfFile, p) != 0 {
+						_ = os.Remove(p)
+					}
+				}
+			}
 
-			// cwebp -q 60 Cute-Baby-Girl.png -o Cute-Baby-Girl.webp
+			//for webp, we need to create dir first
+			_ = os.MkdirAll(path.Dir(WebpAbsolutePath), os.ModePerm)
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			err = webpEncoder(ImgAbsolutePath, WebpAbsolutePath, float32(q))
+			err = webpEncoder(RawImagePath, WebpAbsolutePath, float32(q))
 
 			if err != nil {
 				fmt.Println(err)
@@ -235,24 +208,9 @@ it may take some time and consume a lot of CPU resource. Do you want to proceed(
 				c.Send("Bad file!")
 				return
 			}
-
-			ImgNameCopy := string([]byte(ImgName))
-			c.SendFile(WebpAbsolutePath)
-
-			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
-			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
-			WebpCachedImgPath := path.Clean(fmt.Sprintf("%s/exhaust%s/%s.*.webp", CurrentPath, DirPath, ImgNameCopy))
-			matches, err := filepath.Glob(WebpCachedImgPath)
-			if err != nil {
-				fmt.Println(err.Error())
-			} else {
-				for _, p := range matches {
-					if strings.Compare(WebpAbsolutePath, p) != 0 {
-						_ = os.Remove(p)
-					}
-				}
-			}
+			finalFile = WebpAbsolutePath
 		}
+		c.SendFile(finalFile)
 	})
 
 	app.Listen(ListenAddress)
