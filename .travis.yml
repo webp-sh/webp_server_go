@@ -6,7 +6,8 @@ go:
 jobs:
   include:
     - stage: test-build
-      script: go build
+      script: go build -o webp-server-linux-amd64 webp-server.go
+      script: ls
 
     - stage: GitHub Release
       script: echo "Deploying to GitHub releases ..."
