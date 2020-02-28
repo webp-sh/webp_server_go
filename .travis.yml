@@ -6,6 +6,7 @@ go:
 jobs:
   include:
     - stage: test-build
+      skip_cleanup: true
       script: go build -o webp-server-linux-amd64 webp-server.go
       script: ls
 
