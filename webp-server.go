@@ -101,36 +101,8 @@ func init() {
 	flag.Parse()
 }
 
-func main() {
-
-	if prefetch {
-		fmt.Println(`Prefetch will convert all your images to webp, 
-it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/N)`)
-		reader := bufio.NewReader(os.Stdin)
-		char, _, _ := reader.ReadRune() //y Y ente
-		if char == 121 || char == 10 || char == 89 {
-			//TODO prefetch
-		}
-	}
-	app := fiber.New()
-	app.Banner = false
-	app.Server = "WebP Server Go"
-
-	config := loadConfig(configPath)
-
-	HOST := config.HOST
-	PORT := config.PORT
-	ImgPath := config.ImgPath
-	QUALITY := config.QUALITY
-	AllowedTypes := config.AllowedTypes
-
-	ListenAddress := HOST + ":" + PORT
-
-	// Server Info
-	ServerInfo := "WebP Server is running at " + ListenAddress
-	fmt.Println(ServerInfo)
-
-	app.Get("/*", func(c *fiber.Ctx) {
+func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fiber.Ctx) {
+	return func(c *fiber.Ctx) {
 		//basic vars
 		var reqURI = c.Path()                         // mypic/123.jpg
 		var RawImagePath = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg
@@ -211,7 +183,39 @@ it may take some time and consume a lot of CPU resource. Do you want to proceed(
 			finalFile = WebpAbsolutePath
 		}
 		c.SendFile(finalFile)
-	})
+	}
+}
+
+func main() {
+
+	if prefetch {
+		fmt.Println(`Prefetch will convert all your images to webp, 
+it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/N)`)
+		reader := bufio.NewReader(os.Stdin)
+		char, _, _ := reader.ReadRune() //y Y ente
+		if char == 121 || char == 10 || char == 89 {
+			//TODO prefetch
+		}
+	}
+	app := fiber.New()
+	app.Banner = false
+	app.Server = "WebP Server Go"
+
+	config := loadConfig(configPath)
+
+	HOST := config.HOST
+	PORT := config.PORT
+	ImgPath := config.ImgPath
+	QUALITY := config.QUALITY
+	AllowedTypes := config.AllowedTypes
+
+	ListenAddress := HOST + ":" + PORT
+
+	// Server Info
+	ServerInfo := "WebP Server is running at " + ListenAddress
+	fmt.Println(ServerInfo)
+
+	app.Get("/*", Convert(ImgPath, AllowedTypes, QUALITY))
 
 	app.Listen(ListenAddress)
 
