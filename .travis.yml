@@ -3,22 +3,21 @@ language: go
 go: 
  - 1.13
 
-jobs:
-  include:
-    - stage: test-build
-      skip_cleanup: true
-      script: make
-      script: ls
+before_install:
+  - go get github.com/mitchellh/gox
 
-    - stage: GitHub Release
-      script: echo "Deploying to GitHub releases ..."
-      deploy:
-        provider: releases
-        api_key: $GITHUB_OAUTH_TOKEN
-        skip_cleanup: true
-        file:
-            - webp-server
-        on:
-            repo: webp-sh/webp_server_go
-            tags: false
-            branch: add-travis-ci
+script: echo "Deploying to GitHub releases ..."
+script: gox -os="linux darwin windows" -arch="amd64" -output="webp-server.." -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...
+
+deploy:
+  provider: releases
+  api_key: $GITHUB_OAUTH_TOKEN
+  skip_cleanup: true
+  file:
+      - webp-server.linux.amd64
+      - webp-server.darwin.amd64
+      - webp-server.windows.amd64.exe
+  on:
+      repo: webp-sh/webp_server_go
+      tags: false
+      branch: add-travis-ci
