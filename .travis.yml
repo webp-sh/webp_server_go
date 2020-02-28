@@ -9,7 +9,7 @@ before_install:
   - go get github.com/mitchellh/gox
 
 script: echo "Deploying to GitHub releases ..."
-script: gox -os="linux darwin windows" -arch="amd64" -output="webp-server.." -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...
+script: gox -os="linux darwin windows" -arch="amd64" -output="webp-server.."
 
 deploy:
   provider: releases
