@@ -2,23 +2,18 @@ language: go
 
 go: 
  - 1.13
+ 
+env: GO111MODULE=on
 
-jobs:
-  include:
-    - stage: test-build
-      skip_cleanup: true
-      script: go build -o webp-server-linux-amd64 webp-server.go
-      script: ls
+script: GOARCH=amd64 go build -o webp-server-linux-amd64 webp-server.go
 
-    - stage: GitHub Release
-      script: echo "Deploying to GitHub releases ..."
-      deploy:
-        provider: releases
-        api_key: $GITHUB_OAUTH_TOKEN
-        skip_cleanup: true
-        file:
-            - webp-server
-        on:
-            repo: webp-sh/webp_server_go
-            tags: false
-            branch: add-travis-ci
+deploy:
+  provider: releases
+  api_key: $GITHUB_OAUTH_TOKEN
+  skip_cleanup: true
+  file:
+      - webp-server-linux-amd64
+  on:
+      repo: webp-sh/webp_server_go
+      tags: true
+      branch: master
