@@ -5,7 +5,9 @@ go:
  
 env: GO111MODULE=on
 
-script: go build -o webp-server webp-server.go
+script: GOARCH=amd64 go build -o webp-server-linux-amd64 webp-server.go
+script: GOOS=windows GOARCH=amd64 go build -o webp-server-windows-amd64.exe webp-server.go
+script: GOOS=darwin GOARCH=amd64 go build -o webp-server-darwin-amd64.exe webp-server.go
 
 deploy:
   provider: releases
@@ -15,5 +17,5 @@ deploy:
       - webp-server
   on:
       repo: webp-sh/webp_server_go
-      tags: false
+      tags: true
       branch: add-travis-ci
