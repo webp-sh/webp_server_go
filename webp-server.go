@@ -104,15 +104,15 @@ func init() {
 func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fiber.Ctx) {
 	return func(c *fiber.Ctx) {
 		//basic vars
-		var reqURI = c.Path()                         // mypic/123.jpg
-		var RawImagePath = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg
-		var ImgFilename = path.Base(reqURI)           // pure filename, 123.jpg
-		var finalFile string                          // We'll only need one c.sendFile()
+		var reqURI = c.Path()                        // mypic/123.jpg
+		var RawImageAbs = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg
+		var ImgFilename = path.Base(reqURI)          // pure filename, 123.jpg
+		var finalFile string                         // We'll only need one c.sendFile()
 		// Check for Safari users. If they're Safari, just simply ignore everything.
 		UA := c.Get("User-Agent")
 		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") &&
 			!strings.Contains(UA, "Firefox") {
-			finalFile = RawImagePath
+			finalFile = RawImageAbs
 			return
 		}
 
@@ -130,27 +130,16 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 		}
 
 		// Check the original image for existence,
-		if !imageExists(RawImagePath) {
+		if !imageExists(RawImageAbs) {
 			c.Send("Image not found!")
 			c.SendStatus(404)
 			return
 		}
 
-		// get file mod time
-		STAT, err := os.Stat(RawImagePath)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		ModifiedTime := STAT.ModTime().Unix()
-		// webpFilename: abc.jpg.png -> abc.jpg.png1582558990.webp
-		var WebpFilename = fmt.Sprintf("%s.%d.webp", ImgFilename, ModifiedTime)
-		cwd, _ := os.Getwd()
+		cwd, WebpAbsPath := genWebpAbs(RawImageAbs, ImgFilename, reqURI)
 
-		// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-		WebpAbsolutePath := path.Clean(path.Join(cwd, "exhaust", path.Dir(reqURI), WebpFilename))
-
-		if imageExists(WebpAbsolutePath) {
-			finalFile = WebpAbsolutePath
+		if imageExists(WebpAbsPath) {
+			finalFile = WebpAbsPath
 		} else {
 			// we don't have abc.jpg.png1582558990.webp
 			// delete the old pic and convert a new one.
@@ -170,9 +159,9 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 			}
 
 			//for webp, we need to create dir first
-			_ = os.MkdirAll(path.Dir(WebpAbsolutePath), os.ModePerm)
+			_ = os.MkdirAll(path.Dir(WebpAbsPath), os.ModePerm)
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			err = webpEncoder(RawImagePath, WebpAbsolutePath, float32(q))
+			err = webpEncoder(RawImageAbs, WebpAbsPath, float32(q))
 
 			if err != nil {
 				fmt.Println(err)
@@ -180,34 +169,68 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 				c.Send("Bad file!")
 				return
 			}
-			finalFile = WebpAbsolutePath
+			finalFile = WebpAbsPath
 		}
 		c.SendFile(finalFile)
 	}
 }
 
-func main() {
-
-	if prefetch {
-		fmt.Println(`Prefetch will convert all your images to webp, 
-it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/N)`)
-		reader := bufio.NewReader(os.Stdin)
-		char, _, _ := reader.ReadRune() //y Y ente
-		if char == 121 || char == 10 || char == 89 {
-			//TODO prefetch
-		}
+func genWebpAbs(RawImagePath string, ImgFilename string, reqURI string) (string, string) {
+	// get file mod time
+	STAT, err := os.Stat(RawImagePath)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
-	app := fiber.New()
-	app.Banner = false
-	app.Server = "WebP Server Go"
+	ModifiedTime := STAT.ModTime().Unix()
+	// webpFilename: abc.jpg.png -> abc.jpg.png1582558990.webp
+	var WebpFilename = fmt.Sprintf("%s.%d.webp", ImgFilename, ModifiedTime)
+	cwd, _ := os.Getwd()
 
+	// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+	WebpAbsolutePath := path.Clean(path.Join(cwd, "exhaust", path.Dir(reqURI), WebpFilename))
+	return cwd, WebpAbsolutePath
+}
+
+func main() {
 	config := loadConfig(configPath)
 
 	HOST := config.HOST
 	PORT := config.PORT
-	ImgPath := config.ImgPath
+	confImgPath := path.Clean(config.ImgPath)
 	QUALITY := config.QUALITY
 	AllowedTypes := config.AllowedTypes
+
+	if prefetch {
+		fmt.Println(`Prefetch will convert all your images to webp, 
+it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/n)`)
+		reader := bufio.NewReader(os.Stdin)
+		char, _, _ := reader.ReadRune() //y Y enter
+		if char == 121 || char == 10 || char == 89 {
+			//prefetch, recursive through the dir
+			err := filepath.Walk(confImgPath,
+				func(picAbsPath string, info os.FileInfo, err error) error {
+					fmt.Println(12131, info.Name())
+					if err != nil {
+						return err
+					}
+					// RawImagePath string, ImgFilename string, reqURI string
+					proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
+					_, p2 := genWebpAbs(picAbsPath, info.Name(), proposedURI)
+					q, _ := strconv.ParseFloat(QUALITY, 32)
+					_ = os.MkdirAll(path.Dir(p2), os.ModePerm)
+					_ = webpEncoder(picAbsPath, p2, float32(q))
+
+					return nil
+				})
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
+
+	app := fiber.New()
+	app.Banner = false
+	app.Server = "WebP Server Go"
 
 	ListenAddress := HOST + ":" + PORT
 
@@ -215,8 +238,7 @@ it may take some time and consume a lot of CPU resource. Do you want to proceed(
 	ServerInfo := "WebP Server is running at " + ListenAddress
 	fmt.Println(ServerInfo)
 
-	app.Get("/*", Convert(ImgPath, AllowedTypes, QUALITY))
-
+	app.Get("/*", Convert(confImgPath, AllowedTypes, QUALITY))
 	app.Listen(ListenAddress)
 
 }
