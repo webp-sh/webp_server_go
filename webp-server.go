@@ -75,6 +75,9 @@ func webpEncoder(p1, p2 string, quality float32, Log bool) (err error) {
 	} else if strings.Contains(contentType, "png") {
 		img, _ = png.Decode(bytes.NewReader(data))
 	}
+	// TODO should we add bmp and tiff support? Need more packages.
+	// import "golang.org/x/image/bmp"
+	// import "golang.org/x/image/tiff"
 
 	if img == nil {
 		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
@@ -120,6 +123,7 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 		}
 
 		// check ext
+		// TODO: should remove this function. Check in Nginx.
 		for _, ext := range AllowedTypes {
 			haystack := strings.ToLower(ImgFilename)
 			needle := strings.ToLower("." + ext)
