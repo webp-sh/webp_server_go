@@ -60,7 +60,7 @@ func GetFileContentType(buffer []byte) string {
 	return contentType
 }
 
-func webpEncoder(p1, p2 string, quality float32) (err error) {
+func webpEncoder(p1, p2 string, quality float32, Log bool) (err error) {
 	// if convert fails, return error; success nil
 	var buf bytes.Buffer
 	var img image.Image
@@ -77,8 +77,9 @@ func webpEncoder(p1, p2 string, quality float32) (err error) {
 	}
 
 	if img == nil {
-		log.Println("Image file is corrupted or not supported!")
-		err = errors.New("image file is corrupted or not supported")
+		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
+		log.Println(msg)
+		err = errors.New(msg)
 		return
 	}
 
@@ -91,7 +92,9 @@ func webpEncoder(p1, p2 string, quality float32) (err error) {
 		return
 	}
 
-	fmt.Printf("Save to %s ok\n", p2)
+	if Log {
+		fmt.Printf("Save to %s ok\n", p2)
+	}
 	return nil
 }
 
@@ -161,7 +164,7 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 			//for webp, we need to create dir first
 			_ = os.MkdirAll(path.Dir(WebpAbsPath), os.ModePerm)
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			err = webpEncoder(RawImageAbs, WebpAbsPath, float32(q))
+			err = webpEncoder(RawImageAbs, WebpAbsPath, float32(q), true)
 
 			if err != nil {
 				fmt.Println(err)
@@ -173,6 +176,18 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 		}
 		c.SendFile(finalFile)
 	}
+}
+
+func fileCount(dir string) int {
+	count := 0
+	_ = filepath.Walk(dir,
+		func(path string, info os.FileInfo, err error) error {
+			if !info.IsDir() {
+				count += 1
+			}
+			return nil
+		})
+	return count
 }
 
 func genWebpAbs(RawImagePath string, ImgFilename string, reqURI string) (string, string) {
@@ -207,9 +222,10 @@ it may take some time and consume a lot of CPU resource. Do you want to proceed(
 		char, _, _ := reader.ReadRune() //y Y enter
 		if char == 121 || char == 10 || char == 89 {
 			//prefetch, recursive through the dir
+			all := fileCount(confImgPath)
+			count := 0
 			err := filepath.Walk(confImgPath,
 				func(picAbsPath string, info os.FileInfo, err error) error {
-					fmt.Println(12131, info.Name())
 					if err != nil {
 						return err
 					}
@@ -218,8 +234,10 @@ it may take some time and consume a lot of CPU resource. Do you want to proceed(
 					_, p2 := genWebpAbs(picAbsPath, info.Name(), proposedURI)
 					q, _ := strconv.ParseFloat(QUALITY, 32)
 					_ = os.MkdirAll(path.Dir(p2), os.ModePerm)
-					_ = webpEncoder(picAbsPath, p2, float32(q))
-
+					_ = webpEncoder(picAbsPath, p2, float32(q), false)
+					count += 1
+					// progress bar
+					_, _ = fmt.Fprintf(os.Stdout, "Convert in progress: %d/%d\r", count, all)
 					return nil
 				})
 			if err != nil {
