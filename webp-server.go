@@ -7,8 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/chai2010/webp"
-	"github.com/gofiber/fiber"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -20,6 +18,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/chai2010/webp"
+	"github.com/gofiber/fiber"
 )
 
 type Config struct {
@@ -210,6 +211,37 @@ func genWebpAbs(RawImagePath string, ImgFilename string, reqURI string) (string,
 	return cwd, WebpAbsolutePath
 }
 
+func prefetchImages(confImgPath string, QUALITY string) {
+	fmt.Println(`Prefetch will convert all your images to webp, it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/n)`)
+	reader := bufio.NewReader(os.Stdin)
+	char, _, _ := reader.ReadRune() //y Y enter
+	if char == 121 || char == 10 || char == 89 {
+		//prefetch, recursive through the dir
+		all := fileCount(confImgPath)
+		count := 0
+		err := filepath.Walk(confImgPath,
+			func(picAbsPath string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				// RawImagePath string, ImgFilename string, reqURI string
+				proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
+				_, p2 := genWebpAbs(picAbsPath, info.Name(), proposedURI)
+				q, _ := strconv.ParseFloat(QUALITY, 32)
+				_ = os.MkdirAll(path.Dir(p2), os.ModePerm)
+				_ = webpEncoder(picAbsPath, p2, float32(q), false)
+				count += 1
+				// progress bar
+				_, _ = fmt.Fprintf(os.Stdout, "Convert in progress: %d/%d\r", count, all)
+				return nil
+			})
+		if err != nil {
+			log.Println(err)
+		}
+	}
+	fmt.Fprintf(os.Stdout, "Prefetch complete,")
+}
+
 func main() {
 	config := loadConfig(configPath)
 
@@ -220,34 +252,7 @@ func main() {
 	AllowedTypes := config.AllowedTypes
 
 	if prefetch {
-		fmt.Println(`Prefetch will convert all your images to webp, 
-it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/n)`)
-		reader := bufio.NewReader(os.Stdin)
-		char, _, _ := reader.ReadRune() //y Y enter
-		if char == 121 || char == 10 || char == 89 {
-			//prefetch, recursive through the dir
-			all := fileCount(confImgPath)
-			count := 0
-			err := filepath.Walk(confImgPath,
-				func(picAbsPath string, info os.FileInfo, err error) error {
-					if err != nil {
-						return err
-					}
-					// RawImagePath string, ImgFilename string, reqURI string
-					proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
-					_, p2 := genWebpAbs(picAbsPath, info.Name(), proposedURI)
-					q, _ := strconv.ParseFloat(QUALITY, 32)
-					_ = os.MkdirAll(path.Dir(p2), os.ModePerm)
-					_ = webpEncoder(picAbsPath, p2, float32(q), false)
-					count += 1
-					// progress bar
-					_, _ = fmt.Fprintf(os.Stdout, "Convert in progress: %d/%d\r", count, all)
-					return nil
-				})
-			if err != nil {
-				log.Println(err)
-			}
-		}
+		prefetchImages(confImgPath, QUALITY)
 	}
 
 	app := fiber.New()
