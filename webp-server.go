@@ -87,7 +87,7 @@ func webpEncoder(p1, p2 string, quality float32, Log bool) (err error) {
 		return
 	}
 
-	if err = webp.Encode(&buf, img, &webp.Options{Lossless: true, Quality: quality}); err != nil {
+	if err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality}); err != nil {
 		log.Println(err)
 		return
 	}
