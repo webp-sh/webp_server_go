@@ -12,8 +12,8 @@ deploy:
   api_key: $GITHUB_OAUTH_TOKEN
   skip_cleanup: true
   file:
-      - webp-server
+      - webp-server-linux-amd64
   on:
       repo: webp-sh/webp_server_go
       tags: true
-      branch: add-travis-ci
+      branch: master
