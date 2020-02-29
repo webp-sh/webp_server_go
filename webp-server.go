@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -61,15 +62,22 @@ func GetFileContentType(buffer []byte) string {
 	return contentType
 }
 
-func webpEncoder(p1, p2 string, quality float32, Log bool) (err error) {
+func chanErr(ccc chan int) {
+	if ccc != nil {
+		ccc <- 1
+	}
+}
+func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err error) {
 	// if convert fails, return error; success nil
 	var buf bytes.Buffer
 	var img image.Image
 
 	data, err := ioutil.ReadFile(p1)
 	if err != nil {
+		chanErr(c)
 		return
 	}
+
 	contentType := GetFileContentType(data[:512])
 	if strings.Contains(contentType, "jpeg") {
 		img, _ = jpeg.Decode(bytes.NewReader(data))
@@ -84,21 +92,27 @@ func webpEncoder(p1, p2 string, quality float32, Log bool) (err error) {
 		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
 		log.Println(msg)
 		err = errors.New(msg)
+		chanErr(c)
 		return
 	}
 
 	if err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality}); err != nil {
 		log.Println(err)
+		chanErr(c)
 		return
 	}
 	if err = ioutil.WriteFile(p2, buf.Bytes(), os.ModePerm); err != nil {
 		log.Println(err)
+		chanErr(c)
 		return
 	}
 
 	if Log {
 		fmt.Printf("Save to %s ok\n", p2)
 	}
+
+	chanErr(c)
+
 	return nil
 }
 
@@ -169,7 +183,7 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 			//for webp, we need to create dir first
 			_ = os.MkdirAll(path.Dir(WebpAbsPath), os.ModePerm)
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			err = webpEncoder(RawImageAbs, WebpAbsPath, float32(q), true)
+			err = webpEncoder(RawImageAbs, WebpAbsPath, float32(q), true, nil)
 
 			if err != nil {
 				fmt.Println(err)
@@ -215,6 +229,11 @@ func prefetchImages(confImgPath string, QUALITY string) {
 	fmt.Println(`Prefetch will convert all your images to webp, it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/n)`)
 	reader := bufio.NewReader(os.Stdin)
 	char, _, _ := reader.ReadRune() //y Y enter
+	// maximum ongoing prefetch is depending on your core of CPU
+	var finishChan = make(chan int, runtime.NumCPU())
+	for i := 0; i < runtime.NumCPU(); i++ {
+		finishChan <- 0
+	}
 	if char == 121 || char == 10 || char == 89 {
 		//prefetch, recursive through the dir
 		all := fileCount(confImgPath)
@@ -229,9 +248,9 @@ func prefetchImages(confImgPath string, QUALITY string) {
 				_, p2 := genWebpAbs(picAbsPath, info.Name(), proposedURI)
 				q, _ := strconv.ParseFloat(QUALITY, 32)
 				_ = os.MkdirAll(path.Dir(p2), os.ModePerm)
-				_ = webpEncoder(picAbsPath, p2, float32(q), false)
-				count += 1
-				// progress bar
+				go webpEncoder(picAbsPath, p2, float32(q), false, finishChan)
+				count += <-finishChan
+				//progress bar
 				_, _ = fmt.Fprintf(os.Stdout, "Convert in progress: %d/%d\r", count, all)
 				return nil
 			})
@@ -239,7 +258,9 @@ func prefetchImages(confImgPath string, QUALITY string) {
 			log.Println(err)
 		}
 	}
-	fmt.Fprintf(os.Stdout, "Prefetch complete,")
+
+	_, _ = fmt.Fprintf(os.Stdout, "Prefetch completeY(^_^)Y\n\n")
+
 }
 
 func main() {
