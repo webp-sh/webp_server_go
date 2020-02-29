@@ -6,8 +6,6 @@ go:
 env: GO111MODULE=on
 
 script: GOARCH=amd64 go build -o webp-server-linux-amd64 webp-server.go
-script: GOOS=windows GOARCH=amd64 go build -o webp-server-windows-amd64.exe webp-server.go
-script: GOOS=darwin GOARCH=amd64 go build -o webp-server-darwin-amd64.exe webp-server.go
 
 deploy:
   provider: releases
