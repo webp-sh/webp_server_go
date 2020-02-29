@@ -6,8 +6,8 @@ GOGET=$(GOCMD) get
 BINARY_NAME=webp-server
 BINARY_LINUX=$(BINARY_NAME)_linux-amd64
 
-all: test build
+all: build
 build: 
-		$(GOBUILD) -o $(BINARY_NAME) -v
+		$(GOBUILD) -o $(BINARY_LINUX) -v
 test: 
 		$(GOTEST) -v ./...
