@@ -138,17 +138,22 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 		}
 
 		// check ext
-		// TODO: should remove this function. Check in Nginx.
+		// TODO: may remove this function. Check in Nginx.
+		var allowed = false
 		for _, ext := range AllowedTypes {
 			haystack := strings.ToLower(ImgFilename)
 			needle := strings.ToLower("." + ext)
 			if strings.HasSuffix(haystack, needle) {
+				allowed = true
 				break
 			} else {
-				c.Send("File extension not allowed!")
-				c.SendStatus(403)
-				return
+				allowed = false
 			}
+		}
+		if !allowed {
+			c.Send("File extension not allowed!")
+			c.SendStatus(403)
+			return
 		}
 
 		// Check the original image for existence,
