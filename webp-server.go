@@ -101,7 +101,7 @@ func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 		chanErr(c)
 		return
 	}
-	if err = ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {
+	if err = ioutil.WriteFile(p2, buf.Bytes(), 0755); err != nil {
 		log.Println(err)
 		chanErr(c)
 		return
@@ -186,7 +186,7 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 			}
 
 			//for webp, we need to create dir first
-			_ = os.MkdirAll(path.Dir(WebpAbsPath), 0644)
+			_ = os.MkdirAll(path.Dir(WebpAbsPath), 0755)
 			q, _ := strconv.ParseFloat(QUALITY, 32)
 			err = webpEncoder(RawImageAbs, WebpAbsPath, float32(q), true, nil)
 
@@ -252,7 +252,7 @@ func prefetchImages(confImgPath string, QUALITY string) {
 				proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
 				_, p2 := genWebpAbs(picAbsPath, info.Name(), proposedURI)
 				q, _ := strconv.ParseFloat(QUALITY, 32)
-				_ = os.MkdirAll(path.Dir(p2), 0644)
+				_ = os.MkdirAll(path.Dir(p2), 0755)
 				go webpEncoder(picAbsPath, p2, float32(q), false, finishChan)
 				count += <-finishChan
 				//progress bar
