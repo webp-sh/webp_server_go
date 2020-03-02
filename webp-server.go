@@ -30,6 +30,7 @@ type Config struct {
 	ImgPath      string `json:"IMG_PATH"`
 	QUALITY      string
 	AllowedTypes []string `json:"ALLOWED_TYPES"`
+	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
 var configPath string
@@ -122,7 +123,7 @@ func init() {
 	flag.Parse()
 }
 
-func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fiber.Ctx) {
+func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY string) func(c *fiber.Ctx) {
 	return func(c *fiber.Ctx) {
 		//basic vars
 		var reqURI = c.Path()                        // mypic/123.jpg
@@ -163,7 +164,7 @@ func Convert(ImgPath string, AllowedTypes []string, QUALITY string) func(c *fibe
 			return
 		}
 
-		cwd, WebpAbsPath := genWebpAbs(RawImageAbs, ImgFilename, reqURI)
+		cwd, WebpAbsPath := genWebpAbs(RawImageAbs, ExhaustPath, ImgFilename, reqURI)
 
 		if imageExists(WebpAbsPath) {
 			finalFile = WebpAbsPath
@@ -214,7 +215,7 @@ func fileCount(dir string) int {
 	return count
 }
 
-func genWebpAbs(RawImagePath string, ImgFilename string, reqURI string) (string, string) {
+func genWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, reqURI string) (string, string) {
 	// get file mod time
 	STAT, err := os.Stat(RawImagePath)
 	if err != nil {
@@ -226,11 +227,12 @@ func genWebpAbs(RawImagePath string, ImgFilename string, reqURI string) (string,
 	cwd, _ := os.Getwd()
 
 	// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-	WebpAbsolutePath := path.Clean(path.Join(cwd, "exhaust", path.Dir(reqURI), WebpFilename))
+	// Custom Exhaust: /path/to/exhaust/web_path/web_to/tsuki.jpg.1582558990.webp
+	WebpAbsolutePath := path.Clean(path.Join(ExhaustPath, path.Dir(reqURI), WebpFilename))
 	return cwd, WebpAbsolutePath
 }
 
-func prefetchImages(confImgPath string, QUALITY string) {
+func prefetchImages(confImgPath string, ExhaustPath string, QUALITY string) {
 	fmt.Println(`Prefetch will convert all your images to webp, it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/n)`)
 	reader := bufio.NewReader(os.Stdin)
 	char, _, _ := reader.ReadRune() //y Y enter
@@ -250,7 +252,7 @@ func prefetchImages(confImgPath string, QUALITY string) {
 				}
 				// RawImagePath string, ImgFilename string, reqURI string
 				proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
-				_, p2 := genWebpAbs(picAbsPath, info.Name(), proposedURI)
+				_, p2 := genWebpAbs(picAbsPath, ExhaustPath, info.Name(), proposedURI)
 				q, _ := strconv.ParseFloat(QUALITY, 32)
 				_ = os.MkdirAll(path.Dir(p2), 0755)
 				go webpEncoder(picAbsPath, p2, float32(q), false, finishChan)
@@ -276,9 +278,10 @@ func main() {
 	confImgPath := path.Clean(config.ImgPath)
 	QUALITY := config.QUALITY
 	AllowedTypes := config.AllowedTypes
+	ExhaustPath := config.ExhaustPath
 
 	if prefetch {
-		prefetchImages(confImgPath, QUALITY)
+		prefetchImages(confImgPath, ExhaustPath, QUALITY)
 	}
 
 	app := fiber.New()
@@ -291,7 +294,7 @@ func main() {
 	ServerInfo := "WebP Server is running at " + ListenAddress
 	fmt.Println(ServerInfo)
 
-	app.Get("/*", Convert(confImgPath, AllowedTypes, QUALITY))
+	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY))
 	app.Listen(ListenAddress)
 
 }

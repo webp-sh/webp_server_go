@@ -33,11 +33,13 @@ It's basically between `ExpressJS` and `Fiber`, much faster than the `http` pack
 Regarding the `IMG_PATH` section in `config.json`. 
 If you are serving images at `https://example.com/pics/tsuki.jpg` and 
 your files are at `/var/www/image/pics/tsuki.jpg`, then `IMG_PATH` shall be `/var/www/image`.
+`EXHAUST_PATH` is cache folder for output `webp` images, with `EXHAUST_PATH` set to `/var/cache/webp` 
+in the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
 
 ## 1. Download or build the binary
 Download the `webp-server` from [release](https://github.com/n0vad3v/webp_server_go/releases) page.
 
-Wanna  build your own binary? Check out [build](#build-your-own-binaries) section
+Wanna build your own binary? Check out [build](#build-your-own-binaries) section
 
 ## 2. config file
 Create a `config.json` as follows to face your need, default convert quality is 80%.
@@ -47,6 +49,7 @@ Create a `config.json` as follows to face your need, default convert quality is 
 	"PORT": "3333",
 	"QUALITY": "80",
 	"IMG_PATH": "/path/to/pics",
+	"EXHAUST_PATH": "/path/to/exhaust",
 	"ALLOWED_TYPES": ["jpg","png","jpeg"]
 }
 ```
@@ -95,6 +98,8 @@ But the binary will work instantly on your platform and arch**
 - [x] A better way to supervise the program.
 - [ ] Get rid of render-blocking effect on first render.
 - [x] Prefetch on server initialization.
+- [x] Custom exhaust path.
+- [ ] Multiple listen address.
 
 ## Related Articles(In chronological order)
 
