@@ -278,7 +278,12 @@ func main() {
 	confImgPath := path.Clean(config.ImgPath)
 	QUALITY := config.QUALITY
 	AllowedTypes := config.AllowedTypes
-	ExhaustPath := config.ExhaustPath
+	var ExhaustPath string
+	if len(config.ExhaustPath) == 0 {
+		ExhaustPath = "./exhaust"
+	} else {
+		ExhaustPath = config.ExhaustPath
+	}
 
 	if prefetch {
 		prefetchImages(confImgPath, ExhaustPath, QUALITY)
