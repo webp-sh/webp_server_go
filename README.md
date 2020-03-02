@@ -33,8 +33,8 @@ It's basically between `ExpressJS` and `Fiber`, much faster than the `http` pack
 Regarding the `IMG_PATH` section in `config.json`. 
 If you are serving images at `https://example.com/pics/tsuki.jpg` and 
 your files are at `/var/www/image/pics/tsuki.jpg`, then `IMG_PATH` shall be `/var/www/image`.
-`EXHAUST_PATH` is cache folder for output `webp` images, in the `EXHAUST_PATH` set to `/var/cache/webp` 
-with the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
+`EXHAUST_PATH` is cache folder for output `webp` images, with `EXHAUST_PATH` set to `/var/cache/webp` 
+in the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
 
 ## 1. Download or build the binary
 Download the `webp-server` from [release](https://github.com/n0vad3v/webp_server_go/releases) page.
