@@ -7,6 +7,8 @@ After the [n0vad3v/webp_server](https://github.com/n0vad3v/webp_server), I decid
 
 This is a Server based on Golang, which allows you to serve WebP images on the fly. 
 It will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.json`.. 
+* currently supported  image format: JPEG, PNG, BMP, GIF(static image for now)
+
 
 > e.g When you visit `https://a.com/1.jpg`，it will serve as `image/webp` without changing the URL.
 >
@@ -84,6 +86,51 @@ location ^~ /wp-content/uploads/ {
         proxy_pass http://127.0.0.1:3333;
 }
 ```
+
+## Advanced usage
+### show help
+```
+./webp-server --help
+Usage of ./webp-server:
+  -child
+        is child process
+  -config string
+        /path/to/config.json. (Default: ./config.json) (default "config.json")
+  -dump-config
+        Print sample config.json
+  -dump-systemd
+        Print sample systemd service file.
+  -jobs int
+        Prefetch thread, default is all. (default 8)
+  -prefetch
+        Prefetch and convert image to webp
+  -prefork
+        use prefork
+```
+### Prefetch
+Prefetch will convert all your images to webp. Don't worry, Webp server will start, 
+you don't have to wait until prefetch completes.
+```
+./webp-server -prefetch
+```
+If you want to control threads to use while prefetching, add `-jobs=4`. 
+By default, it will utilize all your CPU cores.
+```
+# use 4 cores
+./webp-server -prefetch -jobs=4
+```
+### dump config.json
+The standard `config.json` will show on your screen. You many want to use `>` to redirect to a file.
+```
+./webp-server -dump-config
+```
+### dump systemd service file
+The standard systemd service file will show on your screen. You many want to use `>` to redirect to a file.
+
+```
+./webp-server -dump-systemd
+```
+
 ## Build your own binaries
 Install latest version of golang, enable go module, clone the repo, and then...
 ```shell script

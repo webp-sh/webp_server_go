@@ -2,7 +2,7 @@
   "HOST": "127.0.0.1",
   "PORT": "3333",
   "QUALITY": "80",
-  "IMG_PATH": "/Users/benny/goLandProject/webp_server_go/pics",
+  "IMG_PATH": "/path/to/pics",
   "EXHAUST_PATH": "",
   "ALLOWED_TYPES": [
     "jpg",
