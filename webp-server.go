@@ -7,7 +7,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"golang.org/x/image/bmp"
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
@@ -33,8 +35,44 @@ type Config struct {
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
+const version = "0.0.3"
+
 var configPath string
 var prefetch bool
+var jobs int
+var dumpConfig bool
+var dumpSystemd bool
+
+const sampleConfig = `
+{
+  "HOST": "127.0.0.1",
+  "PORT": "3333",
+  "QUALITY": "80",
+  "IMG_PATH": "/Users/benny/goLandProject/webp_server_go/pics",
+  "EXHAUST_PATH": "",
+  "ALLOWED_TYPES": ["jpg", "png", "jpeg", "bmp", "gif"]
+}
+`
+const sampleSystemd = `
+[Unit]
+Description=WebP Server
+Documentation=https://github.com/n0vad3v/webp_server_go
+After=nginx.target
+
+[Service]
+Type=simple
+StandardError=journal
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+WorkingDirectory=/opt/webps
+ExecStart=/opt/webps/webp-server --config /opt/webps/config.json
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=3s
+
+
+[Install]
+WantedBy=multi-user.target
+`
 
 func loadConfig(path string) Config {
 	var config Config
@@ -84,10 +122,12 @@ func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 		img, _ = jpeg.Decode(bytes.NewReader(data))
 	} else if strings.Contains(contentType, "png") {
 		img, _ = png.Decode(bytes.NewReader(data))
+	} else if strings.Contains(contentType, "bmp") {
+		img, _ = bmp.Decode(bytes.NewReader(data))
+	} else if strings.Contains(contentType, "gif") {
+		// TODO: need to support animated webp
+		img, _ = gif.Decode(bytes.NewReader(data))
 	}
-	// TODO should we add bmp and tiff support? Need more packages.
-	// import "golang.org/x/image/bmp"
-	// import "golang.org/x/image/tiff"
 
 	if img == nil {
 		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
@@ -120,6 +160,9 @@ func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 func init() {
 	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
 	flag.BoolVar(&prefetch, "prefetch", false, "Prefetch and convert image to webp")
+	flag.IntVar(&jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
+	flag.BoolVar(&dumpConfig, "dump-config", false, "Print sample config.json")
+	flag.BoolVar(&dumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.Parse()
 }
 
@@ -237,8 +280,9 @@ func prefetchImages(confImgPath string, ExhaustPath string, QUALITY string) {
 	reader := bufio.NewReader(os.Stdin)
 	char, _, _ := reader.ReadRune() //y Y enter
 	// maximum ongoing prefetch is depending on your core of CPU
-	var finishChan = make(chan int, runtime.NumCPU())
-	for i := 0; i < runtime.NumCPU(); i++ {
+	log.Printf("Prefetching using %d cores", jobs)
+	var finishChan = make(chan int, jobs)
+	for i := 0; i < jobs; i++ {
 		finishChan <- 0
 	}
 	if char == 121 || char == 10 || char == 89 {
@@ -258,7 +302,7 @@ func prefetchImages(confImgPath string, ExhaustPath string, QUALITY string) {
 				go webpEncoder(picAbsPath, p2, float32(q), false, finishChan)
 				count += <-finishChan
 				//progress bar
-				_, _ = fmt.Fprintf(os.Stdout, "Convert in progress: %d/%d\r", count, all)
+				_, _ = fmt.Fprintf(os.Stdout, "[Webp Server started] - convert in progress: %d/%d\r", count, all)
 				return nil
 			})
 		if err != nil {
@@ -285,8 +329,20 @@ func main() {
 		ExhaustPath = config.ExhaustPath
 	}
 
+	// process cli params
+	if dumpConfig {
+		fmt.Println(sampleConfig)
+		os.Exit(0)
+	}
+	if dumpSystemd {
+		fmt.Println(sampleSystemd)
+
+		os.Exit(0)
+
+	}
+
 	if prefetch {
-		prefetchImages(confImgPath, ExhaustPath, QUALITY)
+		go prefetchImages(confImgPath, ExhaustPath, QUALITY)
 	}
 
 	app := fiber.New()
@@ -296,7 +352,7 @@ func main() {
 	ListenAddress := HOST + ":" + PORT
 
 	// Server Info
-	ServerInfo := "WebP Server is running at " + ListenAddress
+	ServerInfo := "WebP Server " + version + " is running at " + ListenAddress
 	fmt.Println(ServerInfo)
 
 	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY))
