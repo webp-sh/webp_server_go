@@ -3,14 +3,19 @@ language: go
 go: 
  - 1.13
  
+arch:
+  - amd64
+  - arm64
+
 env: GO111MODULE=on
 
 script:
-  - sh scripts/build.sh
+  - sh scripts/build.sh $TRAVIS_CPU_ARCH
 
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
+  name: $TRAVIS_TAG
   file_glob: true
   file: builds/*
   skip_cleanup: true
