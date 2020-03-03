@@ -5,7 +5,8 @@ go:
  
 env: GO111MODULE=on
 
-script: GOARCH=amd64 go build -o webp-server-linux-amd64 webp-server.go
+script:
+  - sh scripts/build.sh
 
 deploy:
   provider: releases
