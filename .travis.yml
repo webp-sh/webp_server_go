@@ -15,7 +15,6 @@ script:
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
-  name: $TRAVIS_TAG
   file_glob: true
   file: builds/*
   skip_cleanup: true
