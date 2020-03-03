@@ -7,7 +7,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"golang.org/x/image/bmp"
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
@@ -84,10 +86,12 @@ func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 		img, _ = jpeg.Decode(bytes.NewReader(data))
 	} else if strings.Contains(contentType, "png") {
 		img, _ = png.Decode(bytes.NewReader(data))
+	} else if strings.Contains(contentType, "bmp") {
+		img, _ = bmp.Decode(bytes.NewReader(data))
+	} else if strings.Contains(contentType, "gif") {
+		// TODO: need to support animated webp
+		img, _ = gif.Decode(bytes.NewReader(data))
 	}
-	// TODO should we add bmp and tiff support? Need more packages.
-	// import "golang.org/x/image/bmp"
-	// import "golang.org/x/image/tiff"
 
 	if img == nil {
 		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
