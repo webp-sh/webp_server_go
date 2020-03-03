@@ -26,5 +26,5 @@ deploy:
   skip_cleanup: true
   on:
       repo: webp-sh/webp_server_go
-      tags: false
-      branch: better-ci
+      tags: true
+      branch: master
