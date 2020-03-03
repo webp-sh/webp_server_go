@@ -16,5 +16,5 @@ deploy:
       - webp-server-linux-amd64
   on:
       repo: webp-sh/webp_server_go
-      tags: true
-      branch: master
+      tags: false
+      branch: better-ci
