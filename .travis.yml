@@ -3,16 +3,27 @@ language: go
 go: 
  - 1.13
  
+arch:
+  - amd64
+  - arm64
+  - ppc64le
+
+os:
+  - windows
+  - osx
+  - linux
+
 env: GO111MODULE=on
 
-script: GOARCH=amd64 go build -o webp-server-linux-amd64 webp-server.go
+script:
+  - sh scripts/build.sh $TRAVIS_OS_NAME $TRAVIS_CPU_ARCH
 
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
+  file_glob: true
+  file: builds/*
   skip_cleanup: true
-  file:
-      - webp-server-linux-amd64
   on:
       repo: webp-sh/webp_server_go
       tags: true
