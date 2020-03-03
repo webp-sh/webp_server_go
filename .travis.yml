@@ -12,8 +12,7 @@ deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
   skip_cleanup: true
-  file:
-      - webp-server-linux-amd64
+  file: builds/*
   on:
       repo: webp-sh/webp_server_go
       tags: false
