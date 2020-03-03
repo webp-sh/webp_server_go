@@ -30,6 +30,8 @@ It's basically between `ExpressJS` and `Fiber`, much faster than the `http` pack
 * `webp_server`: Clone the repo -> `npm install` -> run with `pm2`
 * `webp-server(go)`: Download a single binary -> Run
 
+### Auto update
+This tool will check for new release whenever you run it. The updated binary will be save to `update` dir.
 
 ## General Usage Steps
 Regarding the `IMG_PATH` section in `config.json`. 
