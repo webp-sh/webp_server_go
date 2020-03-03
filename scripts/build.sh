@@ -19,4 +19,4 @@ GOARCH=amd64
 go build -x -v -ldflags "-s -w" -o builds/webp-server-windows-amd64.exe
 
 echo "build done!"
-ls
+ls builds
