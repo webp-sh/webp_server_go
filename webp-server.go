@@ -302,7 +302,7 @@ func prefetchImages(confImgPath string, ExhaustPath string, QUALITY string) {
 				go webpEncoder(picAbsPath, p2, float32(q), false, finishChan)
 				count += <-finishChan
 				//progress bar
-				_, _ = fmt.Fprintf(os.Stdout, "Convert in progress: %d/%d\r", count, all)
+				_, _ = fmt.Fprintf(os.Stdout, "[Webp Server started] - convert in progress: %d/%d\r", count, all)
 				return nil
 			})
 		if err != nil {
@@ -342,7 +342,7 @@ func main() {
 	}
 
 	if prefetch {
-		prefetchImages(confImgPath, ExhaustPath, QUALITY)
+		go prefetchImages(confImgPath, ExhaustPath, QUALITY)
 	}
 
 	app := fiber.New()
