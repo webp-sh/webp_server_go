@@ -7,7 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"golang.org/x/image/bmp"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -22,6 +21,8 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/image/bmp"
+
 	"github.com/chai2010/webp"
 	"github.com/gofiber/fiber"
 )
@@ -35,7 +36,7 @@ type Config struct {
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
-const version = "0.0.3"
+const version = "0.0.4"
 
 var configPath string
 var prefetch bool
@@ -45,18 +46,18 @@ var dumpSystemd bool
 
 const sampleConfig = `
 {
-  "HOST": "127.0.0.1",
-  "PORT": "3333",
-  "QUALITY": "80",
-  "IMG_PATH": "/Users/benny/goLandProject/webp_server_go/pics",
-  "EXHAUST_PATH": "",
-  "ALLOWED_TYPES": ["jpg", "png", "jpeg", "bmp", "gif"]
+	"HOST": "127.0.0.1",
+	"PORT": "3333",
+	"QUALITY": "80",
+	"IMG_PATH": "/path/to/pics",
+	"EXHAUST_PATH": "",
+	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp","gif"]
 }
 `
 const sampleSystemd = `
 [Unit]
 Description=WebP Server
-Documentation=https://github.com/n0vad3v/webp_server_go
+Documentation=https://github.com/webp-sh/webp_server_go
 After=nginx.target
 
 [Service]

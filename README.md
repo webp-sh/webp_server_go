@@ -56,39 +56,7 @@ Create a `config.json` as follows to face your need, default convert quality is 
 }
 ```
 ## 3. Run
-Run the binary like this: `./webp-server --config /path/to/config.json`, for prefetch mode, add `--prefech`.
 
-> Prefetch mode will pre-convert all the images in the `IMG_PATH` on initial start up.
-
-### screen or tmux
-Use `screen` or `tmux` to avoid being terminated. Let's take `screen` for example
-```
-screen -S webp
-./webp-server --config /path/to/config.json
-```
-(Use Ctrl-A-D to detach the `screen` with `webp-server` running.)
-### systemd
-Don't worry, we've got you covered!
-
-Download `webp-server` to `/opt/webps/webp-server`, and create a config file to `/opt/webps/config.json`, then,
-
-```shell script
-cp webps.service /lib/systemd/system/
-systemctl daemon-reload
-systemctl enable webps.service
-systemctl start webps.service
-```
-## 4. Nginx proxy_pass
-Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly
-### WordPress example
-```
-location ^~ /wp-content/uploads/ {
-        proxy_pass http://127.0.0.1:3333;
-}
-```
-
-## Advanced usage
-### show help
 ```
 ./webp-server --help
 Usage of ./webp-server:
@@ -108,8 +76,7 @@ Usage of ./webp-server:
         use prefork
 ```
 ### Prefetch
-Prefetch will convert all your images to webp. Don't worry, Webp server will start, 
-you don't have to wait until prefetch completes.
+Prefetch will convert all your images to webp. Don't worry, WebP Server will start, you don't have to wait until prefetch completes.
 ```
 ./webp-server -prefetch
 ```
@@ -122,7 +89,7 @@ By default, it will utilize all your CPU cores.
 ### dump config.json
 The standard `config.json` will show on your screen. You many want to use `>` to redirect to a file.
 ```
-./webp-server -dump-config
+./webp-server -dump-config > config.json
 ```
 ### dump systemd service file
 The standard systemd service file will show on your screen. You many want to use `>` to redirect to a file.
@@ -130,6 +97,35 @@ The standard systemd service file will show on your screen. You many want to use
 ```
 ./webp-server -dump-systemd
 ```
+
+### screen or tmux
+Use `screen` or `tmux` to avoid being terminated. Let's take `screen` for example
+```
+screen -S webp
+./webp-server --config /path/to/config.json
+```
+(Use Ctrl-A-D to detach the `screen` with `webp-server` running.)
+### systemd
+Don't worry, we've got you covered!
+
+Download `webp-server` to `/opt/webps/webp-server`, and create a config file to `/opt/webps/config.json`, then,
+
+```shell script
+./webp-server -dump-systemd > /lib/systemd/system/webp-server.service
+systemctl daemon-reload
+systemctl enable webps.service
+systemctl start webps.service
+```
+## 4. Nginx proxy_pass
+Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly
+### WordPress example
+```
+location ^~ /wp-content/uploads/ {
+        proxy_pass http://127.0.0.1:3333;
+}
+```
+If you use Caddy, you may refer to [优雅的让 Halo 支持 webp 图片输出](https://halo.run/archives/halo-and-webp).
+## Advanced usage
 
 ## Build your own binaries
 Install latest version of golang, enable go module, clone the repo, and then...

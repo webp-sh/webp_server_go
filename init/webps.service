@@ -1,6 +1,6 @@
 [Unit]
-Description=WebP Server
-Documentation=https://github.com/n0vad3v/webp_server_go
+Description=WebP Server Go
+Documentation=https://github.com/webp-sh/webp_server_go
 After=nginx.target
 
 [Service]
