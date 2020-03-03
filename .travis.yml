@@ -11,8 +11,9 @@ script:
 deploy:
   provider: releases
   api_key: $GITHUB_OAUTH_TOKEN
-  skip_cleanup: true
+  file_glob: true
   file: builds/*
+  skip_cleanup: true
   on:
       repo: webp-sh/webp_server_go
       tags: false
