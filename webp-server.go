@@ -39,6 +39,7 @@ const version = "0.0.3"
 
 var configPath string
 var prefetch bool
+var jobs int
 var dumpConfig bool
 var dumpSystemd bool
 
@@ -159,6 +160,7 @@ func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 func init() {
 	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
 	flag.BoolVar(&prefetch, "prefetch", false, "Prefetch and convert image to webp")
+	flag.IntVar(&jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
 	flag.BoolVar(&dumpConfig, "dump-config", false, "Print sample config.json")
 	flag.BoolVar(&dumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.Parse()
@@ -278,8 +280,9 @@ func prefetchImages(confImgPath string, ExhaustPath string, QUALITY string) {
 	reader := bufio.NewReader(os.Stdin)
 	char, _, _ := reader.ReadRune() //y Y enter
 	// maximum ongoing prefetch is depending on your core of CPU
-	var finishChan = make(chan int, runtime.NumCPU())
-	for i := 0; i < runtime.NumCPU(); i++ {
+	log.Printf("Prefetching using %d cores", jobs)
+	var finishChan = make(chan int, jobs)
+	for i := 0; i < jobs; i++ {
 		finishChan <- 0
 	}
 	if char == 121 || char == 10 || char == 89 {
