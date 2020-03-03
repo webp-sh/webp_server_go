@@ -17,7 +17,7 @@ os:
 env: GO111MODULE=on
 
 script:
-  - sh scripts/build.sh $TRAVIS_CPU_ARCH
+  - sh scripts/build.sh $TRAVIS_OS_NAME $TRAVIS_CPU_ARCH
 
 deploy:
   provider: releases
