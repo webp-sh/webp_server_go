@@ -1,13 +1,15 @@
-GOCMD=go
-GOBUILD=$(GOCMD) build
-GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
-GOGET=$(GOCMD) get
-BINARY_NAME=webp-server
-BINARY_LINUX=$(BINARY_NAME)_linux-amd64
+ifeq ($(shell uname),Linux)
+	OS=linux
+else
+	OS=darwin
+endif
+
+ifeq ($(shell uname -m),aarch64)
+	ARCH=arm64
+else
+	ARCH=amd64
+endif
 
 all: build
 build: 
-		$(GOBUILD) -o $(BINARY_LINUX) -v
-test: 
-		$(GOTEST) -v ./...
+	./scripts/build.sh $(OS) $(ARCH)
