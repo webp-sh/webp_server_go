@@ -80,6 +80,16 @@ func init() {
 }
 
 func main() {
+	// process cli params
+	if dumpConfig {
+		fmt.Println(sampleConfig)
+		os.Exit(0)
+	}
+	if dumpSystemd {
+		fmt.Println(sampleSystemd)
+		os.Exit(0)
+	}
+
 	go autoUpdate()
 	config := loadConfig(configPath)
 
@@ -93,16 +103,6 @@ func main() {
 		ExhaustPath = "./exhaust"
 	} else {
 		ExhaustPath = config.ExhaustPath
-	}
-
-	// process cli params
-	if dumpConfig {
-		fmt.Println(sampleConfig)
-		os.Exit(0)
-	}
-	if dumpSystemd {
-		fmt.Println(sampleSystemd)
-		os.Exit(0)
 	}
 
 	if prefetch {
