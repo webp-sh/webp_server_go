@@ -79,6 +79,7 @@ func init() {
 }
 
 func main() {
+	go autoUpdate()
 	config := loadConfig(configPath)
 
 	HOST := config.HOST
