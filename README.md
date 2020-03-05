@@ -34,19 +34,20 @@ It's basically between `ExpressJS` and `Fiber`, much faster than the `http` pack
 This tool will check for new release whenever you run it. The updated binary will be save to `update` dir.
 
 ## General Usage Steps
-Regarding the `IMG_PATH` section in `config.json`. 
-If you are serving images at `https://example.com/pics/tsuki.jpg` and 
-your files are at `/var/www/image/pics/tsuki.jpg`, then `IMG_PATH` shall be `/var/www/image`.
-`EXHAUST_PATH` is cache folder for output `webp` images, with `EXHAUST_PATH` set to `/var/cache/webp` 
-in the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
+
 
 ## 1. Download or build the binary
 Download the `webp-server` from [release](https://github.com/n0vad3v/webp_server_go/releases) page.
 
 Wanna build your own binary? Check out [build](#build-your-own-binaries) section
 
-## 2. config file
-Create a `config.json` as follows to face your need, default convert quality is 80%.
+## 2. Dump config file
+
+```
+./webp-server -dump-config > config.json
+```
+
+The default `config.json` may look like this.
 ```json
 {
 	"HOST": "127.0.0.1",
@@ -57,6 +58,13 @@ Create a `config.json` as follows to face your need, default convert quality is 
 	"ALLOWED_TYPES": ["jpg","png","jpeg"]
 }
 ```
+
+Regarding the `IMG_PATH` section in `config.json`. 
+If you are serving images at `https://example.com/pics/tsuki.jpg` and your files are at `/var/www/image/pics/tsuki.jpg`, then `IMG_PATH` shall be `/var/www/image`.
+
+`EXHAUST_PATH` is cache folder for output `webp` images, with `EXHAUST_PATH` set to `/var/cache/webp` 
+in the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
+
 ## 3. Run
 
 ```
@@ -88,11 +96,7 @@ By default, it will utilize all your CPU cores.
 # use 4 cores
 ./webp-server -prefetch -jobs=4
 ```
-### dump config.json
-The standard `config.json` will show on your screen. You many want to use `>` to redirect to a file.
-```
-./webp-server -dump-config > config.json
-```
+
 ### dump systemd service file
 The standard systemd service file will show on your screen. You many want to use `>` to redirect to a file.
 
@@ -107,6 +111,7 @@ screen -S webp
 ./webp-server --config /path/to/config.json
 ```
 (Use Ctrl-A-D to detach the `screen` with `webp-server` running.)
+
 ### systemd
 Don't worry, we've got you covered!
 
@@ -127,6 +132,7 @@ location ^~ /wp-content/uploads/ {
 }
 ```
 If you use Caddy, you may refer to [优雅的让 Halo 支持 webp 图片输出](https://halo.run/archives/halo-and-webp).
+
 ## Advanced usage
 
 ## Build your own binaries
