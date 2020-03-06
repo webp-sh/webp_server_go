@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/gofiber/fiber"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/gofiber/fiber"
 )
 
 func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY string) func(c *fiber.Ctx) {
@@ -51,7 +52,7 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			return
 		}
 
-		cwd, WebpAbsPath := GenWebpAbs(RawImageAbs, ExhaustPath, ImgFilename, reqURI)
+		_, WebpAbsPath := GenWebpAbs(RawImageAbs, ExhaustPath, ImgFilename, reqURI)
 
 		if ImageExists(WebpAbsPath) {
 			finalFile = WebpAbsPath
@@ -59,7 +60,7 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			// we don't have abc.jpg.png1582558990.webp
 			// delete the old pic and convert a new one.
 			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-			destHalfFile := path.Clean(path.Join(cwd, "exhaust", path.Dir(reqURI), ImgFilename))
+			destHalfFile := path.Clean(path.Join(WebpAbsPath, path.Dir(reqURI), ImgFilename))
 			matches, err := filepath.Glob(destHalfFile + "*")
 			if err != nil {
 				fmt.Println(err.Error())
@@ -76,7 +77,7 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			//for webp, we need to create dir first
 			_ = os.MkdirAll(path.Dir(WebpAbsPath), 0755)
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			err = WebpEncoder(RawImageAbs, WebpAbsPath, float32(q), true, nil)
+			err = WebpEncoder(RawImageAbs, WebpAbsPath, float32(q), verboseMode, nil)
 
 			if err != nil {
 				fmt.Println(err)

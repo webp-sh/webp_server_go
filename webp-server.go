@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"runtime"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gofiber/fiber"
 )
@@ -21,13 +22,14 @@ type Config struct {
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
-const version = "0.1.0"
+const version = "0.1.1"
 
 var configPath string
 var prefetch bool
 var jobs int
 var dumpConfig bool
 var dumpSystemd bool
+var verboseMode bool
 
 const sampleConfig = `
 {
@@ -76,10 +78,20 @@ func init() {
 	flag.IntVar(&jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
 	flag.BoolVar(&dumpConfig, "dump-config", false, "Print sample config.json")
 	flag.BoolVar(&dumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
+	flag.BoolVar(&verboseMode, "v", false, "Verbose, print out debug info.")
 	flag.Parse()
 }
 
 func main() {
+
+	// Logrus
+	log.SetOutput(os.Stdout)
+	if verboseMode {
+		log.SetLevel(log.InfoLevel)
+	} else {
+		log.SetLevel(log.WarnLevel)
+	}
+
 	// process cli params
 	if dumpConfig {
 		fmt.Println(sampleConfig)
