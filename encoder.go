@@ -19,6 +19,8 @@ import (
 
 func WebpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err error) {
 	// if convert fails, return error; success nil
+
+	log.Debugf("target: %s with quality of %f", path.Base(p1), quality)
 	var buf bytes.Buffer
 	var img image.Image
 
@@ -37,30 +39,31 @@ func WebpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 		img, _ = bmp.Decode(bytes.NewReader(data))
 	} else if strings.Contains(contentType, "gif") {
 		// TODO: need to support animated webp
+		log.Warn("Gif support is not perfect!")
 		img, _ = gif.Decode(bytes.NewReader(data))
 	}
 
 	if img == nil {
 		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
-		log.Info(msg)
+		log.Debug(msg)
 		err = errors.New(msg)
 		ChanErr(c)
 		return
 	}
 
 	if err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality}); err != nil {
-		log.Info(err)
+		log.Error(err)
 		ChanErr(c)
 		return
 	}
 	if err = ioutil.WriteFile(p2, buf.Bytes(), 0755); err != nil {
-		log.Warn(err)
+		log.Error(err)
 		ChanErr(c)
 		return
 	}
 
 	if Log {
-		log.Warn("Save to %s ok\n", p2)
+		log.Info("Save to " + p2 + " ok!\n")
 	}
 
 	ChanErr(c)

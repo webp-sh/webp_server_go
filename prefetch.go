@@ -3,20 +3,23 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func PrefetchImages(confImgPath string, ExhaustPath string, QUALITY string) {
-	fmt.Println(`Prefetch will convert all your images to webp, it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/n)`)
+	fmt.Println(`Prefetch will convert all your images to webp, 
+it may take some time and consume a lot of CPU resource. Do you want to proceed(Y/n)`)
+
 	reader := bufio.NewReader(os.Stdin)
 	char, _, _ := reader.ReadRune() //y Y enter
 	// maximum ongoing prefetch is depending on your core of CPU
-	log.Printf("Prefetching using %d cores", jobs)
+	log.Infof("Prefetching using %d cores", jobs)
 	var finishChan = make(chan int, jobs)
 	for i := 0; i < jobs; i++ {
 		finishChan <- 0
@@ -42,7 +45,7 @@ func PrefetchImages(confImgPath string, ExhaustPath string, QUALITY string) {
 				return nil
 			})
 		if err != nil {
-			log.Println(err)
+			log.Debug(err)
 		}
 	}
 

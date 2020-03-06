@@ -4,17 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path"
 	"runtime"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func autoUpdate() {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("Download error.", err)
+			log.Error("Download error.", err)
 		}
 	}()
 
@@ -23,16 +24,16 @@ func autoUpdate() {
 		TagName string `json:"tag_name"`
 	}
 	var res Result
+	log.Debugf("Requesting to %s", api)
 	resp1, _ := http.Get(api)
 	data1, _ := ioutil.ReadAll(resp1.Body)
 	_ = json.Unmarshal(data1, &res)
-
 	var gitVersion = res.TagName
 
 	if gitVersion > version {
-		log.Printf("Time to update! New version %s found!", gitVersion)
+		log.Infof("Time to update! New version %s found", gitVersion)
 	} else {
-		log.Println("No new version found.")
+		log.Debug("No new version found.")
 		return
 	}
 
@@ -41,11 +42,10 @@ func autoUpdate() {
 		filename += ".exe"
 	}
 	var releaseUrl = "https://github.com/webp-sh/webp_server_go/releases/latest/download/" + filename
-	log.Println("Downloading binary...")
+	log.Info("Downloading binary to update...")
 	resp, _ := http.Get(releaseUrl)
 	if resp.StatusCode != 200 {
-		log.Printf("%s-%s not found on release. "+
-			"Contact developers to supply your version", runtime.GOOS, runtime.GOARCH)
+		log.Debug("%s-%s not found on release.", runtime.GOOS, runtime.GOARCH)
 		return
 	}
 	data, _ := ioutil.ReadAll(resp.Body)
@@ -54,7 +54,7 @@ func autoUpdate() {
 	err := ioutil.WriteFile(path.Join("update", filename), data, 0755)
 
 	if err == nil {
-		log.Println("Update complete. Please find your binary from update directory.")
+		log.Info("Update complete. Please find your binary from update directory.")
 	}
 	_ = resp.Body.Close()
 }

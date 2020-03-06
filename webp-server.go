@@ -8,9 +8,8 @@ import (
 	"path"
 	"runtime"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/gofiber/fiber"
+	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -38,7 +37,7 @@ const sampleConfig = `
 	"QUALITY": "80",
 	"IMG_PATH": "/path/to/pics",
 	"EXHAUST_PATH": "",
-	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp","gif"]
+	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
 }`
 const sampleSystemd = `
 [Unit]
@@ -55,7 +54,6 @@ ExecStart=/opt/webps/webp-server --config /opt/webps/config.json
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=3s
-
 
 [Install]
 WantedBy=multi-user.target`
@@ -80,18 +78,28 @@ func init() {
 	flag.BoolVar(&dumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.BoolVar(&verboseMode, "v", false, "Verbose, print out debug info.")
 	flag.Parse()
+	// Logrus
+	log.SetOutput(os.Stdout)
+	log.SetReportCaller(true)
+	Formatter := &log.TextFormatter{
+		EnvironmentOverrideColors: true,
+		FullTimestamp:             true,
+		TimestampFormat:           "2006-01-02 15:04:05",
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			return fmt.Sprintf("[%s()]", f.Function), ""
+		},
+	}
+	log.SetFormatter(Formatter)
+
+	if verboseMode {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("Debug mode is enable!")
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
 }
 
 func main() {
-
-	// Logrus
-	log.SetOutput(os.Stdout)
-	if verboseMode {
-		log.SetLevel(log.InfoLevel)
-	} else {
-		log.SetLevel(log.WarnLevel)
-	}
-
 	// process cli params
 	if dumpConfig {
 		fmt.Println(sampleConfig)
@@ -128,8 +136,7 @@ func main() {
 	ListenAddress := HOST + ":" + PORT
 
 	// Server Info
-	ServerInfo := "WebP Server " + version + " is running at " + ListenAddress
-	fmt.Println(ServerInfo)
+	log.Infof("WebP Server %s %s", version, ListenAddress)
 
 	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY))
 	app.Listen(ListenAddress)
