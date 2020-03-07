@@ -42,8 +42,12 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			}
 		}
 		if !allowed {
-			log.Warnf("File extension not allowed! %s", ImgFilename)
-			c.SendFile(RawImageAbs)
+			msg := "File extension not allowed! " + ImgFilename
+			log.Warn(msg)
+			c.Send(msg)
+			if ImageExists(RawImageAbs) {
+				c.SendFile(RawImageAbs)
+			}
 			return
 		}
 
@@ -81,7 +85,7 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			//for webp, we need to create dir first
 			_ = os.MkdirAll(path.Dir(WebpAbsPath), 0755)
 			q, _ := strconv.ParseFloat(QUALITY, 32)
-			err = WebpEncoder(RawImageAbs, WebpAbsPath, float32(q), verboseMode, nil)
+			err = WebpEncoder(RawImageAbs, WebpAbsPath, float32(q), true, nil)
 
 			if err != nil {
 				log.Error(err)

@@ -39,6 +39,7 @@ func ImageExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
+	log.Debugf("file %s exists!", filename)
 	return !info.IsDir()
 }
 
