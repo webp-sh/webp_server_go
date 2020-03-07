@@ -42,10 +42,8 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			}
 		}
 		if !allowed {
-			msg := "File extension not allowed!"
-			log.Warnf("%s %s", msg, ImgFilename)
-			c.Send(msg)
-			c.SendStatus(403)
+			log.Warnf("File extension not allowed! %s", ImgFilename)
+			c.SendFile(RawImageAbs)
 			return
 		}
 
