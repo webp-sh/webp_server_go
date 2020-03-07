@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path"
@@ -38,6 +39,7 @@ func ImageExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
+	log.Debugf("file %s exists!", filename)
 	return !info.IsDir()
 }
 
@@ -45,7 +47,7 @@ func GenWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, req
 	// get file mod time
 	STAT, err := os.Stat(RawImagePath)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Error(err.Error())
 	}
 	ModifiedTime := STAT.ModTime().Unix()
 	// webpFilename: abc.jpg.png -> abc.jpg.png1582558990.webp

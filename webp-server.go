@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"runtime"
 
 	"github.com/gofiber/fiber"
+	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -21,13 +21,14 @@ type Config struct {
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
-const version = "0.1.0"
+const version = "0.1.1"
 
 var configPath string
 var prefetch bool
 var jobs int
 var dumpConfig bool
 var dumpSystemd bool
+var verboseMode bool
 
 const sampleConfig = `
 {
@@ -36,7 +37,7 @@ const sampleConfig = `
 	"QUALITY": "80",
 	"IMG_PATH": "/path/to/pics",
 	"EXHAUST_PATH": "",
-	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp","gif"]
+	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
 }`
 const sampleSystemd = `
 [Unit]
@@ -54,7 +55,6 @@ ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=3s
 
-
 [Install]
 WantedBy=multi-user.target`
 
@@ -67,6 +67,11 @@ func loadConfig(path string) Config {
 	defer jsonObject.Close()
 	decoder := json.NewDecoder(jsonObject)
 	_ = decoder.Decode(&config)
+	_, err = os.Stat(config.ImgPath)
+	if err != nil {
+		log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
+	}
+
 	return config
 }
 
@@ -76,7 +81,27 @@ func init() {
 	flag.IntVar(&jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
 	flag.BoolVar(&dumpConfig, "dump-config", false, "Print sample config.json")
 	flag.BoolVar(&dumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
+	flag.BoolVar(&verboseMode, "v", false, "Verbose, print out debug info.")
 	flag.Parse()
+	// Logrus
+	log.SetOutput(os.Stdout)
+	log.SetReportCaller(true)
+	Formatter := &log.TextFormatter{
+		EnvironmentOverrideColors: true,
+		FullTimestamp:             true,
+		TimestampFormat:           "2006-01-02 15:04:05",
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			return fmt.Sprintf("[%s()]", f.Function), ""
+		},
+	}
+	log.SetFormatter(Formatter)
+
+	if verboseMode {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("Debug mode is enable!")
+	} else {
+		log.SetLevel(log.InfoLevel)
+	}
 }
 
 func main() {
@@ -116,8 +141,7 @@ func main() {
 	ListenAddress := HOST + ":" + PORT
 
 	// Server Info
-	ServerInfo := "WebP Server " + version + " is running at " + ListenAddress
-	fmt.Println(ServerInfo)
+	log.Infof("WebP Server %s %s", version, ListenAddress)
 
 	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY))
 	app.Listen(ListenAddress)
