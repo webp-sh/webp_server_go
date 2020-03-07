@@ -67,6 +67,11 @@ func loadConfig(path string) Config {
 	defer jsonObject.Close()
 	decoder := json.NewDecoder(jsonObject)
 	_ = decoder.Decode(&config)
+	_, err = os.Stat(config.ImgPath)
+	if err != nil {
+		log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
+	}
+
 	return config
 }
 
