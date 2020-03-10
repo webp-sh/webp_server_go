@@ -13,6 +13,8 @@ import (
 
 func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY string) func(c *fiber.Ctx) {
 	return func(c *fiber.Ctx) {
+		log.Infof("innder Convert")
+		log.Infof("exhaust path : %s",ExhaustPath)
 		//basic vars
 		var reqURI = c.Path()                        // mypic/123.jpg
 		var RawImageAbs = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg

@@ -1,25 +1,18 @@
 package main
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"path"
+	// "path"
 	"runtime"
+	"strings"
 
 	"github.com/gofiber/fiber"
 	log "github.com/sirupsen/logrus"
 )
 
-type Config struct {
-	HOST         string
-	PORT         string
-	ImgPath      string `json:"IMG_PATH"`
-	QUALITY      string
-	AllowedTypes []string `json:"ALLOWED_TYPES"`
-	ExhaustPath  string   `json:"EXHAUST_PATH"`
-}
 
 const version = "0.1.1"
 
@@ -57,23 +50,6 @@ RestartSec=3s
 
 [Install]
 WantedBy=multi-user.target`
-
-func loadConfig(path string) Config {
-	var config Config
-	jsonObject, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer jsonObject.Close()
-	decoder := json.NewDecoder(jsonObject)
-	_ = decoder.Decode(&config)
-	_, err = os.Stat(config.ImgPath)
-	if err != nil {
-		log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
-	}
-
-	return config
-}
 
 func init() {
 	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
@@ -115,23 +91,19 @@ func main() {
 		os.Exit(0)
 	}
 
-	go autoUpdate()
-	config := loadConfig(configPath)
+	// go autoUpdate()
+	config,_ := LoadConfig(configPath)
 
 	HOST := config.HOST
 	PORT := config.PORT
-	confImgPath := path.Clean(config.ImgPath)
 	QUALITY := config.QUALITY
-	AllowedTypes := config.AllowedTypes
-	var ExhaustPath string
-	if len(config.ExhaustPath) == 0 {
-		ExhaustPath = "./exhaust"
-	} else {
-		ExhaustPath = config.ExhaustPath
-	}
+	// AllowedTypes := config.AllowedTypes
 
 	if prefetch {
-		go PrefetchImages(confImgPath, ExhaustPath, QUALITY)
+		extra := config.GetAllImagePathAndExhaustPath()
+		for _,v := range extra{
+			go PrefetchImages(v.ImgPath, v.ExhaustPath , QUALITY)
+		}
 	}
 
 	app := fiber.New()
@@ -143,7 +115,19 @@ func main() {
 	// Server Info
 	log.Infof("WebP Server %s %s", version, ListenAddress)
 
-	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY))
+	app.Get("/*", func(c *fiber.Ctx) {
+		s := strings.Split(c.Get("host"),"/")
+		serverName := s[len(s)-1]
+		exhaustPath,err := config.GetExhaustPath(serverName)
+		if err != nil{
+			log.Infof("error: server name is not exist")
+		}
+		log.Infof("Get request server name %s",serverName)
+		log.Infof("exhaust path : %s",exhaustPath)
+		log.Infof("image path : %s",config.GetImagePath(serverName))
+		log.Infof("invoke Convert")
+		Convert(config.GetImagePath(serverName),exhaustPath , config.AllowedTypes, config.QUALITY)
+	  })
 	app.Listen(ListenAddress)
 
 }
