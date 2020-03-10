@@ -1,14 +1,10 @@
 package main
 
 import (
-	// "encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	// "path"
 	"runtime"
-	"strings"
-
 	"github.com/gofiber/fiber"
 	log "github.com/sirupsen/logrus"
 )
@@ -115,19 +111,26 @@ func main() {
 	// Server Info
 	log.Infof("WebP Server %s %s", version, ListenAddress)
 
-	app.Get("/*", func(c *fiber.Ctx) {
-		s := strings.Split(c.Get("host"),"/")
-		serverName := s[len(s)-1]
-		exhaustPath,err := config.GetExhaustPath(serverName)
-		if err != nil{
-			log.Infof("error: server name is not exist")
-		}
-		log.Infof("Get request server name %s",serverName)
-		log.Infof("exhaust path : %s",exhaustPath)
-		log.Infof("image path : %s",config.GetImagePath(serverName))
-		log.Infof("invoke Convert")
-		Convert(config.GetImagePath(serverName),exhaustPath , config.AllowedTypes, config.QUALITY)
-	  })
+	//I don't know why no effect
+	// var ServerName string
+	// var ExhaustPath string
+	// app.Use(func(c *fiber.Ctx){
+	// 	s := strings.Split(c.Get("host"),"/")
+	// 	ServerName = s[len(s)-1]
+	// 	exhaust,err := config.GetExhaustPath(ServerName)
+	// 	ExhaustPath = exhaust
+	// 	if err != nil{
+	// 		log.Warn("error: server name is not exist")
+	// 	}
+	// 	log.Infof("Get request server name %s",ServerName)
+	// 	log.Infof("exhaust path : %s",ExhaustPath)
+	// 	log.Infof("image path : %s",config.GetImagePath(ServerName))
+	// 	c.Next()
+	// })
+
+	// app.Get("/*", Convert(config.GetImagePath(ServerName),ExhaustPath , config.AllowedTypes, config.QUALITY))
+
+	app.Get("/*", CConvert(config))
 	app.Listen(ListenAddress)
 
 }
