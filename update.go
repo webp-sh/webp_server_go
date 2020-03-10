@@ -15,7 +15,7 @@ import (
 func autoUpdate() {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error("Download error.", err)
+			log.Errorf("Download error.", err)
 		}
 	}()
 
