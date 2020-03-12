@@ -3,8 +3,6 @@
 </p>
 <img src="https://api.travis-ci.org/webp-sh/webp_server_go.svg?branch=master"/>
 
-After the [n0vad3v/webp_server](https://github.com/n0vad3v/webp_server), I decide to rewrite the whole program with Go, as there will be no more `npm install`s or `docker-compose`s.
-
 This is a Server based on Golang, which allows you to serve WebP images on the fly. 
 It will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.json`.. 
 * currently supported  image format: JPEG, PNG, BMP, GIF(static image for now)
@@ -14,34 +12,15 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 >
 > For Safari and Opera users, the original image will be used.
 
-## Compare to [n0vad3v/webp_server](https://github.com/n0vad3v/webp_server)
-
-### Size
-
-* `webp_server` with `node_modules`: 43M
-* `webp-server(go)` single binary: 15M
-
-### Performance
-
-It's basically between `ExpressJS` and `Fiber`, much faster than the `http` package of course.
-
-### Convenience
-
-* `webp_server`: Clone the repo -> `npm install` -> run with `pm2`
-* `webp-server(go)`: Download a single binary -> Run
-
-### Auto update
-This tool will check for new release whenever you run it. The updated binary will be save to `update` dir.
 
 ## General Usage Steps
 
-
-## 1. Download or build the binary
+### 1. Download or build the binary
 Download the `webp-server` from [release](https://github.com/n0vad3v/webp_server_go/releases) page.
 
 Wanna build your own binary? Check out [build](#build-your-own-binaries) section
 
-## 2. Dump config file
+### 2. Dump config file
 
 ```
 ./webp-server -dump-config > config.json
@@ -65,7 +44,7 @@ If you are serving images at `https://example.com/pics/tsuki.jpg` and your files
 `EXHAUST_PATH` is cache folder for output `webp` images, with `EXHAUST_PATH` set to `/var/cache/webp` 
 in the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
 
-## 3. Run
+### 3. Run
 
 ```
 ./webp-server --help
@@ -85,7 +64,7 @@ Usage of ./webp-server:
   -prefork
         use prefork
 ```
-### Prefetch
+#### Prefetch
 Prefetch will convert all your images to webp. Don't worry, WebP Server will start, you don't have to wait until prefetch completes.
 ```
 ./webp-server -prefetch
@@ -97,14 +76,14 @@ By default, it will utilize all your CPU cores.
 ./webp-server -prefetch -jobs=4
 ```
 
-### dump systemd service file
+#### dump systemd service file
 The standard systemd service file will show on your screen. You many want to use `>` to redirect to a file.
 
 ```
 ./webp-server -dump-systemd
 ```
 
-### screen or tmux
+#### screen or tmux
 Use `screen` or `tmux` to avoid being terminated. Let's take `screen` for example
 ```
 screen -S webp
@@ -112,7 +91,7 @@ screen -S webp
 ```
 (Use Ctrl-A-D to detach the `screen` with `webp-server` running.)
 
-### systemd
+#### systemd
 Don't worry, we've got you covered!
 
 Download `webp-server` to `/opt/webps/webp-server`, and create a config file to `/opt/webps/config.json`, then,
@@ -123,9 +102,9 @@ systemctl daemon-reload
 systemctl enable webp-server.service
 systemctl start webp-server.service
 ```
-## 4. Nginx proxy_pass
+### 4. Nginx proxy_pass
 Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly
-### WordPress example
+#### WordPress example
 ```
 location ^~ /wp-content/uploads/ {
         proxy_pass http://127.0.0.1:3333;
@@ -133,7 +112,8 @@ location ^~ /wp-content/uploads/ {
 ```
 If you use Caddy, you may refer to [优雅的让 Halo 支持 webp 图片输出](https://halo.run/archives/halo-and-webp).
 
-## Advanced usage
+### Auto update
+This tool will check for new release whenever you run it. The updated binary will be save to `update` dir.
 
 ## Build your own binaries
 Install latest version of golang, enable go module, clone the repo, and then...
@@ -142,6 +122,23 @@ make
 ```
 **Due to the limitations of webp module, you can't cross compile this tool. 
 But the binary will work instantly on your platform and arch**
+
+
+## Compare to [n0vad3v/webp_server](https://github.com/n0vad3v/webp_server)
+
+### Size
+
+* `webp_server` with `node_modules`: 43M
+* `webp-server(go)` single binary: 15M
+
+### Performance
+
+It's basically between `ExpressJS` and `Fiber`, much faster than the `http` package of course.
+
+### Convenience
+
+* `webp_server`: Clone the repo -> `npm install` -> run with `pm2`
+* `webp-server(go)`: Download a single binary -> Run
 
 ## TODO
 - [x] This version doesn't support header-based-output, which means Safari users will not see the converted `webp` images, this should be fixed in later releases.

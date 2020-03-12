@@ -56,7 +56,7 @@ func WebpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 		ChanErr(c)
 		return
 	}
-	if err = ioutil.WriteFile(p2, buf.Bytes(), 0755); err != nil {
+	if err = ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {
 		log.Error(err)
 		ChanErr(c)
 		return
