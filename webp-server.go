@@ -41,17 +41,15 @@ const sampleConfig = `
 }`
 const sampleSystemd = `
 [Unit]
-Description=WebP Server
+Description=WebP Server Go
 Documentation=https://github.com/webp-sh/webp_server_go
 After=nginx.target
 
 [Service]
 Type=simple
 StandardError=journal
-AmbientCapabilities=CAP_NET_BIND_SERVICE
 WorkingDirectory=/opt/webps
 ExecStart=/opt/webps/webp-server --config /opt/webps/config.json
-ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=3s
 
