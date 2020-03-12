@@ -120,8 +120,8 @@ Download `webp-server` to `/opt/webps/webp-server`, and create a config file to 
 ```shell script
 ./webp-server -dump-systemd > /lib/systemd/system/webp-server.service
 systemctl daemon-reload
-systemctl enable webps.service
-systemctl start webps.service
+systemctl enable webp-server.service
+systemctl start webp-server.service
 ```
 ## 4. Nginx proxy_pass
 Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly
