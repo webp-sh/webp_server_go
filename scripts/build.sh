@@ -12,5 +12,10 @@ else
     go build -v -ldflags "-s -w" -o builds/webp-server-${1}-${2}
 fi
 
+for file in builds/*
+do
+    sha256sum ${file} > ${file}.sha256
+done
+
 echo "build done!"
 ls builds
