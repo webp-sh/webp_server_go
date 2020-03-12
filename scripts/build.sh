@@ -14,7 +14,7 @@ fi
 
 for file in builds/*
 do
-    sha256sum ${file} > builds/${file}.sha256
+    sha256sum ${file} > ${file}.sha256
 done
 
 echo "build done!"
