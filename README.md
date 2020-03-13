@@ -102,6 +102,15 @@ systemctl daemon-reload
 systemctl enable webp-server.service
 systemctl start webp-server.service
 ```
+
+#### docker
+
+We've build docker images on [hub.docker.com](https://hub.docker.com/repository/docker/webpsh/webps). If you want to run webp-server insider docker container, you can run the command below,
+```shell
+docker run -d -p 3333:3333 -v /path/to/pics:/opt/pics --name webps webpsh/webps
+```
+The path `path/to/pics` is your images serving in local. The path `/opt/pics` unable modify because it define in the `config.json` when building docker image. The cache folder of `EXHAUST_PATH` default define in `/opt/exhaust` , you can also mount the local dir for the cache folder by using `-v /path/to/exhaust:/opt/exhaust` option.
+
 ### 4. Nginx proxy_pass
 Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly
 #### WordPress example
