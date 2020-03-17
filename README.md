@@ -112,11 +112,18 @@ docker run -d -p 3333:3333 -v /path/to/pics:/opt/pics --name webps webpsh/webps
 The path `path/to/pics` is your images serving in local. The path `/opt/pics` unable modify because it define in the `config.json` when building docker image. The cache folder of `EXHAUST_PATH` default define in `/opt/exhaust` , you can also mount the local dir for the cache folder by using `-v /path/to/exhaust:/opt/exhaust` option.
 
 ### 4. Nginx proxy_pass
-Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly
-#### WordPress example
+Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly.
+
+#### CDN Problem
+If you use CDN(such as Cloudflare) for your website, we'd recommend you to add a `no-cache` header like the example below, this will prevent your images from being cached and webp images rendered to Safari users(which will of course cause some troubles).
+
+#### Nginx example
+
+This is an example for a typical Wordpress installation.
 ```
 location ^~ /wp-content/uploads/ {
-        proxy_pass http://127.0.0.1:3333;
+      add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
+      proxy_pass http://127.0.0.1:3333;
 }
 ```
 If you use Caddy, you may refer to [优雅的让 Halo 支持 webp 图片输出](https://halo.run/archives/halo-and-webp).
