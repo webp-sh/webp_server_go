@@ -77,7 +77,7 @@ By default, it will utilize all your CPU cores.
 ```
 
 #### dump systemd service file
-The standard systemd service file will show on your screen. You many want to use `>` to redirect to a file.
+The standard systemd service file will show on your screen. You may want to use `>` to redirect to a file.
 
 ```
 ./webp-server -dump-systemd
