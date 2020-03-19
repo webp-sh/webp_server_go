@@ -22,7 +22,7 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 		UA := c.Get("User-Agent")
 		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") &&
 			!strings.Contains(UA, "Firefox") {
-			log.Info("A Safari use has arrived...")
+			log.Info("A Safari user has arrived...")
 			c.SendFile(RawImageAbs)
 			return
 		}
