@@ -158,12 +158,11 @@ It's basically between `ExpressJS` and `Fiber`, much faster than the `http` pack
 
 ## TODO
 - [x] This version doesn't support header-based-output, which means Safari users will not see the converted `webp` images, this should be fixed in later releases.
-- [ ] Multi platform support.
+- [x] Multi platform support.
 - [x] A better way to supervise the program.
 - [ ] Get rid of render-blocking effect on first render.
 - [x] Prefetch on server initialization.
 - [x] Custom exhaust path.
-- [ ] Multiple listen address.
 
 ## Benchmark on convert
 
