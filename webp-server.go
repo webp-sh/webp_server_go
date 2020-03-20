@@ -37,7 +37,7 @@ const sampleConfig = `
 	"QUALITY": "80",
 	"IMG_PATH": "/path/to/pics",
 	"EXHAUST_PATH": "",
-	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
+	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp","gif"]
 }`
 const sampleSystemd = `
 [Unit]
