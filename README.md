@@ -13,12 +13,10 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 > For Safari and Opera users, the original image will be used.
 
 
-## General Usage Steps
+## Simple Usage Steps
 
 ### 1. Download or build the binary
 Download the `webp-server` from [release](https://github.com/n0vad3v/webp_server_go/releases) page.
-
-Wanna build your own binary? Check out [build](#build-your-own-binaries) section
 
 ### 2. Dump config file
 
@@ -38,8 +36,20 @@ The default `config.json` may look like this.
 }
 ```
 
-Regarding the `IMG_PATH` section in `config.json`. 
-If you are serving images at `https://example.com/pics/tsuki.jpg` and your files are at `/var/www/image/pics/tsuki.jpg`, then `IMG_PATH` shall be `/var/www/image`.
+#### Config Example
+
+In the following example, the image path and website URL.
+
+| Image Path                            | Website Path                         |
+| ------------------------------------- | ------------------------------------ |
+| `/var/www/img.webp.sh/path/tsuki.jpg` | `https://img.webp.sh/path/tsuki.jpg` |
+
+The `config.json` should be like:
+
+| IMG_PATH               |
+| ---------------------- |
+| `/var/www/img.webp.sh` |
+
 
 `EXHAUST_PATH` is cache folder for output `webp` images, with `EXHAUST_PATH` set to `/var/cache/webp` 
 in the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
@@ -47,142 +57,15 @@ in the example above, your `webp` image will be saved at `/var/cache/webp/pics/t
 ### 3. Run
 
 ```
-./webp-server --help
-Usage of ./webp-server:
-  -child
-        is child process
-  -config string
-        /path/to/config.json. (Default: ./config.json) (default "config.json")
-  -dump-config
-        Print sample config.json
-  -dump-systemd
-        Print sample systemd service file.
-  -jobs int
-        Prefetch thread, default is all. (default 8)
-  -prefetch
-        Prefetch and convert image to webp
-  -prefork
-        use prefork
+./webp-server --config=/path/to/config.json
 ```
-#### Prefetch
-Prefetch will convert all your images to webp. Don't worry, WebP Server will start, you don't have to wait until prefetch completes.
-```
-./webp-server -prefetch
-```
-If you want to control threads to use while prefetching, add `-jobs=4`. 
-By default, it will utilize all your CPU cores.
-```
-# use 4 cores
-./webp-server -prefetch -jobs=4
-```
-
-#### dump systemd service file
-The standard systemd service file will show on your screen. You may want to use `>` to redirect to a file.
-
-```
-./webp-server -dump-systemd
-```
-
-#### screen or tmux
-Use `screen` or `tmux` to avoid being terminated. Let's take `screen` for example
-```
-screen -S webp
-./webp-server --config /path/to/config.json
-```
-(Use Ctrl-A-D to detach the `screen` with `webp-server` running.)
-
-#### systemd
-Don't worry, we've got you covered!
-
-Download `webp-server` to `/opt/webps/webp-server`, and create a config file to `/opt/webps/config.json`, then,
-
-```shell script
-./webp-server -dump-systemd > /lib/systemd/system/webp-server.service
-systemctl daemon-reload
-systemctl enable webp-server.service
-systemctl start webp-server.service
-```
-
-#### docker
-
-We've build docker images on [hub.docker.com](https://hub.docker.com/repository/docker/webpsh/webps). If you want to run webp-server insider docker container, you can run the command below,
-```shell
-docker run -d -p 3333:3333 -v /path/to/pics:/opt/pics --name webps webpsh/webps
-```
-The path `path/to/pics` is your images serving in local. The path `/opt/pics` unable modify because it define in the `config.json` when building docker image. The cache folder of `EXHAUST_PATH` default define in `/opt/exhaust` , you can also mount the local dir for the cache folder by using `-v /path/to/exhaust:/opt/exhaust` option.
 
 ### 4. Nginx proxy_pass
 Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly.
 
-#### CDN Problem
-If you use CDN(such as Cloudflare) for your website, we'd recommend you to add a `no-cache` header like the example below, this will prevent your images from being cached and webp images rendered to Safari users(which will of course cause some troubles).
+## Advanced Usage
 
-#### Nginx example
-
-This is an example for a typical Wordpress installation.
-```
-location ^~ /wp-content/uploads/ {
-      add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
-      proxy_pass http://127.0.0.1:3333;
-}
-```
-If you use Caddy, you may refer to [优雅的让 Halo 支持 webp 图片输出](https://halo.run/archives/halo-and-webp).
-
-### Auto update
-This tool will check for new release whenever you run it. The updated binary will be save to `update` dir.
-
-## Build your own binaries
-Install latest version of golang, enable go module, clone the repo, and then...
-```shell script
-make
-```
-**Due to the limitations of webp module, you can't cross compile this tool. 
-But the binary will work instantly on your platform and arch**
-
-
-## Compare to [n0vad3v/webp_server](https://github.com/n0vad3v/webp_server)
-
-### Size
-
-* `webp_server` with `node_modules`: 43M
-* `webp-server(go)` single binary: 15M
-
-### Performance
-
-It's basically between `ExpressJS` and `Fiber`, much faster than the `http` package of course.
-
-### Convenience
-
-* `webp_server`: Clone the repo -> `npm install` -> run with `pm2`
-* `webp-server(go)`: Download a single binary -> Run
-
-## TODO
-- [x] This version doesn't support header-based-output, which means Safari users will not see the converted `webp` images, this should be fixed in later releases.
-- [x] Multi platform support.
-- [x] A better way to supervise the program.
-- [ ] Get rid of render-blocking effect on first render.
-- [x] Prefetch on server initialization.
-- [x] Custom exhaust path.
-
-## Benchmark on convert
-
-## 8 core
-
-| file_size_range | file_num | src_size | dist_size |  total  |   user   | system | cpu  | core |
-| :-------------: | :------: | :------: | :-------: | :-----: | :------: | :----: | :--: | :--: |
-|  (10KB,500KB)   |   4600   |   1.3G   |   310M    | 1:44.49 | 905.41s  | 9.55s  | 875% |  8   |
-|   (500KB,1MB)   |   3500   |   2.4G   |   361M    | 2:04.81 | 1092.50s | 7.98s  | 881% |  8   |
-|    (1MB,4MB)    |   2000   |   3.8G   |   342M    | 2:32.64 | 1345.73s | 10.84s | 888% |  8   |
-|   (4MB,32MB)    |   500    |   3.6G   |   246M    | 1:44.53 | 916.91s  | 12.03s | 888% |  8   |
-
-## 1,2,4,8 core
-
-| file_size_range | file_num | src_size | dist_size |    8    |    4    |    2    |    1    |
-| :-------------: | :------: | :------: | :-------: | :-----: | :-----: | :-----: | :-----: |
-|  (10KB,500KB)   |   4600   |   1.3G   |   310M    | 1:44.49 | 2:18.49 | 3:36.05 | 5:20.88 |
-|   (500KB,1MB)   |   3500   |   2.4G   |   361M    | 2:04.81 | 2:49.46 | 4:16.41 | 6:28.97 |
-|    (1MB,4MB)    |   2000   |   3.8G   |   342M    | 2:32.64 | 3:26.18 | 5:22.15 | 7:53.45 |
-|   (4MB,32MB)    |   500    |   3.6G   |   246M    | 1:44.53 | 2:21.22 | 3:39.16 | 5:28.65 |
+For supervisor, Docker sections, please read our documentation at [https://webp.sh/docs/](https://webp.sh/docs/)
 
 ## Related Articles(In chronological order)
 
