@@ -1,12 +1,13 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gofiber/fiber"
 )
@@ -23,6 +24,8 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") &&
 			!strings.Contains(UA, "Firefox") {
 			log.Info("A Safari user has arrived...")
+			etag := GenEtag(RawImageAbs)
+			c.Set("ETag", etag)
 			c.SendFile(RawImageAbs)
 			return
 		}
@@ -46,6 +49,8 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			log.Warn(msg)
 			c.Send(msg)
 			if ImageExists(RawImageAbs) {
+				etag := GenEtag(RawImageAbs)
+				c.Set("ETag", etag)
 				c.SendFile(RawImageAbs)
 			}
 			return
@@ -95,6 +100,8 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			}
 			finalFile = WebpAbsPath
 		}
+		etag := GenEtag(finalFile)
+		c.Set("ETag", etag)
 		c.SendFile(finalFile)
 	}
 }

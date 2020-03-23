@@ -2,11 +2,14 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"hash/crc32"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func ChanErr(ccc chan int) {
@@ -58,4 +61,13 @@ func GenWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, req
 	// Custom Exhaust: /path/to/exhaust/web_path/web_to/tsuki.jpg.1582558990.webp
 	WebpAbsolutePath := path.Clean(path.Join(ExhaustPath, path.Dir(reqURI), WebpFilename))
 	return cwd, WebpAbsolutePath
+}
+
+func GenEtag(ImgAbsPath string) string {
+	data, err := ioutil.ReadFile(ImgAbsPath)
+	if err != nil {
+		log.Info(err)
+	}
+	crc := crc32.ChecksumIEEE(data)
+	return fmt.Sprintf(`W/"%d-%08X"`, len(data), crc)
 }
