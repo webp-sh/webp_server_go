@@ -141,7 +141,7 @@ func main() {
 	// Server Info
 	log.Infof("WebP Server %s %s", version, ListenAddress)
 
-	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY))
+	app.All("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY))
 	app.Listen(ListenAddress)
 
 }
