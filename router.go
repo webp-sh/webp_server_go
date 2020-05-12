@@ -1,12 +1,13 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gofiber/fiber"
 )
@@ -18,10 +19,9 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 		var RawImageAbs = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 		var ImgFilename = path.Base(reqURI)          // pure filename, 123.jpg
 		var finalFile string                         // We'll only need one c.sendFile()
-		// Check for Safari users. If they're Safari, just simply ignore everything.
+		// Check for Safari users. If they're Safari or the UA contains `AppleWebKit`(Might be the WeChat Browser), just simply ignore everything.
 		UA := c.Get("User-Agent")
-		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") &&
-			!strings.Contains(UA, "Firefox") {
+		if (strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") && !strings.Contains(UA, "Firefox")) || (strings.Contains(UA, "AppleWebKit")) {
 			log.Info("A Safari user has arrived...")
 			c.SendFile(RawImageAbs)
 			return
