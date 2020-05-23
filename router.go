@@ -19,11 +19,9 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 		var RawImageAbs = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 		var ImgFilename = path.Base(reqURI)          // pure filename, 123.jpg
 		var finalFile string                         // We'll only need one c.sendFile()
-		// Check for Safari users. If they're Safari or the UA contains `AppleWebKit`(Might be the WeChat Browser), just simply ignore everything.
-		UA := c.Get("User-Agent")
-		if (strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") && !strings.Contains(UA, "Firefox")) || (strings.Contains(UA, "AppleWebKit")) {
-			log.Info("A Safari user has arrived...")
-			c.SendFile(RawImageAbs)
+
+		UA, done := CheckUA(c, RawImageAbs)
+		if done {
 			return
 		}
 		log.Debugf("Incoming connection from %s@%s with %s", UA, c.IP(), ImgFilename)
