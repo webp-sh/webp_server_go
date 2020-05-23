@@ -2,20 +2,28 @@ language: go
 
 go: 
  - 1.13
- 
+
+env: GO111MODULE=on
 arch:
   - amd64
   - arm64
-
 os:
   - windows
   - osx
   - linux
 
-env: GO111MODULE=on
+script: sh scripts/build.sh $TRAVIS_OS_NAME $TRAVIS_CPU_ARCH
 
-script:
-  - sh scripts/build.sh $TRAVIS_OS_NAME $TRAVIS_CPU_ARCH
+jobs:
+  include:
+    - stage: "Unit Tests"
+      arch:
+        - amd64
+      os:
+        - linux
+      script:
+        - go test -v -cover encoder_test.go encoder.go helper.go
+        - go test -v -cover helper_test.go helper.go
 
 deploy:
   provider: releases
