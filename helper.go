@@ -8,9 +8,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-  
-	log "github.com/sirupsen/logrus"
+
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func ChanErr(ccc chan int) {
@@ -71,6 +72,7 @@ func GenEtag(ImgAbsPath string) string {
 	}
 	crc := crc32.ChecksumIEEE(data)
 	return fmt.Sprintf(`W/"%d-%08X"`, len(data), crc)
+}
 
 func isSafari(UA string) bool {
 	// for more information, please check test case
