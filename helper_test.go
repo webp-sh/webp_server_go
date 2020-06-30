@@ -68,8 +68,8 @@ func TestGenEtag(t *testing.T) {
 	}
 }
 
-func TestgoOrigin(t *testing.T) {
 
+func TestgoOrigin(t *testing.T) {
 	// reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent/Firefox
 	// https://developer.chrome.com/multidevice/user-agent#chrome_for_ios_user_agent
 

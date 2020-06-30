@@ -74,6 +74,7 @@ func GenEtag(ImgAbsPath string) string {
 	return fmt.Sprintf(`W/"%d-%08X"`, len(data), crc)
 }
 
+
 func goOrigin(UA string) bool {
 	// for more information, please check test case
 	if strings.Contains(UA, "Firefox") || strings.Contains(UA, "Chrome") {
