@@ -46,6 +46,8 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			log.Warn(msg)
 			c.Send(msg)
 			if ImageExists(RawImageAbs) {
+				etag := GenEtag(RawImageAbs)
+				c.Set("ETag", etag)
 				c.SendFile(RawImageAbs)
 			}
 			return
@@ -95,6 +97,8 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			}
 			finalFile = WebpAbsPath
 		}
+		etag := GenEtag(finalFile)
+		c.Set("ETag", etag)
 		c.SendFile(finalFile)
 	}
 }
