@@ -58,7 +58,7 @@ func TestGenWebpAbs(t *testing.T) {
 	}
 }
 
-func TestisSafari(t *testing.T) {
+func TestgoOrigin(t *testing.T) {
 	// reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent/Firefox
 	// https://developer.chrome.com/multidevice/user-agent#chrome_for_ios_user_agent
 
@@ -89,7 +89,7 @@ func TestisSafari(t *testing.T) {
 
 	for browser, is := range testCase {
 
-		if is != isSafari(browser) {
+		if is != goOrigin(browser) {
 			t.Errorf("[%v]:[%s]", is, browser)
 		}
 	}

@@ -20,9 +20,9 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 		var ImgFilename = path.Base(reqURI)          // pure filename, 123.jpg
 		var finalFile string                         // We'll only need one c.sendFile()
 		var UA = c.Get("User-Agent")
-		done := isSafari(UA)
+		done := goOrigin(UA)
 		if done {
-			log.Infof("A Safari user has arrived...%s", UA)
+			log.Infof("A Safari/IE/whatever user has arrived...%s", UA)
 			c.SendFile(RawImageAbs)
 			return
 		}

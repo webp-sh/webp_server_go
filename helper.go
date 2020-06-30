@@ -61,7 +61,7 @@ func GenWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, req
 	return cwd, WebpAbsolutePath
 }
 
-func isSafari(UA string) bool {
+func goOrigin(UA string) bool {
 	// for more information, please check test case
 	if strings.Contains(UA, "Firefox") || strings.Contains(UA, "Chrome") {
 		// Chrome or firefox on macOS Windows
@@ -70,6 +70,10 @@ func isSafari(UA string) bool {
 	} else if strings.Contains(UA, "FxiOS") || strings.Contains(UA, "CriOS") {
 		//firefox and Chrome on iOS
 	} else {
+		return true
+	}
+	if strings.Contains(UA, "rv:11.0") || strings.Contains(UA, "MSIE") {
+		// MSIE
 		return true
 	}
 	return false
