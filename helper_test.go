@@ -58,7 +58,18 @@ func TestGenWebpAbs(t *testing.T) {
 	}
 }
 
-func TestgoOrigin(t *testing.T) {
+func TestGenEtag(t *testing.T) {
+	var data = "./pics/png.jpg"
+	var expected = "W/\"1020764-262C0329\""
+	var result = GenEtag(data)
+
+	if result != expected {
+		t.Errorf("Result: [%s], Expected: [%s]", result, expected)
+	}
+}
+
+
+func TestGoOrigin(t *testing.T) {
 	// reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent/Firefox
 	// https://developer.chrome.com/multidevice/user-agent#chrome_for_ios_user_agent
 
