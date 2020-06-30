@@ -15,7 +15,7 @@ import (
 func autoUpdate() {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Errorf("Download error.", err)
+			log.Errorf("Download error: %s", err)
 		}
 	}()
 
@@ -45,7 +45,7 @@ func autoUpdate() {
 	log.Info("Downloading binary to update...")
 	resp, _ := http.Get(releaseUrl)
 	if resp.StatusCode != 200 {
-		log.Debug("%s-%s not found on release.", runtime.GOOS, runtime.GOARCH)
+		log.Debugf("%s-%s not found on release.", runtime.GOOS, runtime.GOARCH)
 		return
 	}
 	data, _ := ioutil.ReadAll(resp.Body)

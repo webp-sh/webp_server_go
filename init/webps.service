@@ -13,3 +13,4 @@ RestartSec=3s
 
 [Install]
 WantedBy=multi-user.target
+Alias=webp-server.service

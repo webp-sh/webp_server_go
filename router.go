@@ -19,13 +19,10 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 		var RawImageAbs = path.Join(ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 		var ImgFilename = path.Base(reqURI)          // pure filename, 123.jpg
 		var finalFile string                         // We'll only need one c.sendFile()
-		// Check for Safari users. If they're Safari, just simply ignore everything.
-		UA := c.Get("User-Agent")
-		if strings.Contains(UA, "Safari") && !strings.Contains(UA, "Chrome") &&
-			!strings.Contains(UA, "Firefox") {
-			log.Info("A Safari user has arrived...")
-			etag := GenEtag(RawImageAbs)
-			c.Set("ETag", etag)
+		var UA = c.Get("User-Agent")
+		done := isSafari(UA)
+		if done {
+			log.Infof("A Safari user has arrived...%s", UA)
 			c.SendFile(RawImageAbs)
 			return
 		}
