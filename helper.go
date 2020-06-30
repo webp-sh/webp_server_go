@@ -86,5 +86,4 @@ func isSafari(UA string) bool {
 		return true
 	}
 	return false
-
 }
