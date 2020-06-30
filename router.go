@@ -23,6 +23,10 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 		done := goOrigin(UA)
 		if done {
 			log.Infof("A Safari/IE/whatever user has arrived...%s", UA)
+			// Check for Safari users. If they're Safari, just simply ignore everything.
+
+			etag := GenEtag(RawImageAbs)
+			c.Set("ETag", etag)
 			c.SendFile(RawImageAbs)
 			return
 		}
@@ -46,6 +50,8 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			log.Warn(msg)
 			c.Send(msg)
 			if ImageExists(RawImageAbs) {
+				etag := GenEtag(RawImageAbs)
+				c.Set("ETag", etag)
 				c.SendFile(RawImageAbs)
 			}
 			return
@@ -95,6 +101,8 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 			}
 			finalFile = WebpAbsPath
 		}
+		etag := GenEtag(finalFile)
+		c.Set("ETag", etag)
 		c.SendFile(finalFile)
 	}
 }
