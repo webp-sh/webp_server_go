@@ -21,7 +21,7 @@ type Config struct {
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
-const version = "0.1.3"
+const version = "0.1.4"
 
 var configPath string
 var prefetch bool
