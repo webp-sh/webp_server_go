@@ -77,15 +77,11 @@ func goOrigin(UA string) bool {
 	// for more information, please check test case
 	if strings.Contains(UA, "Firefox") || strings.Contains(UA, "Chrome") {
 		// Chrome or firefox on macOS Windows
-	} else if strings.Contains(UA, "Android") || strings.Contains(UA, "Windows") || strings.Contains(UA, "Linux") {
-		// on Android, Windows and Linux
+	} else if strings.Contains(UA, "Android") || strings.Contains(UA, "Linux") {
+		// on Android and Linux
 	} else if strings.Contains(UA, "FxiOS") || strings.Contains(UA, "CriOS") {
 		//firefox and Chrome on iOS
 	} else {
-		return true
-	}
-	if strings.Contains(UA, "rv:11.0") || strings.Contains(UA, "MSIE") {
-		// MSIE
 		return true
 	}
 	return false

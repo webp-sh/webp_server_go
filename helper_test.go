@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 )
+import "github.com/stretchr/testify/assert"
 
 // test this file: go test -v -cover helper_test.go helper.go
 // test one function: go test -run TestGetFileContentType helper_test.go helper.go -v
@@ -12,9 +13,7 @@ func TestGetFileContentType(t *testing.T) {
 	var expected = "text/plain; charset=utf-8"
 	var result = GetFileContentType(data)
 
-	if result != expected {
-		t.Errorf("Result: [%s], Expected: [%s]", result, expected)
-	}
+	assert.Equalf(t, result, expected, "Result: [%s], Expected: [%s]", result, expected)
 
 }
 
@@ -23,10 +22,8 @@ func TestFileCount(t *testing.T) {
 	var data = ".github"
 	var expected = 2
 	var result = FileCount(data)
+	assert.Equalf(t, result, expected, "Result: [%d], Expected: [%d]", result, expected)
 
-	if result != expected {
-		t.Errorf("Result: [%d], Expected: [%d]", result, expected)
-	}
 }
 
 func TestImageExists(t *testing.T) {
@@ -39,9 +36,7 @@ func TestImageExists(t *testing.T) {
 	data = ".pics/empty2.jpg"
 	result = ImageExists(data)
 
-	if result {
-		t.Errorf("Result: [%v], Expected: [%v]", result, false)
-	}
+	assert.Falsef(t, result, "Result: [%v], Expected: [%v]", result, false)
 
 }
 
@@ -52,10 +47,9 @@ func TestGenWebpAbs(t *testing.T) {
 		t.Logf("Result: [%v], Expected: [%v]", cwd, "webp_server_go")
 	}
 	var parts = strings.Split(cooked, ".")
-	if parts[0] != "/tmp/test" || parts[2] != "webp" {
-		t.Errorf("Result: [%v], Expected: [%v]", cooked, "/tmp/test.<ts>.webp")
 
-	}
+	assert.Equalf(t, parts[0], "/tmp/test", "Result: [%v], Expected: [%v]", cooked, "/tmp/test.<ts>.webp")
+	assert.Equalf(t, parts[2], "webp", "Result: [%v], Expected: [%v]", cooked, "/tmp/test.<ts>.webp")
 }
 
 func TestGenEtag(t *testing.T) {
@@ -63,11 +57,9 @@ func TestGenEtag(t *testing.T) {
 	var expected = "W/\"1020764-262C0329\""
 	var result = GenEtag(data)
 
-	if result != expected {
-		t.Errorf("Result: [%s], Expected: [%s]", result, expected)
-	}
-}
+	assert.Equalf(t, result, expected, "Result: [%s], Expected: [%s]", result, expected)
 
+}
 
 func TestGoOrigin(t *testing.T) {
 	// reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent/Firefox
@@ -96,13 +88,18 @@ func TestGoOrigin(t *testing.T) {
 		"Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_3 like Mac OS X) AppleWebKit/603.3.8 (KHTML, like Gecko) Mobile/14G60 wxwork/2.1.5 MicroMessenger/6.3.22":                                                                         true,
 		"Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 MicroMessenger/6.5.2.501 NetType/WIFI WindowsWechat QBCore/3.43.691.400 QQBrowser/9.0.2524.400":              false,
 		"Mozilla/5.0 (Linux; Android 7.0; LG-H831 Build/NRD90U; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/68.0.3440.91 Mobile Safari/537.36 MicroMessenger/6.6.7.1303(0x26060743) NetType/WIFI Language/zh_TW": false,
+
+		// IE
+		"Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko": true,
+		"Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; WOW64; Trident/6.0)":  true,
+
+		// Others
+		"PostmanRuntime/7.26.1": true,
+		"curl/7.64.1":           true,
 	}
 
 	for browser, is := range testCase {
-
-		if is != goOrigin(browser) {
-			t.Errorf("[%v]:[%s]", is, browser)
-		}
+		assert.Equalf(t, is, goOrigin(browser), "[%v]:[%s]", is, browser)
 	}
 
 }
