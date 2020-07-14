@@ -9,8 +9,9 @@ import (
 	"path"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func ChanErr(ccc chan int) {
@@ -81,6 +82,7 @@ func goOrigin(UA string) bool {
 		// on Android and Linux
 	} else if strings.Contains(UA, "FxiOS") || strings.Contains(UA, "CriOS") {
 		//firefox and Chrome on iOS
+		return true
 	} else {
 		return true
 	}
