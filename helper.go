@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"hash/crc32"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -48,6 +49,56 @@ func ImageExists(filename string) bool {
 	return !info.IsDir()
 }
 
+// Check for remote filepath, e.g: https://test.webp.sh/node.png
+// return StatusCode, etagValue
+func GetRemoteImageInfo(fileUrl string) (int, string) {
+	res, err := http.Head(fileUrl)
+	if err != nil {
+		log.Fatal("Connection to remote error!")
+	}
+	if res.StatusCode != 404 {
+		for index, _ := range res.Header {
+			if strings.ToLower(index) == "etag" {
+				etagValue := res.Header[index][0]
+				return 200, etagValue
+			}
+		}
+	}
+	return res.StatusCode, ""
+}
+
+func FetchRemoteImage(filepath string, url string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_ = os.MkdirAll(path.Dir(filepath), 0755)
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+// Given /path/to/node.png
+// Delete /path/to/node.png*
+func CleanProxyCache(cacheImagePath string) {
+	// Delete /node.png*
+	files, err := filepath.Glob(cacheImagePath + "*")
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, f := range files {
+		if err := os.Remove(f); err != nil {
+			panic(err)
+		}
+	}
+}
+
 func GenWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, reqURI string) (string, string) {
 	// get file mod time
 	STAT, err := os.Stat(RawImagePath)
@@ -56,7 +107,7 @@ func GenWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, req
 	}
 	ModifiedTime := STAT.ModTime().Unix()
 	// webpFilename: abc.jpg.png -> abc.jpg.png1582558990.webp
-	var WebpFilename = fmt.Sprintf("%s.%d.webp", ImgFilename, ModifiedTime)
+	WebpFilename := fmt.Sprintf("%s.%d.webp", ImgFilename, ModifiedTime)
 	cwd, _ := os.Getwd()
 
 	// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
