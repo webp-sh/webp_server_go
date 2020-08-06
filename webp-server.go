@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"runtime"
 
 	"github.com/gofiber/fiber"
@@ -21,7 +22,7 @@ type Config struct {
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
-const version = "0.1.5"
+const version = "0.2.0"
 
 var configPath string
 var prefetch bool
@@ -65,11 +66,6 @@ func loadConfig(path string) Config {
 	defer jsonObject.Close()
 	decoder := json.NewDecoder(jsonObject)
 	_ = decoder.Decode(&config)
-	_, err = os.Stat(config.ImgPath)
-	if err != nil {
-		log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
-	}
-
 	return config
 }
 
@@ -118,7 +114,20 @@ func main() {
 
 	HOST := config.HOST
 	PORT := config.PORT
-	confImgPath := path.Clean(config.ImgPath)
+	// Check for remote address
+	matched, _ := regexp.MatchString(`^https?://`, config.ImgPath)
+	proxyMode := false
+	confImgPath := ""
+	if matched {
+		proxyMode = true
+		confImgPath = config.ImgPath
+	} else {
+		_, err := os.Stat(config.ImgPath)
+		if err != nil {
+			log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
+		}
+		confImgPath = path.Clean(config.ImgPath)
+	}
 	QUALITY := config.QUALITY
 	AllowedTypes := config.AllowedTypes
 	var ExhaustPath string
@@ -141,7 +150,7 @@ func main() {
 	// Server Info
 	log.Infof("WebP Server %s %s", version, ListenAddress)
 
-	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY))
+	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY, proxyMode))
 	app.Listen(ListenAddress)
 
 }

@@ -3,7 +3,7 @@
 </p>
 <img src="https://api.travis-ci.org/webp-sh/webp_server_go.svg?branch=master"/>
 
-[Documentation](https://webp.sh/docs/) | [Website](https://webp.sh/)
+[Documentation](https://docs.webp.sh/) | [Website](https://webp.sh/)
 
 This is a Server based on Golang, which allows you to serve WebP images on the fly. 
 It will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.json`.. 
@@ -18,7 +18,7 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 ## Simple Usage Steps
 
 ### 1. Download or build the binary
-Download the `webp-server` from [release](https://github.com/n0vad3v/webp_server_go/releases) page.
+Download the `webp-server` from [release](https://github.com/webp-sh/webp_server_go/releases) page.
 
 ### 2. Dump config file
 
@@ -67,8 +67,7 @@ Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-th
 
 ## Advanced Usage
 
-For supervisor, Docker sections, please read our documentation at [https://webp.sh/docs/](https://webp.sh/docs/)
-
+For supervisor, Docker sections, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
 
 ## License
 
