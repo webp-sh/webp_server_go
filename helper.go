@@ -57,11 +57,11 @@ func GetRemoteImageInfo(fileUrl string) (int, string) {
 		log.Fatal("Connection to remote error!")
 	}
 	if res.StatusCode != 404 {
-		for index, _ := range res.Header {
-			if strings.ToLower(index) == "etag" {
-				etagValue := res.Header[index][0]
-				return 200, etagValue
-			}
+		etagValue := res.Header.Get("etag")
+		if etagValue == "" {
+			log.Info("Remote didn't return etag in header, please check.")
+		} else {
+			return 200, etagValue
 		}
 	}
 	return res.StatusCode, ""
