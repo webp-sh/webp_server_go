@@ -97,7 +97,7 @@ func Convert(ImgPath string, ExhaustPath string, AllowedTypes []string, QUALITY 
 					c.SendFile(localEtagImagePath)
 				}
 			} else {
-				msg := "Remote returned + " + strconv.Itoa(statusCode) + " status code!"
+				msg := fmt.Sprintf("Remote returned %d status code!", statusCode)
 				c.Send(msg)
 				log.Warn(msg)
 				c.SendStatus(statusCode)
