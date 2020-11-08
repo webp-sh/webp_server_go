@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"runtime"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,7 +22,7 @@ type Config struct {
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
-const version = "0.2.0"
+const version = "0.2.1"
 
 var configPath string
 var prefetch bool
@@ -31,11 +31,17 @@ var dumpConfig bool
 var dumpSystemd bool
 var verboseMode bool
 
+var (
+	confImgPath, exhaustPath, quality string
+	AllowedTypes                      []string
+	proxyMode                         bool
+)
+
 const sampleConfig = `
 {
 	"HOST": "127.0.0.1",
 	"PORT": "3333",
-	"QUALITY": "80",
+	"quality": "80",
 	"IMG_PATH": "/path/to/pics",
 	"EXHAUST_PATH": "",
 	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
@@ -116,8 +122,7 @@ func main() {
 	PORT := config.PORT
 	// Check for remote address
 	matched, _ := regexp.MatchString(`^https?://`, config.ImgPath)
-	proxyMode := false
-	confImgPath := ""
+	proxyMode = false
 	if matched {
 		proxyMode = true
 		confImgPath = config.ImgPath
@@ -128,29 +133,25 @@ func main() {
 		}
 		confImgPath = path.Clean(config.ImgPath)
 	}
-	QUALITY := config.QUALITY
-	AllowedTypes := config.AllowedTypes
-	var ExhaustPath string
+	quality = config.QUALITY
+	AllowedTypes = config.AllowedTypes
 	if len(config.ExhaustPath) == 0 {
-		ExhaustPath = "./exhaust"
+		exhaustPath = "./exhaust"
 	} else {
-		ExhaustPath = config.ExhaustPath
+		exhaustPath = config.ExhaustPath
 	}
 
 	if prefetch {
-		go PrefetchImages(confImgPath, ExhaustPath, QUALITY)
+		go PrefetchImages(confImgPath, exhaustPath, quality)
 	}
 
 	app := fiber.New()
-	app.Banner = false
-	app.Server = "WebP Server Go"
-
 	ListenAddress := HOST + ":" + PORT
 
 	// Server Info
 	log.Infof("WebP Server %s %s", version, ListenAddress)
 
-	app.Get("/*", Convert(confImgPath, ExhaustPath, AllowedTypes, QUALITY, proxyMode))
+	app.Get("/*", Convert)
 	app.Listen(ListenAddress)
 
 }
