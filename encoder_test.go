@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-//go test -v -cover encoder_test.go encoder.go helper.go
+//go test -v -cover .
 func TestWebpEncoder(t *testing.T) {
 
 	var webp = "/tmp/test-result.webp"

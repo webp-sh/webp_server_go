@@ -34,12 +34,12 @@ const (
 	version      = "0.2.1"
 	sampleConfig = `
 {
-	"Host": "127.0.0.1",
-	"Port": "3333",
-	"quality": "80",
-	"IMG_PATH": "/path/to/pics",
-	"EXHAUST_PATH": "",
-	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
+  "HOST": "127.0.0.1",
+  "PORT": "3333",
+  "QUALITY": "80",
+  "IMG_PATH": "./pics",
+  "EXHAUST_PATH": "./exhaust",
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
 }`
 
 	sampleSystemd = `
@@ -120,15 +120,11 @@ func main() {
 	proxyMode = false
 	if matched {
 		proxyMode = true
-
 	} else {
 		_, err := os.Stat(config.ImgPath)
 		if err != nil {
 			log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
 		}
-	}
-	if len(config.ExhaustPath) == 0 {
-		config.ExhaustPath = "./exhaust"
 	}
 
 	if prefetch {

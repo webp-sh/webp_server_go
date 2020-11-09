@@ -1,6 +1,6 @@
 module webp_server_go
 
-go 1.13
+go 1.15
 
 require (
 	github.com/chai2010/webp v1.1.0

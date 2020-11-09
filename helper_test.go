@@ -7,8 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// test this file: go test -v -cover helper_test.go helper.go
-// test one function: go test -run TestGetFileContentType helper_test.go helper.go -v
+// test this file: go test -v -cover .
 func TestGetFileContentType(t *testing.T) {
 	var data = []byte("hello")
 	var expected = "text/plain; charset=utf-8"

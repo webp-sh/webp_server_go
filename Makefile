@@ -10,6 +10,16 @@ else
 	ARCH=amd64
 endif
 
-all: build
-build: 
+default:
+	make clean
+	go build -o builds/webp-server-$(OS)-$(ARCH) .
+	ls builds
+all:
+	make clean
 	./scripts/build.sh $(OS) $(ARCH)
+
+test:
+	go test -v -cover .
+
+clean:
+	rm -rf builds
