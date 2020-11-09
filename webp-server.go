@@ -71,7 +71,7 @@ func loadConfig(path string) Config {
 	return config
 }
 
-func init() {
+func deferInit() {
 	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
 	flag.BoolVar(&prefetch, "prefetch", false, "Prefetch and convert image to webp")
 	flag.IntVar(&jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
@@ -101,6 +101,7 @@ func init() {
 }
 
 func main() {
+	deferInit()
 	// process cli params
 	if dumpConfig {
 		fmt.Println(sampleConfig)
