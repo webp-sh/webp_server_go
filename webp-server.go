@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path"
 	"regexp"
 	"runtime"
 
@@ -14,39 +13,36 @@ import (
 )
 
 type Config struct {
-	HOST         string
-	PORT         string
-	ImgPath      string `json:"IMG_PATH"`
-	QUALITY      string
+	Host         string   `json:"HOST"`
+	Port         string   `json:"Port"`
+	ImgPath      string   `json:"IMG_PATH"`
+	Quality      string   `json:"Quality"`
 	AllowedTypes []string `json:"ALLOWED_TYPES"`
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
 
-const version = "0.2.1"
-
-var configPath string
-var prefetch bool
-var jobs int
-var dumpConfig bool
-var dumpSystemd bool
-var verboseMode bool
-
 var (
-	confImgPath, exhaustPath, quality string
-	AllowedTypes                      []string
-	proxyMode                         bool
+	configPath                                     string
+	jobs                                           int
+	dumpConfig, dumpSystemd, verboseMode, prefetch bool
+
+	proxyMode bool
+	config    Config
 )
 
-const sampleConfig = `
+const (
+	version      = "0.2.1"
+	sampleConfig = `
 {
-	"HOST": "127.0.0.1",
-	"PORT": "3333",
+	"Host": "127.0.0.1",
+	"Port": "3333",
 	"quality": "80",
 	"IMG_PATH": "/path/to/pics",
 	"EXHAUST_PATH": "",
 	"ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
 }`
-const sampleSystemd = `
+
+	sampleSystemd = `
 [Unit]
 Description=WebP Server Go
 Documentation=https://github.com/webp-sh/webp_server_go
@@ -62,16 +58,16 @@ RestartSec=3s
 
 [Install]
 WantedBy=multi-user.target`
+)
 
 func loadConfig(path string) Config {
-	var config Config
 	jsonObject, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer jsonObject.Close()
 	decoder := json.NewDecoder(jsonObject)
 	_ = decoder.Decode(&config)
+	_ = jsonObject.Close()
 	return config
 }
 
@@ -116,42 +112,35 @@ func main() {
 	}
 
 	go autoUpdate()
-	config := loadConfig(configPath)
+	config = loadConfig(configPath)
 
-	HOST := config.HOST
-	PORT := config.PORT
 	// Check for remote address
 	matched, _ := regexp.MatchString(`^https?://`, config.ImgPath)
 	proxyMode = false
 	if matched {
 		proxyMode = true
-		confImgPath = config.ImgPath
+
 	} else {
 		_, err := os.Stat(config.ImgPath)
 		if err != nil {
 			log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
 		}
-		confImgPath = path.Clean(config.ImgPath)
 	}
-	quality = config.QUALITY
-	AllowedTypes = config.AllowedTypes
 	if len(config.ExhaustPath) == 0 {
-		exhaustPath = "./exhaust"
-	} else {
-		exhaustPath = config.ExhaustPath
+		config.ExhaustPath = "./exhaust"
 	}
 
 	if prefetch {
-		go PrefetchImages(confImgPath, exhaustPath, quality)
+		go prefetchImages(config.ImgPath, config.ExhaustPath, config.Quality)
 	}
 
 	app := fiber.New()
-	ListenAddress := HOST + ":" + PORT
+	ListenAddress := config.Host + ":" + config.Port
 
 	// Server Info
 	log.Infof("WebP Server %s %s", version, ListenAddress)
 
-	app.Get("/*", Convert)
-	app.Listen(ListenAddress)
+	app.Get("/*", convert)
+	_ = app.Listen(ListenAddress)
 
 }

@@ -15,20 +15,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ChanErr(ccc chan int) {
+func chanErr(ccc chan int) {
 	if ccc != nil {
 		ccc <- 1
 	}
 }
 
-func GetFileContentType(buffer []byte) string {
+func getFileContentType(buffer []byte) string {
 	// Use the net/http package's handy DectectContentType function. Always returns a valid
 	// content-type by returning "application/octet-stream" if no others seemed to match.
 	contentType := http.DetectContentType(buffer)
 	return contentType
 }
 
-func FileCount(dir string) int {
+func fileCount(dir string) int {
 	count := 0
 	_ = filepath.Walk(dir,
 		func(path string, info os.FileInfo, err error) error {
@@ -40,7 +40,7 @@ func FileCount(dir string) int {
 	return count
 }
 
-func ImageExists(filename string) bool {
+func imageExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false
@@ -51,10 +51,11 @@ func ImageExists(filename string) bool {
 
 // Check for remote filepath, e.g: https://test.webp.sh/node.png
 // return StatusCode, etagValue
-func GetRemoteImageInfo(fileUrl string) (int, string) {
+func getRemoteImageInfo(fileUrl string) (int, string) {
 	res, err := http.Head(fileUrl)
 	if err != nil {
 		log.Fatal("Connection to remote error!")
+		return http.StatusInternalServerError, ""
 	}
 	if res.StatusCode != 404 {
 		etagValue := res.Header.Get("etag")
@@ -67,7 +68,7 @@ func GetRemoteImageInfo(fileUrl string) (int, string) {
 	return res.StatusCode, ""
 }
 
-func FetchRemoteImage(filepath string, url string) error {
+func fetchRemoteImage(filepath string, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -86,7 +87,7 @@ func FetchRemoteImage(filepath string, url string) error {
 
 // Given /path/to/node.png
 // Delete /path/to/node.png*
-func CleanProxyCache(cacheImagePath string) {
+func cleanProxyCache(cacheImagePath string) {
 	// Delete /node.png*
 	files, err := filepath.Glob(cacheImagePath + "*")
 	if err != nil {
@@ -99,11 +100,12 @@ func CleanProxyCache(cacheImagePath string) {
 	}
 }
 
-func GenWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, reqURI string) (string, string) {
+func genWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, reqURI string) (string, string) {
 	// get file mod time
 	STAT, err := os.Stat(RawImagePath)
 	if err != nil {
 		log.Error(err.Error())
+		return "", ""
 	}
 	ModifiedTime := STAT.ModTime().Unix()
 	// webpFilename: abc.jpg.png -> abc.jpg.png1582558990.webp
@@ -116,7 +118,7 @@ func GenWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, req
 	return cwd, WebpAbsolutePath
 }
 
-func GenEtag(ImgAbsPath string) string {
+func genEtag(ImgAbsPath string) string {
 	data, err := ioutil.ReadFile(ImgAbsPath)
 	if err != nil {
 		log.Info(err)

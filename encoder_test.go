@@ -34,8 +34,8 @@ func walker() []string {
 
 func runEncoder(t *testing.T, file string, webp string) {
 	var c chan int
-	//t.Logf("Convert from %s to %s", file, webp)
-	var err = WebpEncoder(file, webp, 80, false, c)
+	//t.Logf("convert from %s to %s", file, webp)
+	var err = webpEncoder(file, webp, 80, false, c)
 	if file == "pics/empty.jpg" && err != nil {
 		t.Log("Empty file, that's okay.")
 	} else if err != nil {
@@ -43,7 +43,7 @@ func runEncoder(t *testing.T, file string, webp string) {
 	}
 
 	data, _ := ioutil.ReadFile(webp)
-	types := GetFileContentType(data[:512])
+	types := getFileContentType(data[:512])
 	if types != "image/webp" {
 		t.Fatal("Fatal, file type is wrong!")
 	}

@@ -12,7 +12,7 @@ import (
 func TestGetFileContentType(t *testing.T) {
 	var data = []byte("hello")
 	var expected = "text/plain; charset=utf-8"
-	var result = GetFileContentType(data)
+	var result = getFileContentType(data)
 
 	assert.Equalf(t, result, expected, "Result: [%s], Expected: [%s]", result, expected)
 
@@ -22,27 +22,27 @@ func TestGetFileContentType(t *testing.T) {
 func TestFileCount(t *testing.T) {
 	var data = ".github"
 	var expected = 2
-	var result = FileCount(data)
+	var result = fileCount(data)
 	assert.Equalf(t, result, expected, "Result: [%d], Expected: [%d]", result, expected)
 
 }
 
 func TestImageExists(t *testing.T) {
 	var data = "./pics/empty.jpg"
-	var result = !ImageExists(data)
+	var result = !imageExists(data)
 
 	if result {
 		t.Errorf("Result: [%v], Expected: [%v]", result, false)
 	}
 	data = ".pics/empty2.jpg"
-	result = ImageExists(data)
+	result = imageExists(data)
 
 	assert.Falsef(t, result, "Result: [%v], Expected: [%v]", result, false)
 
 }
 
 func TestGenWebpAbs(t *testing.T) {
-	cwd, cooked := GenWebpAbs("./pics/webp_server.png", "/tmp",
+	cwd, cooked := genWebpAbs("./pics/webp_server.png", "/tmp",
 		"test", "a")
 	if !strings.Contains(cwd, "webp_server_go") {
 		t.Logf("Result: [%v], Expected: [%v]", cwd, "webp_server_go")
@@ -56,7 +56,7 @@ func TestGenWebpAbs(t *testing.T) {
 func TestGenEtag(t *testing.T) {
 	var data = "./pics/png.jpg"
 	var expected = "W/\"1020764-262C0329\""
-	var result = GenEtag(data)
+	var result = genEtag(data)
 
 	assert.Equalf(t, result, expected, "Result: [%s], Expected: [%s]", result, expected)
 
