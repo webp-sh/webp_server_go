@@ -59,18 +59,6 @@ func convert(c *fiber.Ctx) error {
 		// https://test.webp.sh/node.png
 		realRemoteAddr := config.ImgPath + reqURI
 		// Ping Remote for status code and etag info
-
-		// If status code is 200
-		//     Check for local /node.png-etag-<etagValue>
-		//         if exist
-		//             Send local cache
-		//         else
-		//             Delete local /node.png*
-		//             Fetch and convert to /node.png-etag-<etagValue>
-		//             Send local cache
-		// else status code is 404
-		//      Delete /node.png*
-		//      Send 404
 		fmt.Println("Remote Addr is " + realRemoteAddr + ", fetching..")
 		statusCode, etagValue := getRemoteImageInfo(realRemoteAddr)
 		if statusCode == 200 {

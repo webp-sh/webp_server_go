@@ -28,10 +28,10 @@ var (
 
 	proxyMode bool
 	config    Config
+	version   = "0.2.1"
 )
 
 const (
-	version      = "0.2.1"
 	sampleConfig = `
 {
   "HOST": "127.0.0.1",

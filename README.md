@@ -3,6 +3,8 @@
 </p>
 <img src="https://api.travis-ci.org/webp-sh/webp_server_go.svg?branch=master"/>
 
+[![codecov](https://codecov.io/gh/webp-sh/webp_server_go/branch/master/graph/badge.svg?token=VR3BMZME65)](https://codecov.io/gh/webp-sh/webp_server_go)
+
 [Documentation](https://docs.webp.sh/) | [Website](https://webp.sh/)
 
 This is a Server based on Golang, which allows you to serve WebP images on the fly. 

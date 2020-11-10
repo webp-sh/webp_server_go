@@ -54,7 +54,7 @@ func imageExists(filename string) bool {
 func getRemoteImageInfo(fileUrl string) (int, string) {
 	res, err := http.Head(fileUrl)
 	if err != nil {
-		log.Fatal("Connection to remote error!")
+		log.Errorln("Connection to remote error!")
 		return http.StatusInternalServerError, ""
 	}
 	if res.StatusCode != 404 {

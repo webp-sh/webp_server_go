@@ -50,7 +50,6 @@ func autoUpdate() {
 	}
 	data, _ := ioutil.ReadAll(resp.Body)
 	_ = os.Mkdir("update", 0755)
-	// TODO: checksum
 	err := ioutil.WriteFile(path.Join("update", filename), data, 0755)
 
 	if err == nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -9,7 +10,6 @@ import (
 
 //go test -v -cover .
 func TestWebpEncoder(t *testing.T) {
-
 	var webp = "/tmp/test-result.webp"
 	var target = walker()
 
@@ -19,8 +19,24 @@ func TestWebpEncoder(t *testing.T) {
 	}
 	_ = os.Remove(webp)
 
+	// test error
+	err := webpEncoder("./pics/empty.jpg", webp, 80, true, nil)
+	assert.NotNil(t, err)
 }
 
+func TestNonImage(t *testing.T) {
+	var webp = "/tmp/test-result.webp"
+	// test error
+	var err = webpEncoder("./pics/empty.jpg", webp, 80, true, nil)
+	assert.NotNil(t, err)
+}
+
+func TestWriteFail(t *testing.T) {
+	// test permission denied
+	var webp = "/123.webp"
+	var err = webpEncoder("./pics/png.jpg", webp, 80, true, nil)
+	assert.NotNil(t, err)
+}
 func walker() []string {
 	var list []string
 	_ = filepath.Walk("./pics", func(path string, info os.FileInfo, err error) error {
@@ -35,7 +51,7 @@ func walker() []string {
 func runEncoder(t *testing.T, file string, webp string) {
 	var c chan int
 	//t.Logf("convert from %s to %s", file, webp)
-	var err = webpEncoder(file, webp, 80, false, c)
+	var err = webpEncoder(file, webp, 80, true, c)
 	if file == "pics/empty.jpg" && err != nil {
 		t.Log("Empty file, that's okay.")
 	} else if err != nil {

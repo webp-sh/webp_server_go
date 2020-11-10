@@ -19,7 +19,8 @@ all:
 	./scripts/build.sh $(OS) $(ARCH)
 
 test:
-	go test -v -cover .
+	go test -coverprofile=coverage.txt -covermode=atomic
 
 clean:
 	rm -rf builds
+	rm -rf prefetch
