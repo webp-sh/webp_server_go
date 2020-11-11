@@ -14,9 +14,9 @@ import (
 
 type Config struct {
 	Host         string   `json:"HOST"`
-	Port         string   `json:"Port"`
+	Port         string   `json:"PORT"`
 	ImgPath      string   `json:"IMG_PATH"`
-	Quality      string   `json:"Quality"`
+	Quality      string   `json:"QUALITY"`
 	AllowedTypes []string `json:"ALLOWED_TYPES"`
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 }
