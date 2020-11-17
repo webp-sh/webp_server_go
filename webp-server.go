@@ -22,9 +22,9 @@ type Config struct {
 }
 
 var (
-	configPath                                     string
-	jobs                                           int
-	dumpConfig, dumpSystemd, verboseMode, prefetch bool
+	configPath                                                  string
+	jobs                                                        int
+	dumpConfig, dumpSystemd, verboseMode, prefetch, showVersion bool
 
 	proxyMode bool
 	config    Config
@@ -78,6 +78,7 @@ func deferInit() {
 	flag.BoolVar(&dumpConfig, "dump-config", false, "Print sample config.json")
 	flag.BoolVar(&dumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.BoolVar(&verboseMode, "v", false, "Verbose, print out debug info.")
+	flag.BoolVar(&showVersion, "V", false, "Show version information.")
 	flag.Parse()
 	// Logrus
 	log.SetOutput(os.Stdout)
@@ -101,6 +102,16 @@ func deferInit() {
 }
 
 func main() {
+	// Our banner
+	banner := fmt.Sprintf(`
+▌ ▌   ▌  ▛▀▖ ▞▀▖                ▞▀▖
+▌▖▌▞▀▖▛▀▖▙▄▘ ▚▄ ▞▀▖▙▀▖▌ ▌▞▀▖▙▀▖ ▌▄▖▞▀▖
+▙▚▌▛▀ ▌ ▌▌   ▖ ▌▛▀ ▌  ▐▐ ▛▀ ▌   ▌ ▌▌ ▌
+▘ ▘▝▀▘▀▀ ▘   ▝▀ ▝▀▘▘   ▘ ▝▀▘▘   ▝▀ ▝▀
+
+Webp Server Go - v%s
+Develop by WebP Server team. https://github.com/webp-sh`, version)
+
 	deferInit()
 	// process cli params
 	if dumpConfig {
@@ -109,6 +120,10 @@ func main() {
 	}
 	if dumpSystemd {
 		fmt.Println(sampleSystemd)
+		os.Exit(0)
+	}
+	if showVersion {
+		fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner+"", 0x1B)
 		os.Exit(0)
 	}
 
@@ -131,13 +146,16 @@ func main() {
 		go prefetchImages(config.ImgPath, config.ExhaustPath, config.Quality)
 	}
 
-	app := fiber.New()
-	ListenAddress := config.Host + ":" + config.Port
-
-	// Server Info
-	log.Infof("WebP Server %s %s", version, ListenAddress)
-
+	app := fiber.New(fiber.Config{
+		ServerHeader:          "Webp-Server-Go",
+		DisableStartupMessage: true,
+	})
+	listenAddress := config.Host + ":" + config.Port
 	app.Get("/*", convert)
-	_ = app.Listen(ListenAddress)
+
+	fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner, 0x1B)
+	fmt.Println("Webp-Server-Go is Running on http://" + listenAddress)
+
+	_ = app.Listen(listenAddress)
 
 }
