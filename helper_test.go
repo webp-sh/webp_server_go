@@ -1,48 +1,49 @@
 package main
 
 import (
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-// test this file: go test -v -cover helper_test.go helper.go
-// test one function: go test -run TestGetFileContentType helper_test.go helper.go -v
+// test this file: go test -v -cover .
 func TestGetFileContentType(t *testing.T) {
 	var data = []byte("hello")
 	var expected = "text/plain; charset=utf-8"
-	var result = GetFileContentType(data)
+	var result = getFileContentType(data)
 
 	assert.Equalf(t, result, expected, "Result: [%s], Expected: [%s]", result, expected)
 
 }
 
-// TODO: make a universal logging function
 func TestFileCount(t *testing.T) {
 	var data = ".github"
 	var expected = 2
-	var result = FileCount(data)
+	var result = fileCount(data)
 	assert.Equalf(t, result, expected, "Result: [%d], Expected: [%d]", result, expected)
 
 }
 
 func TestImageExists(t *testing.T) {
 	var data = "./pics/empty.jpg"
-	var result = !ImageExists(data)
+	var result = !imageExists(data)
 
 	if result {
 		t.Errorf("Result: [%v], Expected: [%v]", result, false)
 	}
 	data = ".pics/empty2.jpg"
-	result = ImageExists(data)
+	result = imageExists(data)
 
 	assert.Falsef(t, result, "Result: [%v], Expected: [%v]", result, false)
 
 }
 
 func TestGenWebpAbs(t *testing.T) {
-	cwd, cooked := GenWebpAbs("./pics/webp_server.png", "/tmp",
+	cwd, cooked := genWebpAbs("./pics/webp_server.png", "/tmp",
 		"test", "a")
 	if !strings.Contains(cwd, "webp_server_go") {
 		t.Logf("Result: [%v], Expected: [%v]", cwd, "webp_server_go")
@@ -56,7 +57,7 @@ func TestGenWebpAbs(t *testing.T) {
 func TestGenEtag(t *testing.T) {
 	var data = "./pics/png.jpg"
 	var expected = "W/\"1020764-262C0329\""
-	var result = GenEtag(data)
+	var result = genEtag(data)
 
 	assert.Equalf(t, result, expected, "Result: [%s], Expected: [%s]", result, expected)
 
@@ -103,4 +104,56 @@ func TestGoOrigin(t *testing.T) {
 		assert.Equalf(t, is, goOrigin(browser), "[%v]:[%s]", is, browser)
 	}
 
+}
+
+func TestChanErr(t *testing.T) {
+	var value = 2
+	var testC = make(chan int, 2)
+	testC <- value
+	chanErr(testC)
+	value = <-testC
+	assert.Equal(t, 2, value)
+}
+
+func TestGetRemoteImageInfo(t *testing.T) {
+	url := "http://github.com/favicon.ico"
+	statusCode, etag := getRemoteImageInfo(url)
+	assert.NotEqual(t, "", etag)
+	assert.Equal(t, statusCode, http.StatusOK)
+
+	// test non-exist url
+	url = "http://sdahjajda.com"
+	statusCode, etag = getRemoteImageInfo(url)
+	assert.Equal(t, "", etag)
+	assert.Equal(t, statusCode, http.StatusInternalServerError)
+}
+
+func TestFetchRemoteImage(t *testing.T) {
+	// test the normal one
+	fp := filepath.Join("./exhaust", "test.ico")
+	url := "http://github.com/favicon.ico"
+	err := fetchRemoteImage(fp, url)
+	assert.Equal(t, err, nil)
+	data, _ := ioutil.ReadFile(fp)
+	assert.Equal(t, "image/x-icon", getFileContentType(data))
+
+	// test can't create file
+	err = fetchRemoteImage("/", url)
+	assert.NotNil(t, err)
+
+	// test bad url
+	err = fetchRemoteImage(fp, "http://ahjdsgdsghja.cya")
+	assert.NotNil(t, err)
+}
+
+func TestCleanProxyCache(t *testing.T) {
+	// test normal situation
+	fp := filepath.Join("./exhaust", "sample.png.12345.webp")
+	_ = ioutil.WriteFile(fp, []byte("1234"), 0755)
+	assert.True(t, imageExists(fp))
+	cleanProxyCache(fp)
+	assert.False(t, imageExists(fp))
+
+	// test bad dir
+	cleanProxyCache("/aasdyg/dhj2/dagh")
 }

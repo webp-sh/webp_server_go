@@ -1,7 +1,7 @@
 language: go
 
-go: 
- - 1.14.7
+go:
+  - 1.15.4
 
 env: GO111MODULE=on
 arch:
@@ -22,8 +22,7 @@ jobs:
       os:
         - linux
       script:
-        - go test -v -cover encoder_test.go encoder.go helper.go
-        - go test -v -cover helper_test.go helper.go
+        - make test
 
 deploy:
   provider: releases
@@ -35,3 +34,6 @@ deploy:
       repo: webp-sh/webp_server_go
       tags: true
       branch: master
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

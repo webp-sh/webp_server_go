@@ -17,7 +17,7 @@ import (
 	"golang.org/x/image/bmp"
 )
 
-func WebpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err error) {
+func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err error) {
 	// if convert fails, return error; success nil
 
 	log.Debugf("target: %s with quality of %f", path.Base(p1), quality)
@@ -26,11 +26,11 @@ func WebpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 
 	data, err := ioutil.ReadFile(p1)
 	if err != nil {
-		ChanErr(c)
+		chanErr(c)
 		return
 	}
 
-	contentType := GetFileContentType(data[:512])
+	contentType := getFileContentType(data[:512])
 	if strings.Contains(contentType, "jpeg") {
 		img, _ = jpeg.Decode(bytes.NewReader(data))
 	} else if strings.Contains(contentType, "png") {
@@ -47,18 +47,18 @@ func WebpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
 		log.Debug(msg)
 		err = errors.New(msg)
-		ChanErr(c)
+		chanErr(c)
 		return
 	}
 
 	if err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality}); err != nil {
 		log.Error(err)
-		ChanErr(c)
+		chanErr(c)
 		return
 	}
 	if err = ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {
 		log.Error(err)
-		ChanErr(c)
+		chanErr(c)
 		return
 	}
 
@@ -66,7 +66,7 @@ func WebpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 		log.Info("Save to " + p2 + " ok!\n")
 	}
 
-	ChanErr(c)
+	chanErr(c)
 
 	return nil
 }
