@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,10 +15,11 @@ import (
 
 func convert(c *fiber.Ctx) error {
 	//basic vars
-	var reqURI = c.Path()                               // /mypic/123.jpg
-	var rawImageAbs = path.Join(config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
-	var imgFilename = path.Base(reqURI)                 // pure filename, 123.jpg
-	var finalFile string                                // We'll only need one c.sendFile()
+	var reqURI = c.Path()                                       // /mypic/123.jpg
+	unescapeReqURI, _ := url.QueryUnescape(reqURI)
+	var rawImageAbs = path.Join(config.ImgPath, unescapeReqURI) // /home/xxx/mypic/123.jpg
+	var imgFilename = path.Base(unescapeReqURI)                 // pure filename, 123.jpg
+	var finalFile string                                        // We'll only need one c.sendFile()
 	var UA = c.Get("User-Agent")
 	done := goOrigin(UA)
 	if done {
@@ -57,20 +59,20 @@ func convert(c *fiber.Ctx) error {
 	// Start Proxy Mode
 	if proxyMode {
 		// https://test.webp.sh/node.png
-		realRemoteAddr := config.ImgPath + reqURI
+		realRemoteAddr := config.ImgPath + unescapeReqURI
 		// Ping Remote for status code and etag info
 		fmt.Println("Remote Addr is " + realRemoteAddr + ", fetching..")
 		statusCode, etagValue := getRemoteImageInfo(realRemoteAddr)
 		if statusCode == 200 {
 			// Check local path: /node.png-etag-<etagValue>
-			localEtagImagePath := config.ExhaustPath + reqURI + "-etag-" + etagValue
+			localEtagImagePath := config.ExhaustPath + unescapeReqURI + "-etag-" + etagValue
 			if imageExists(localEtagImagePath) {
 				return c.SendFile(localEtagImagePath)
 			} else {
 				// Temporary store of remote file.
 				// ./remote-raw/node.png
-				cleanProxyCache(config.ExhaustPath + reqURI + "*")
-				localRemoteTmpPath := "./remote-raw" + reqURI
+				cleanProxyCache(config.ExhaustPath + unescapeReqURI + "*")
+				localRemoteTmpPath := "./remote-raw" + unescapeReqURI
 				_ = fetchRemoteImage(localRemoteTmpPath, realRemoteAddr)
 				q, _ := strconv.ParseFloat(config.Quality, 32)
 				_ = os.MkdirAll(path.Dir(localEtagImagePath), 0755)
@@ -85,7 +87,7 @@ func convert(c *fiber.Ctx) error {
 			_ = c.Send([]byte(msg))
 			log.Warn(msg)
 			_ = c.SendStatus(statusCode)
-			cleanProxyCache(config.ExhaustPath + reqURI + "*")
+			cleanProxyCache(config.ExhaustPath + unescapeReqURI + "*")
 			return errors.New(msg)
 		}
 		// End Proxy Mode
@@ -99,7 +101,7 @@ func convert(c *fiber.Ctx) error {
 			return errors.New(msg)
 		}
 
-		_, webpAbsPath := genWebpAbs(rawImageAbs, config.ExhaustPath, imgFilename, reqURI)
+		_, webpAbsPath := genWebpAbs(rawImageAbs, config.ExhaustPath, imgFilename, unescapeReqURI)
 
 		if imageExists(webpAbsPath) {
 			finalFile = webpAbsPath
@@ -107,7 +109,7 @@ func convert(c *fiber.Ctx) error {
 			// we don't have abc.jpg.png1582558990.webp
 			// delete the old pic and convert a new one.
 			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-			destHalfFile := path.Clean(path.Join(webpAbsPath, path.Dir(reqURI), imgFilename))
+			destHalfFile := path.Clean(path.Join(webpAbsPath, path.Dir(unescapeReqURI), imgFilename))
 			matches, err := filepath.Glob(destHalfFile + "*")
 			if err != nil {
 				log.Error(err.Error())
