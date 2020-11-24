@@ -121,7 +121,7 @@ func setupParam() {
 func requestToServer(url string, app *fiber.App, ua string) (*http.Response, []byte) {
 	req := httptest.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", ua)
-	resp, _ := app.Test(req)
+	resp, _ := app.Test(req, 60000)
 	data, _ := ioutil.ReadAll(resp.Body)
 	return resp, data
 }
