@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -14,7 +15,7 @@ import (
 
 func convert(c *fiber.Ctx) error {
 	//basic vars
-	var reqURI = c.Path()                               // /mypic/123.jpg
+	var reqURI, _ = url.QueryUnescape(c.Path())         // /mypic/123.jpg
 	var rawImageAbs = path.Join(config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 	var imgFilename = path.Base(reqURI)                 // pure filename, 123.jpg
 	var finalFile string                                // We'll only need one c.sendFile()
