@@ -16,7 +16,7 @@ func TestPrefetchImages(t *testing.T) {
 	_ = os.Mkdir(fp, 0755)
 	prefetchImages("./pics", "./prefetch", "80")
 	count := fileCount("./prefetch")
-	assert.Equal(t, 6, count)
+	assert.Equal(t, 7, count)
 	_ = os.RemoveAll(fp)
 
 	// concurrency
@@ -24,6 +24,6 @@ func TestPrefetchImages(t *testing.T) {
 	_ = os.Mkdir(fp, 0755)
 	prefetchImages("./pics", "./prefetch", "80")
 	count = fileCount("./prefetch")
-	assert.Equal(t, 4, count)
+	assert.Equal(t, 5, count)
 	_ = os.RemoveAll(fp)
 }

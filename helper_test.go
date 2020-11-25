@@ -116,7 +116,7 @@ func TestChanErr(t *testing.T) {
 }
 
 func TestGetRemoteImageInfo(t *testing.T) {
-	url := "http://github.com/favicon.ico"
+	url := "https://github.com/favicon.ico"
 	statusCode, etag := getRemoteImageInfo(url)
 	assert.NotEqual(t, "", etag)
 	assert.Equal(t, statusCode, http.StatusOK)

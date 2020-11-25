@@ -21,13 +21,15 @@ var (
 func TestConvert(t *testing.T) {
 	setupParam()
 	var testChromeLink = map[string]string{
-		"http://127.0.0.1:3333/webp_server.jpg": "image/webp",
-		"http://127.0.0.1:3333/webp_server.bmp": "image/webp",
-		"http://127.0.0.1:3333/webp_server.png": "image/webp",
-		"http://127.0.0.1:3333/empty.jpg":       "text/plain; charset=utf-8",
-		"http://127.0.0.1:3333/png.jpg":         "image/webp",
-		"http://127.0.0.1:3333/12314.jpg":       "text/plain; charset=utf-8",
-		"http://127.0.0.1:3333/dir1/inside.jpg": "image/webp",
+		"http://127.0.0.1:3333/webp_server.jpg":                 "image/webp",
+		"http://127.0.0.1:3333/webp_server.bmp":                 "image/webp",
+		"http://127.0.0.1:3333/webp_server.png":                 "image/webp",
+		"http://127.0.0.1:3333/empty.jpg":                       "text/plain; charset=utf-8",
+		"http://127.0.0.1:3333/png.jpg":                         "image/webp",
+		"http://127.0.0.1:3333/12314.jpg":                       "text/plain; charset=utf-8",
+		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
+		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
+		"http://127.0.0.1:3333/太神啦.png":                         "image/webp",
 	}
 
 	var testSafariLink = map[string]string{
@@ -119,7 +121,7 @@ func setupParam() {
 func requestToServer(url string, app *fiber.App, ua string) (*http.Response, []byte) {
 	req := httptest.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", ua)
-	resp, _ := app.Test(req)
+	resp, _ := app.Test(req, 60000)
 	data, _ := ioutil.ReadAll(resp.Body)
 	return resp, data
 }

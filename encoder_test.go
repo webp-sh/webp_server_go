@@ -22,6 +22,7 @@ func TestWebpEncoder(t *testing.T) {
 	// test error
 	err := webpEncoder("./pics/empty.jpg", webp, 80, true, nil)
 	assert.NotNil(t, err)
+	_ = os.Remove(webp)
 }
 
 func TestNonImage(t *testing.T) {
@@ -29,14 +30,10 @@ func TestNonImage(t *testing.T) {
 	// test error
 	var err = webpEncoder("./pics/empty.jpg", webp, 80, true, nil)
 	assert.NotNil(t, err)
+	_ = os.Remove(webp)
+
 }
 
-func TestWriteFail(t *testing.T) {
-	// test permission denied
-	var webp = "/123.webp"
-	var err = webpEncoder("./pics/png.jpg", webp, 80, true, nil)
-	assert.NotNil(t, err)
-}
 func walker() []string {
 	var list []string
 	_ = filepath.Walk("./pics", func(path string, info os.FileInfo, err error) error {
