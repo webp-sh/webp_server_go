@@ -20,8 +20,8 @@ func convert(c *fiber.Ctx) error {
 	var imgFilename = path.Base(reqURI)                 // pure filename, 123.jpg
 	var finalFile string                                // We'll only need one c.sendFile()
 	var UA = c.Get("User-Agent")
-	done := goOrigin(UA)
-	if done {
+	needOrigin := goOrigin(UA)
+	if needOrigin {
 		log.Infof("A Safari/IE/whatever user has arrived...%s", UA)
 		// Check for Safari users. If they're Safari, just simply ignore everything.
 
@@ -137,6 +137,8 @@ func convert(c *fiber.Ctx) error {
 		}
 		etag := genEtag(finalFile)
 		c.Set("ETag", etag)
+		compressionRate := getCompressionRate(rawImageAbs, webpAbsPath)
+		c.Set("X-Compression-Rate", compressionRate)
 		return c.SendFile(finalFile)
 	}
 }

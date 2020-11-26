@@ -108,7 +108,7 @@ func genWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, req
 		return "", ""
 	}
 	ModifiedTime := STAT.ModTime().Unix()
-	// webpFilename: abc.jpg.png -> abc.jpg.png1582558990.webp
+	// webpFilename: abc.jpg.png -> abc.jpg.png.1582558990.webp
 	WebpFilename := fmt.Sprintf("%s.%d.webp", ImgFilename, ModifiedTime)
 	cwd, _ := os.Getwd()
 
@@ -125,6 +125,22 @@ func genEtag(ImgAbsPath string) string {
 	}
 	crc := crc32.ChecksumIEEE(data)
 	return fmt.Sprintf(`W/"%d-%08X"`, len(data), crc)
+}
+
+func getCompressionRate(RawImagePath string, webpAbsPath string) string {
+	originFileInfo, err := os.Stat(RawImagePath)
+	if err != nil {
+		log.Info(err)
+	}
+	webpFileInfo, err := os.Stat(webpAbsPath)
+	if err != nil {
+		log.Info(err)
+	}
+	fmt.Println(originFileInfo.Size())
+	fmt.Println(webpFileInfo.Size())
+	compressionRate := float64(webpFileInfo.Size()) / float64(originFileInfo.Size())
+
+	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
 func goOrigin(UA string) bool {
