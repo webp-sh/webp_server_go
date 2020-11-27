@@ -19,3 +19,5 @@ exhaust/
 /.idea/modules.xml
 /.idea/vcs.xml
 /.idea/webp_server_go.iml
+remote-raw/
+coverage.txt

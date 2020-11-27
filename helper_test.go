@@ -157,3 +157,18 @@ func TestCleanProxyCache(t *testing.T) {
 	// test bad dir
 	cleanProxyCache("/aasdyg/dhj2/dagh")
 }
+
+func TestGetCompressionRate(t *testing.T) {
+	pic1 := "pics/webp_server.bmp"
+	pic2 := "pics/webp_server.jpg"
+	var ratio string
+
+	ratio = getCompressionRate(pic1, pic2)
+	assert.Equal(t, "0.16", ratio)
+
+	ratio = getCompressionRate(pic1, "pic2")
+	assert.Equal(t, "", ratio)
+
+	ratio = getCompressionRate("pic1", pic2)
+	assert.Equal(t, "", ratio)
+}

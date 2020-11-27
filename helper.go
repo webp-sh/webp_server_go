@@ -91,7 +91,7 @@ func cleanProxyCache(cacheImagePath string) {
 	// Delete /node.png*
 	files, err := filepath.Glob(cacheImagePath + "*")
 	if err != nil {
-		fmt.Println(err)
+		log.Infoln(err)
 	}
 	for _, f := range files {
 		if err := os.Remove(f); err != nil {
@@ -130,16 +130,16 @@ func genEtag(ImgAbsPath string) string {
 func getCompressionRate(RawImagePath string, webpAbsPath string) string {
 	originFileInfo, err := os.Stat(RawImagePath)
 	if err != nil {
-		log.Info(err)
+		log.Warnf("fail to get raw image %v", err)
+		return ""
 	}
 	webpFileInfo, err := os.Stat(webpAbsPath)
 	if err != nil {
-		log.Info(err)
+		log.Warnf("fail to get webp image %v", err)
+		return ""
 	}
-	fmt.Println(originFileInfo.Size())
-	fmt.Println(webpFileInfo.Size())
 	compressionRate := float64(webpFileInfo.Size()) / float64(originFileInfo.Size())
-
+	log.Infof("The compress rate is %d/%d=%.2f", originFileInfo.Size(), webpFileInfo.Size(), compressionRate)
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
