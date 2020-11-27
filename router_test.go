@@ -18,6 +18,44 @@ var (
 	SafariUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
 )
 
+func setupParam() {
+	// setup parameters here...
+	config.ImgPath = "./pics"
+	config.ExhaustPath = "./exhaust"
+	config.AllowedTypes = []string{"jpg", "png", "jpeg", "bmp"}
+}
+
+func requestToServer(url string, app *fiber.App, ua string) (*http.Response, []byte) {
+	req := httptest.NewRequest("GET", url, nil)
+	req.Header.Set("User-Agent", ua)
+	resp, _ := app.Test(req, 60000)
+	data, _ := ioutil.ReadAll(resp.Body)
+	return resp, data
+}
+
+func TestServerHeaders(t *testing.T) {
+	setupParam()
+	var app = fiber.New()
+	app.Get("/*", convert)
+	url := "http://127.0.0.1:3333/webp_server.bmp"
+
+	// test for chrome
+	response, _ := requestToServer(url, app, chromeUA)
+	ratio := response.Header.Get("X-Compression-Rate")
+	etag := response.Header.Get("Etag")
+
+	assert.NotEqual(t, "", ratio)
+	assert.NotEqual(t, "", etag)
+
+	// test for safari
+	response, _ = requestToServer(url, app, SafariUA)
+	ratio = response.Header.Get("X-Compression-Rate")
+	etag = response.Header.Get("Etag")
+
+	assert.Equal(t, NotCompressed, ratio)
+	assert.NotEqual(t, "", etag)
+}
+
 func TestConvert(t *testing.T) {
 	setupParam()
 	var testChromeLink = map[string]string{
@@ -108,20 +146,4 @@ func TestConvertProxyModeWork(t *testing.T) {
 	resp, data := requestToServer(url, app, chromeUA)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "image/webp", getFileContentType(data))
-
-}
-
-func setupParam() {
-	// setup parameters here...
-	config.ImgPath = "./pics"
-	config.ExhaustPath = "./exhaust"
-	config.AllowedTypes = []string{"jpg", "png", "jpeg", "bmp"}
-}
-
-func requestToServer(url string, app *fiber.App, ua string) (*http.Response, []byte) {
-	req := httptest.NewRequest("GET", url, nil)
-	req.Header.Set("User-Agent", ua)
-	resp, _ := app.Test(req, 60000)
-	data, _ := ioutil.ReadAll(resp.Body)
-	return resp, data
 }

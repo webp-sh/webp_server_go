@@ -20,16 +20,17 @@ func convert(c *fiber.Ctx) error {
 	var imgFilename = path.Base(reqURI)                 // pure filename, 123.jpg
 	var finalFile string                                // We'll only need one c.sendFile()
 	var UA = c.Get("User-Agent")
-	done := goOrigin(UA)
-	if done {
+	log.Debugf("Incoming connection from %s@%s with %s", UA, c.IP(), imgFilename)
+
+	needOrigin := goOrigin(UA)
+	if needOrigin {
 		log.Infof("A Safari/IE/whatever user has arrived...%s", UA)
 		// Check for Safari users. If they're Safari, just simply ignore everything.
-
 		etag := genEtag(rawImageAbs)
 		c.Set("ETag", etag)
+		c.Set("X-Compression-Rate", NotCompressed)
 		return c.SendFile(rawImageAbs)
 	}
-	log.Debugf("Incoming connection from %s@%s with %s", UA, c.IP(), imgFilename)
 
 	// check ext
 	var allowed = false
@@ -43,6 +44,7 @@ func convert(c *fiber.Ctx) error {
 			allowed = false
 		}
 	}
+
 	if !allowed {
 		msg := "File extension not allowed! " + imgFilename
 		log.Warn(msg)
@@ -60,7 +62,7 @@ func convert(c *fiber.Ctx) error {
 		// https://test.webp.sh/node.png
 		realRemoteAddr := config.ImgPath + reqURI
 		// Ping Remote for status code and etag info
-		fmt.Println("Remote Addr is " + realRemoteAddr + ", fetching..")
+		log.Infof("Remote Addr is %s fetching", realRemoteAddr)
 		statusCode, etagValue := getRemoteImageInfo(realRemoteAddr)
 		if statusCode == 200 {
 			// Check local path: /node.png-etag-<etagValue>
@@ -77,7 +79,7 @@ func convert(c *fiber.Ctx) error {
 				_ = os.MkdirAll(path.Dir(localEtagImagePath), 0755)
 				err := webpEncoder(localRemoteTmpPath, localEtagImagePath, float32(q), true, nil)
 				if err != nil {
-					fmt.Println(err)
+					log.Warning(err)
 				}
 				return c.SendFile(localEtagImagePath)
 			}
@@ -130,13 +132,14 @@ func convert(c *fiber.Ctx) error {
 			if err != nil {
 				log.Error(err)
 				_ = c.SendStatus(400)
-				_ = c.Send([]byte("Bad file!"))
+				_ = c.Send([]byte("Bad file. " + err.Error()))
 				return err
 			}
 			finalFile = webpAbsPath
 		}
 		etag := genEtag(finalFile)
 		c.Set("ETag", etag)
+		c.Set("X-Compression-Rate", getCompressionRate(rawImageAbs, webpAbsPath))
 		return c.SendFile(finalFile)
 	}
 }
