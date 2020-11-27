@@ -139,7 +139,7 @@ func getCompressionRate(RawImagePath string, webpAbsPath string) string {
 		return ""
 	}
 	compressionRate := float64(webpFileInfo.Size()) / float64(originFileInfo.Size())
-	log.Infof("The compress rate is %d/%d=%.2f", originFileInfo.Size(), webpFileInfo.Size(), compressionRate)
+	log.Debugf("The compress rate is %d/%d=%.2f", originFileInfo.Size(), webpFileInfo.Size(), compressionRate)
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
