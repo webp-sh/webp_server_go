@@ -1,5 +1,5 @@
 Name:    webp-server
-Version: 0.2.2
+Version: 0.3.0
 Release: 1%{?dist}
 Summary: Go version of WebP Server. A tool that will serve your JPG/PNGs as WebP format with compression, on-the-fly.
 
