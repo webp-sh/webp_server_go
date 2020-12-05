@@ -143,17 +143,41 @@ func getCompressionRate(RawImagePath string, webpAbsPath string) string {
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
-func goOrigin(UA string) bool {
+func goOrigin(header, ua string) bool {
+	// We'll first check accept headers, if accept headers is false, we'll then go to UA part
+	if headerOrigin(header) && uaOrigin(ua) {
+		return true
+	} else {
+		return false
+	}
+}
+
+func uaOrigin(ua string) bool {
+	// iOS 14 and iPadOS 14 supports webp, the identification token is iPhone OS 14_2_1 and CPU OS 14_2
 	// for more information, please check test case
-	if strings.Contains(UA, "Firefox") || strings.Contains(UA, "Chrome") {
+	if strings.Contains(ua, "iPhone OS 14") || strings.Contains(ua, "CPU OS 14") {
+		// this is iOS 14/iPadOS 14
+		return false
+	} else if strings.Contains(ua, "Firefox") || strings.Contains(ua, "Chrome") {
 		// Chrome or firefox on macOS Windows
-	} else if strings.Contains(UA, "Android") || strings.Contains(UA, "Linux") {
+	} else if strings.Contains(ua, "Android") || strings.Contains(ua, "Linux") {
 		// on Android and Linux
-	} else if strings.Contains(UA, "FxiOS") || strings.Contains(UA, "CriOS") {
+	} else if strings.Contains(ua, "FxiOS") || strings.Contains(ua, "CriOS") {
 		//firefox and Chrome on iOS
 		return true
 	} else {
 		return true
 	}
 	return false
+}
+
+func headerOrigin(header string) bool {
+	// Webkit is really weird especially on iOS, it doesn't even send out effective accept headers.
+	// Head to test case if you want to know more
+	if strings.Contains(header, "image/webp") {
+		return false
+	} else {
+		// go to origin
+		return true
+	}
 }

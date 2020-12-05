@@ -14,7 +14,8 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 
 > e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp` format without changing the URL.
 >
-> For Safari and Opera users, the original image will be used.
+> ~~For Safari and Opera users, the original image will be used.~~ 
+> We've now support Safari/Chrome/Firefox on iOS 14/iPadOS 14
 
 
 ## Simple Usage Steps
