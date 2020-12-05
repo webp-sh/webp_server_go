@@ -15,7 +15,7 @@ import (
 
 var (
 	chromeUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
-	SafariUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
+	safariUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
 )
 
 func setupParam() {
@@ -23,6 +23,9 @@ func setupParam() {
 	config.ImgPath = "./pics"
 	config.ExhaustPath = "./exhaust"
 	config.AllowedTypes = []string{"jpg", "png", "jpeg", "bmp"}
+
+	proxyMode = false
+	remoteRaw = "remote-raw"
 }
 
 func requestToServer(url string, app *fiber.App, ua string) (*http.Response, []byte) {
@@ -48,7 +51,7 @@ func TestServerHeaders(t *testing.T) {
 	assert.NotEqual(t, "", etag)
 
 	// test for safari
-	response, _ = requestToServer(url, app, SafariUA)
+	response, _ = requestToServer(url, app, safariUA)
 	ratio = response.Header.Get("X-Compression-Rate")
 	etag = response.Header.Get("Etag")
 
@@ -58,6 +61,7 @@ func TestServerHeaders(t *testing.T) {
 
 func TestConvert(t *testing.T) {
 	setupParam()
+	// TODO: old-style test, better update it with accept headers
 	var testChromeLink = map[string]string{
 		"http://127.0.0.1:3333/webp_server.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/webp_server.bmp":                 "image/webp",
@@ -92,7 +96,7 @@ func TestConvert(t *testing.T) {
 
 	// test Safari
 	for url, respType := range testSafariLink {
-		_, data := requestToServer(url, app, SafariUA)
+		_, data := requestToServer(url, app, safariUA)
 		contentType := getFileContentType(data)
 		assert.Equal(t, respType, contentType)
 	}
@@ -126,8 +130,8 @@ func TestConvertProxyModeBad(t *testing.T) {
 	var app = fiber.New()
 	app.Get("/*", convert)
 
-	// this is local image, should be 500
-	url := "http://127.0.0.1:3333/webp_server.bmp"
+	// this is local random image, should be 500
+	url := "http://127.0.0.1:3333/webp_8888server.bmp"
 	resp, _ := requestToServer(url, app, chromeUA)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
@@ -146,4 +150,9 @@ func TestConvertProxyModeWork(t *testing.T) {
 	resp, data := requestToServer(url, app, chromeUA)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "image/webp", getFileContentType(data))
+
+	// test proxyMode with Safari
+	resp, data = requestToServer(url, app, safariUA)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "image/jpeg", getFileContentType(data))
 }

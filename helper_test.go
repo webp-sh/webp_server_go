@@ -61,6 +61,14 @@ func TestGenEtag(t *testing.T) {
 
 	assert.Equalf(t, result, expected, "Result: [%s], Expected: [%s]", result, expected)
 
+	// proxy mode
+	proxyMode = true
+	config.ImgPath = "https://github.com/webp-sh/webp_server_go/raw/master/"
+	remoteRaw = ""
+	data = "https://github.com/webp-sh/webp_server_go/raw/master/pics/webp_server.png"
+	result = genEtag(data)
+	assert.Equal(t, result, "W/\"269387-6FFD6D2D\"")
+
 }
 
 func TestGoOrigin(t *testing.T) {

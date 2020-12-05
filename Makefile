@@ -19,7 +19,7 @@ all:
 	./scripts/build.sh $(OS) $(ARCH)
 
 test:
-	go test -coverprofile=coverage.txt -covermode=atomic
+	go test -v -coverprofile=coverage.txt -covermode=atomic
 
 clean:
 	rm -rf builds

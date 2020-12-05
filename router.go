@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -15,22 +16,31 @@ import (
 
 func convert(c *fiber.Ctx) error {
 	//basic vars
-	var reqURI, _ = url.QueryUnescape(c.Path())         // /mypic/123.jpg
-	var rawImageAbs = path.Join(config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
-	var imgFilename = path.Base(reqURI)                 // pure filename, 123.jpg
-	var finalFile string                                // We'll only need one c.sendFile()
+	var reqURI, _ = url.QueryUnescape(c.Path()) // /mypic/123.jpg
+	var rawImageAbs string
+	if proxyMode {
+		rawImageAbs = config.ImgPath + reqURI
+	} else {
+		rawImageAbs = path.Join(config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
+	}
+	var imgFilename = path.Base(reqURI) // pure filename, 123.jpg
+	var finalFile string                // We'll only need one c.sendFile()
 	var ua = c.Get("User-Agent")
 	var accept = c.Get("accept")
 	log.Debugf("Incoming connection from %s@%s with %s", ua, c.IP(), imgFilename)
 
 	needOrigin := goOrigin(accept, ua)
 	if needOrigin {
-		log.Infof("A Safari/IE/whatever user has arrived...%s", ua)
-		// Check for Safari users. If they're Safari, just simply ignore everything.
-		etag := genEtag(rawImageAbs)
-		c.Set("ETag", etag)
+		log.Debugf("A Safari/IE/whatever user has arrived...%s", ua)
+		c.Set("ETag", genEtag(rawImageAbs))
 		c.Set("X-Compression-Rate", NotCompressed)
-		return c.SendFile(rawImageAbs)
+		if proxyMode {
+			localRemoteTmpPath := remoteRaw + reqURI
+			_ = fetchRemoteImage(localRemoteTmpPath, rawImageAbs)
+			return c.SendFile(localRemoteTmpPath)
+		} else {
+			return c.SendFile(rawImageAbs)
+		}
 	}
 
 	// check ext
@@ -49,13 +59,14 @@ func convert(c *fiber.Ctx) error {
 	if !allowed {
 		msg := "File extension not allowed! " + imgFilename
 		log.Warn(msg)
-		_ = c.Send([]byte(msg))
 		if imageExists(rawImageAbs) {
-			etag := genEtag(rawImageAbs)
-			c.Set("ETag", etag)
+			c.Set("ETag", genEtag(rawImageAbs))
 			return c.SendFile(rawImageAbs)
+		} else {
+			c.Status(http.StatusBadRequest)
+			_ = c.Send([]byte(msg))
+			return nil
 		}
-		return errors.New(msg)
 	}
 
 	// Start Proxy Mode
@@ -72,9 +83,8 @@ func convert(c *fiber.Ctx) error {
 				return c.SendFile(localEtagImagePath)
 			} else {
 				// Temporary store of remote file.
-				// ./remote-raw/node.png
 				cleanProxyCache(config.ExhaustPath + reqURI + "*")
-				localRemoteTmpPath := "./remote-raw" + reqURI
+				localRemoteTmpPath := remoteRaw + reqURI
 				_ = fetchRemoteImage(localRemoteTmpPath, realRemoteAddr)
 				q, _ := strconv.ParseFloat(config.Quality, 32)
 				_ = os.MkdirAll(path.Dir(localEtagImagePath), 0755)

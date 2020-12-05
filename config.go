@@ -19,9 +19,9 @@ var (
 	dumpConfig, dumpSystemd  bool
 	verboseMode, showVersion bool
 	prefetch, proxyMode      bool
-
-	config  Config
-	version = "0.3.1"
+	remoteRaw                = "remote-raw"
+	config                   Config
+	version                  = "0.3.1"
 )
 
 const (
