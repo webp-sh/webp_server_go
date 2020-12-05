@@ -21,7 +21,7 @@ var (
 	prefetch, proxyMode      bool
 
 	config  Config
-	version = "0.3.0"
+	version = "0.3.1"
 )
 
 const (

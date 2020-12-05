@@ -19,12 +19,13 @@ func convert(c *fiber.Ctx) error {
 	var rawImageAbs = path.Join(config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 	var imgFilename = path.Base(reqURI)                 // pure filename, 123.jpg
 	var finalFile string                                // We'll only need one c.sendFile()
-	var UA = c.Get("User-Agent")
-	log.Debugf("Incoming connection from %s@%s with %s", UA, c.IP(), imgFilename)
+	var ua = c.Get("User-Agent")
+	var accept = c.Get("accept")
+	log.Debugf("Incoming connection from %s@%s with %s", ua, c.IP(), imgFilename)
 
-	needOrigin := goOrigin(UA)
+	needOrigin := goOrigin(accept, ua)
 	if needOrigin {
-		log.Infof("A Safari/IE/whatever user has arrived...%s", UA)
+		log.Infof("A Safari/IE/whatever user has arrived...%s", ua)
 		// Check for Safari users. If they're Safari, just simply ignore everything.
 		etag := genEtag(rawImageAbs)
 		c.Set("ETag", etag)

@@ -64,9 +64,38 @@ func TestGenEtag(t *testing.T) {
 }
 
 func TestGoOrigin(t *testing.T) {
+	// this is a complete test case for webp compatibility
+	// func goOrigin(header, ua string) bool
+	// UNLESS YOU KNOW WHAT YOU ARE DOING, DO NOT CHANGE THE TEST CASE MAPPING HERE.
+	var testCase = map[[2]string]bool{
+		// macOS Catalina Safari
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Safari/605.1.15"}: true,
+		// macOS Chrome
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.88 Safari/537.36"}: false,
+		// iOS14 Safari
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Mobile/15E148 Safari/604.1"}: false,
+		// iOS14 Chrome
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/87.0.4280.77 Mobile/15E148 Safari/604.1"}: false,
+		// iPadOS 14 Safari
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Mobile/15E148 Safari/604.1"}: false,
+		// iPadOS 14 Chrome
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/87.0.4280.77 Mobile/15E148 Safari/604.1"}: false,
+		// Warning: these three are real capture headers - I don't have iOS/iPadOS prior to version 14
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"}:                         true,
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Mozilla/5.0 (iPad; CPU OS 10_15_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/25.0 Mobile/15E148 Safari/605.1.15"}:            true,
+		[2]string{"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/83.0.4103.63 Mobile/15E148 Safari/604.1"}: true,
+	}
+
+	for value, is := range testCase {
+		assert.Equalf(t, is, goOrigin(value[0], value[1]), "[%v]:[%s]", value, is)
+	}
+}
+
+func TestUaOrigin(t *testing.T) {
 	// reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/User-Agent/Firefox
 	// https://developer.chrome.com/multidevice/user-agent#chrome_for_ios_user_agent
 
+	// UNLESS YOU KNOW WHAT YOU ARE DOING, DO NOT CHANGE THE TEST CASE MAPPING HERE.
 	var testCase = map[string]bool{
 		// Chrome on Windows, macOS, linux, iOS and Android
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.61 Safari/537.36":                            false,
@@ -98,12 +127,35 @@ func TestGoOrigin(t *testing.T) {
 		// Others
 		"PostmanRuntime/7.26.1": true,
 		"curl/7.64.1":           true,
+
+		// these four are captured from iOS14/iPadOS14, which supports webp
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 14_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Mobile/15E148 Safari/604.1":     false,
+		"Mozilla/5.0 (iPhone; CPU iPhone OS 14_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/87.0.4280.77 Mobile/15E148 Safari/604.1\n": false,
+		"Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0.1 Mobile/15E148 Safari/604.1":                false,
+		"Mozilla/5.0 (iPad; CPU OS 14_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/87.0.4280.77 Mobile/15E148 Safari/604.1":            false,
 	}
 
 	for browser, is := range testCase {
-		assert.Equalf(t, is, goOrigin(browser), "[%v]:[%s]", is, browser)
+		assert.Equalf(t, is, uaOrigin(browser), "[%v]:[%s]", is, browser)
 	}
 
+}
+
+func TestHeaderOrigin(t *testing.T) {
+	// Chrome: Accept: image/avif,image/webp,image/apng,image/*,*/*;q=0.8
+	// Safari 版本14.0.1 (15610.2.11.51.10, 15610): Accept: image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5
+	// Safari Technology Preview Release 116 (Safari 14.1, WebKit 15611.1.5.3) Accept: image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5
+
+	// UNLESS YOU KNOW WHAT YOU ARE DOING, DO NOT CHANGE THE TEST CASE MAPPING HERE.
+	var testCase = map[string]bool{
+		"image/avif,image/webp,image/apng,image/*,*/*;q=0.8": false,
+		"*/*": true,
+		"image/png,image/svg+xml,image/*;q=0.8,video/*;q=0.8,*/*;q=0.5": true,
+		"I don't know what it is:-)":                                    true,
+	}
+	for header, is := range testCase {
+		assert.Equalf(t, is, headerOrigin(header), "[%v]:[%s]", is, header)
+	}
 }
 
 func TestChanErr(t *testing.T) {
