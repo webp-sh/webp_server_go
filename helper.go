@@ -119,9 +119,12 @@ func genWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, req
 }
 
 func genEtag(ImgAbsPath string) string {
+	if proxyMode {
+		ImgAbsPath = path.Join(remoteRaw, strings.Replace(ImgAbsPath, config.ImgPath, "", -1))
+	}
 	data, err := ioutil.ReadFile(ImgAbsPath)
 	if err != nil {
-		log.Info(err)
+		log.Warn(err)
 	}
 	crc := crc32.ChecksumIEEE(data)
 	return fmt.Sprintf(`W/"%d-%08X"`, len(data), crc)
