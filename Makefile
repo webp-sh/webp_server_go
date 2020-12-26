@@ -24,3 +24,6 @@ test:
 clean:
 	rm -rf builds
 	rm -rf prefetch
+
+docker:
+	go build -ldflags="-s -w" -o webp-server .
