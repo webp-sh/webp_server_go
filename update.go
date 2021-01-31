@@ -38,7 +38,7 @@ func autoUpdate() {
 	}
 
 	var filename = fmt.Sprintf("webp-server-%s-%s", runtime.GOOS, runtime.GOARCH)
-	if runtime.GOARCH == "windows" {
+	if runtime.GOOS == "windows" {
 		filename += ".exe"
 	}
 	var releaseUrl = "https://github.com/webp-sh/webp_server_go/releases/latest/download/" + filename
