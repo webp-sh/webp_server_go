@@ -54,6 +54,20 @@ func deferInit() {
 	}
 }
 
+func switchProxyMode() {
+	// Check for remote address
+	matched, _ := regexp.MatchString(`^https?://`, config.ImgPath)
+	proxyMode = false
+	if matched {
+		proxyMode = true
+	} else {
+		_, err := os.Stat(config.ImgPath)
+		if err != nil {
+			log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
+		}
+	}
+}
+
 func main() {
 	// Our banner
 	banner := fmt.Sprintf(`
@@ -82,18 +96,7 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 
 	go autoUpdate()
 	config = loadConfig(configPath)
-
-	// Check for remote address
-	matched, _ := regexp.MatchString(`^https?://`, config.ImgPath)
-	proxyMode = false
-	if matched {
-		proxyMode = true
-	} else {
-		_, err := os.Stat(config.ImgPath)
-		if err != nil {
-			log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.ImgPath)
-		}
-	}
+	switchProxyMode()
 
 	if prefetch {
 		go prefetchImages(config.ImgPath, config.ExhaustPath, config.Quality)
