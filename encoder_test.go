@@ -8,7 +8,17 @@ import (
 	"testing"
 )
 
-//go test -v -cover .
+func walker() []string {
+	var list []string
+	_ = filepath.Walk("./pics", func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			list = append(list, path)
+		}
+		return nil
+	})
+	return list
+}
+
 func TestWebpEncoder(t *testing.T) {
 	var webp = "/tmp/test-result.webp"
 	var target = walker()
@@ -25,24 +35,18 @@ func TestWebpEncoder(t *testing.T) {
 	_ = os.Remove(webp)
 }
 
-func TestNonImage(t *testing.T) {
+func TestNonExistImage(t *testing.T) {
 	var webp = "/tmp/test-result.webp"
 	// test error
 	var err = webpEncoder("./pics/empty.jpg", webp, 80, true, nil)
 	assert.NotNil(t, err)
 	_ = os.Remove(webp)
-
 }
 
-func walker() []string {
-	var list []string
-	_ = filepath.Walk("./pics", func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			list = append(list, path)
-		}
-		return nil
-	})
-	return list
+func TestConvertFail(t *testing.T) {
+	var webp = "/tmp/test-result.webp"
+	var err = webpEncoder("./pics/webp_server.jpg", webp, -1, true, nil)
+	assert.NotNil(t, t, err)
 }
 
 func runEncoder(t *testing.T, file string, webp string) {

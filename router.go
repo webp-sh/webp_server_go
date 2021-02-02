@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -151,6 +152,18 @@ func convert(c *fiber.Ctx) error {
 		etag := genEtag(finalFile)
 		c.Set("ETag", etag)
 		c.Set("X-Compression-Rate", getCompressionRate(rawImageAbs, webpAbsPath))
+		setWebpType(c, rawImageAbs, webpAbsPath)
 		return c.SendFile(finalFile)
 	}
+}
+
+func setWebpType(c *fiber.Ctx, rawImageAbs, webpAbsPath string) {
+	raw, _ := ioutil.ReadFile(rawImageAbs)
+	webp, _ := ioutil.ReadFile(webpAbsPath)
+	if len(webp) > len(raw) {
+		c.Set("X-WebP-Type", WebpBigger)
+	} else {
+		c.Set("X-WebP-Type", WebpSmaller)
+	}
+
 }

@@ -41,9 +41,8 @@ func autoUpdate() {
 	if runtime.GOOS == "windows" {
 		filename += ".exe"
 	}
-	var releaseUrl = "https://github.com/webp-sh/webp_server_go/releases/latest/download/" + filename
 	log.Info("Downloading binary to update...")
-	resp, _ := http.Get(releaseUrl)
+	resp, _ := http.Get(releaseUrl + filename)
 	if resp.StatusCode != 200 {
 		log.Debugf("%s-%s not found on release.", runtime.GOOS, runtime.GOARCH)
 		return

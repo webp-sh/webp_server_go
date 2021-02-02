@@ -18,6 +18,15 @@ func TestNormalAutoUpdate(t *testing.T) {
 	_ = os.RemoveAll(dir)
 }
 
+func Test404AutoUpdate(t *testing.T) {
+	version = "0.0.1"
+	dir := "./update"
+	releaseUrl = releaseUrl + "a"
+	autoUpdate()
+	assert.Equal(t, 0, fileCount(dir))
+	_ = os.RemoveAll(dir)
+}
+
 func TestNoNeedAutoUpdate(t *testing.T) {
 	version = "99.99"
 	dir := "./update"

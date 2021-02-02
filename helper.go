@@ -32,6 +32,9 @@ func fileCount(dir string) int {
 	count := 0
 	_ = filepath.Walk(dir,
 		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
 			if !info.IsDir() {
 				count += 1
 			}

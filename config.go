@@ -22,11 +22,13 @@ var (
 	remoteRaw                = "remote-raw"
 	config                   Config
 	version                  = "0.3.2"
+	releaseUrl               = "https://github.com/webp-sh/webp_server_go/releases/latest/download/"
 )
 
 const (
 	NotCompressed = "not_compressed"
 	WebpBigger    = "webp_bigger"
+	WebpSmaller   = "webp_smaller"
 )
 
 const (
