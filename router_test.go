@@ -56,7 +56,6 @@ func TestServerHeaders(t *testing.T) {
 	ratio = response.Header.Get("X-Compression-Rate")
 	etag = response.Header.Get("Etag")
 
-	assert.Equal(t, NotCompressed, ratio)
 	assert.NotEqual(t, "", etag)
 }
 
@@ -168,10 +167,9 @@ func TestConvertBigger(t *testing.T) {
 	app.Get("/*", convert)
 
 	url := "http://127.0.0.1:3333/big.jpg"
-	response, webp := requestToServer(url, app, chromeUA)
-
-	assert.Equal(t, response.Header.Get("X-Webp-Type"), WebpBigger)
-	assert.True(t, len(webp) > len(jpg))
+	response, data := requestToServer(url, app, chromeUA)
+	assert.Equal(t, "image/jpeg", response.Header.Get("content-type"))
+	assert.True(t, len(data) == len(jpg))
 
 	_ = os.RemoveAll(config.ExhaustPath)
 }

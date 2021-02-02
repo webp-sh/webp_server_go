@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 
 	"strings"
 
@@ -53,22 +54,24 @@ func imageExists(filename string) bool {
 }
 
 // Check for remote filepath, e.g: https://test.webp.sh/node.png
-// return StatusCode, etagValue
-func getRemoteImageInfo(fileUrl string) (int, string) {
+// return StatusCode, etagValue and length
+func getRemoteImageInfo(fileUrl string) (int, string, string) {
 	res, err := http.Head(fileUrl)
 	if err != nil {
 		log.Errorln("Connection to remote error!")
-		return http.StatusInternalServerError, ""
+		return http.StatusInternalServerError, "", ""
 	}
 	if res.StatusCode != 404 {
 		etagValue := res.Header.Get("etag")
 		if etagValue == "" {
 			log.Info("Remote didn't return etag in header, please check.")
 		} else {
-			return 200, etagValue
+			return 200, etagValue, res.Header.Get("content-length")
 		}
 	}
-	return res.StatusCode, ""
+
+	return res.StatusCode, "", res.Header.Get("content-length")
+
 }
 
 func fetchRemoteImage(filepath string, url string) error {
@@ -185,5 +188,25 @@ func headerOrigin(header string) bool {
 	} else {
 		// go to origin
 		return true
+	}
+}
+
+func chooseProxy(proxyRawSize string, webpAbsPath string) bool {
+	var proxyRaw, _ = strconv.Atoi(proxyRawSize)
+	webp, _ := ioutil.ReadFile(webpAbsPath)
+	if len(webp) > proxyRaw {
+		return true
+	} else {
+		return false
+	}
+}
+
+func chooseLocalSmallerFile(rawImageAbs, webpAbsPath string) string {
+	raw, _ := ioutil.ReadFile(rawImageAbs)
+	webp, _ := ioutil.ReadFile(webpAbsPath)
+	if len(webp) > len(raw) {
+		return rawImageAbs
+	} else {
+		return webpAbsPath
 	}
 }

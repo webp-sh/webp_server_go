@@ -177,14 +177,16 @@ func TestChanErr(t *testing.T) {
 
 func TestGetRemoteImageInfo(t *testing.T) {
 	url := "https://github.com/favicon.ico"
-	statusCode, etag := getRemoteImageInfo(url)
+	statusCode, etag, length := getRemoteImageInfo(url)
 	assert.NotEqual(t, "", etag)
+	assert.NotEqual(t, "0", length)
 	assert.Equal(t, statusCode, http.StatusOK)
 
 	// test non-exist url
 	url = "http://sdahjajda.com"
-	statusCode, etag = getRemoteImageInfo(url)
+	statusCode, etag, length = getRemoteImageInfo(url)
 	assert.Equal(t, "", etag)
+	assert.Equal(t, "", length)
 	assert.Equal(t, statusCode, http.StatusInternalServerError)
 }
 

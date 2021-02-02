@@ -26,12 +26,6 @@ var (
 )
 
 const (
-	NotCompressed = "not_compressed"
-	WebpBigger    = "webp_bigger"
-	WebpSmaller   = "webp_smaller"
-)
-
-const (
 	sampleConfig = `
 {
   "HOST": "127.0.0.1",
