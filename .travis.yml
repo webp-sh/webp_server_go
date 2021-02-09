@@ -6,10 +6,10 @@ go:
 env: GO111MODULE=on
 arch:
   - amd64
-  - arm64
+  - arm64-graviton2
+virt: lxd
+group: edge
 os:
-  - windows
-  - osx
   - linux
 
 script: sh scripts/build.sh $TRAVIS_OS_NAME $TRAVIS_CPU_ARCH
@@ -19,6 +19,9 @@ jobs:
     - stage: "Unit Tests"
       arch:
         - amd64
+        - arm64-graviton2
+      virt: lxd
+      group: edge
       os:
         - linux
       script:
