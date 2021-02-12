@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ var (
 func setupParam() {
 	// setup parameters here...
 	config.ImgPath = "./pics"
-	config.ExhaustPath = "./exhaust"
+	config.ExhaustPath = "./exhaust_test"
 	config.AllowedTypes = []string{"jpg", "png", "jpeg", "bmp"}
 
 	proxyMode = false
@@ -55,7 +56,6 @@ func TestServerHeaders(t *testing.T) {
 	ratio = response.Header.Get("X-Compression-Rate")
 	etag = response.Header.Get("Etag")
 
-	assert.Equal(t, NotCompressed, ratio)
 	assert.NotEqual(t, "", etag)
 }
 
@@ -155,4 +155,21 @@ func TestConvertProxyModeWork(t *testing.T) {
 	resp, data = requestToServer(url, app, safariUA)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "image/jpeg", getFileContentType(data))
+}
+
+func TestConvertBigger(t *testing.T) {
+	setupParam()
+	config.Quality = "100"
+
+	jpg, _ := ioutil.ReadFile("pics/big.jpg")
+
+	var app = fiber.New()
+	app.Get("/*", convert)
+
+	url := "http://127.0.0.1:3333/big.jpg"
+	response, data := requestToServer(url, app, chromeUA)
+	assert.Equal(t, "image/jpeg", response.Header.Get("content-type"))
+	assert.True(t, len(data) == len(jpg))
+
+	_ = os.RemoveAll(config.ExhaustPath)
 }
