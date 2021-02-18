@@ -2,6 +2,7 @@ language: go
 
 go:
   - 1.15.4
+  - 1.16.x
 
 env: GO111MODULE=on
 arch:
