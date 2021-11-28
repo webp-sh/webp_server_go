@@ -17,16 +17,14 @@ import (
 	"golang.org/x/image/bmp"
 )
 
-func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err error) {
+func webpEncoder(p1, p2 string, quality float32) (err error) {
 	// if convert fails, return error; success nil
-
 	log.Debugf("target: %s with quality of %f", path.Base(p1), quality)
 	var buf bytes.Buffer
 	var img image.Image
 
 	data, err := ioutil.ReadFile(p1)
 	if err != nil {
-		chanErr(c)
 		return
 	}
 
@@ -46,27 +44,19 @@ func webpEncoder(p1, p2 string, quality float32, Log bool, c chan int) (err erro
 	if img == nil {
 		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
 		log.Debug(msg)
-		err = errors.New(msg)
-		chanErr(c)
-		return
+		return errors.New(msg)
 	}
 
 	if err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality}); err != nil {
 		log.Error(err)
-		chanErr(c)
 		return
 	}
 	if err = ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {
 		log.Error(err)
-		chanErr(c)
 		return
 	}
 
-	if Log {
-		log.Info("Save to " + p2 + " ok!\n")
-	}
-
-	chanErr(c)
+	log.Info("Save to " + p2 + " ok!\n")
 
 	return nil
 }

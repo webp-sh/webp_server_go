@@ -106,7 +106,7 @@ func convert(c *fiber.Ctx) error {
 		//for webp, we need to create dir first
 		err = os.MkdirAll(path.Dir(webpAbsPath), 0755)
 		q, _ := strconv.ParseFloat(config.Quality, 32)
-		err = webpEncoder(rawImageAbs, webpAbsPath, float32(q), true, nil)
+		err = webpEncoder(rawImageAbs, webpAbsPath, float32(q))
 
 		if err != nil {
 			log.Error(err)
@@ -143,7 +143,7 @@ func proxyHandler(c *fiber.Ctx, reqURI string) error {
 			_ = fetchRemoteImage(localRawImagePath, realRemoteAddr)
 			q, _ := strconv.ParseFloat(config.Quality, 32)
 			_ = os.MkdirAll(path.Dir(localEtagWebPPath), 0755)
-			err := webpEncoder(localRawImagePath, localEtagWebPPath, float32(q), true, nil)
+			err := webpEncoder(localRawImagePath, localEtagWebPPath, float32(q))
 			if err != nil {
 				log.Warning(err)
 			}

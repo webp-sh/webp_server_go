@@ -30,7 +30,7 @@ func TestWebpEncoder(t *testing.T) {
 	_ = os.Remove(webp)
 
 	// test error
-	err := webpEncoder("./pics/empty.jpg", webp, 80, true, nil)
+	err := webpEncoder("./pics/empty.jpg", webp, 80)
 	assert.NotNil(t, err)
 	_ = os.Remove(webp)
 }
@@ -38,21 +38,20 @@ func TestWebpEncoder(t *testing.T) {
 func TestNonExistImage(t *testing.T) {
 	var webp = "/tmp/test-result.webp"
 	// test error
-	var err = webpEncoder("./pics/empty.jpg", webp, 80, true, nil)
+	var err = webpEncoder("./pics/empty.jpg", webp, 80)
 	assert.NotNil(t, err)
 	_ = os.Remove(webp)
 }
 
 func TestConvertFail(t *testing.T) {
 	var webp = "/tmp/test-result.webp"
-	var err = webpEncoder("./pics/webp_server.jpg", webp, -1, true, nil)
+	var err = webpEncoder("./pics/webp_server.jpg", webp, -1)
 	assert.NotNil(t, t, err)
 }
 
 func runEncoder(t *testing.T, file string, webp string) {
-	var c chan int
 	//t.Logf("convert from %s to %s", file, webp)
-	var err = webpEncoder(file, webp, 80, true, c)
+	var err = webpEncoder(file, webp, 80)
 	if file == "pics/empty.jpg" && err != nil {
 		t.Log("Empty file, that's okay.")
 	} else if err != nil {
