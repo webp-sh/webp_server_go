@@ -4,28 +4,71 @@ import (
 	"bytes"
 	"errors"
 	"image"
-	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/Kagami/go-avif"
 	"github.com/chai2010/webp"
 	"golang.org/x/image/bmp"
 )
 
-func webpEncoder(p1, p2 string, quality float32) (err error) {
-	// if convert fails, return error; success nil
-	log.Debugf("target: %s with quality of %f", path.Base(p1), quality)
-	var buf bytes.Buffer
-	var img image.Image
+func convertFilter(raw, avifPath, webpPath string, c chan int) {
+	// all absolute paths
 
-	data, err := ioutil.ReadFile(p1)
+	if !imageExists(avifPath) {
+		convertImage(raw, avifPath, "avif")
+	}
+	if !imageExists(webpPath) {
+		convertImage(raw, webpPath, "webp")
+	}
+
+	if c != nil {
+		c <- 1
+	}
+}
+
+func convertImage(raw, optimized, itype string) {
+	// we don't have abc.jpg.png1582558990.webp
+	// delete the old pic and convert a new one.
+	// optimized: /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+	// we'll delete file starts with /home/webp_server/exhaust/path/to/tsuki.jpg.ts.itype
+
+	s := strings.Split(path.Base(optimized), ".")
+	pattern := path.Join(path.Dir(optimized), s[0]+"."+s[1]+".*."+s[len(s)-1])
+
+	matches, err := filepath.Glob(pattern)
 	if err != nil {
-		return
+		log.Error(err.Error())
+	} else {
+		for _, p := range matches {
+			_ = os.Remove(p)
+		}
+	}
+
+	//we need to create dir first
+	err = os.MkdirAll(path.Dir(optimized), 0755)
+	//q, _ := strconv.ParseFloat(config.Quality, 32)
+
+	switch itype {
+	case "webp":
+		webpEncoder(raw, optimized, config.Quality)
+	case "avif":
+		avifEncoder(raw, optimized, config.Quality)
+	}
+
+}
+
+func readRawImage(imgPath string) (img image.Image, err error) {
+	data, err := ioutil.ReadFile(imgPath)
+	if err != nil {
+		log.Errorln(err)
 	}
 
 	contentType := getFileContentType(data[:512])
@@ -35,28 +78,64 @@ func webpEncoder(p1, p2 string, quality float32) (err error) {
 		img, _ = png.Decode(bytes.NewReader(data))
 	} else if strings.Contains(contentType, "bmp") {
 		img, _ = bmp.Decode(bytes.NewReader(data))
-	} else if strings.Contains(contentType, "gif") {
-		// TODO: need to support animated webp
-		log.Warn("Gif support is not perfect!")
-		img, _ = gif.Decode(bytes.NewReader(data))
 	}
 
 	if img == nil {
-		msg := "image file " + path.Base(p1) + " is corrupted or not supported"
-		log.Debug(msg)
-		return errors.New(msg)
+		errinfo := "image file " + path.Base(imgPath) + " is corrupted or not supported"
+		log.Errorln(errinfo)
+		return nil, errors.New(errinfo)
 	}
 
-	if err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality}); err != nil {
+	return img, nil
+}
+
+func avifEncoder(p1, p2 string, quality float32) {
+	var img image.Image
+	dst, err := os.Create(p2)
+	if err != nil {
+		log.Fatalf("Can't create destination file: %v", err)
+	}
+	img, err = readRawImage(p1)
+	if err != nil {
+		return
+	}
+
+	var avifQuality = int((100 - quality) / 100 * avif.MaxQuality)
+	err = avif.Encode(dst, img, &avif.Options{Quality: avifQuality})
+	if err != nil {
+		log.Fatalf("Can't encode source image: %v", err)
+	}
+
+	convertLog("AVIF", p1, p2, quality)
+}
+
+func webpEncoder(p1, p2 string, quality float32) {
+	// if convert fails, return error; success nil
+	var buf bytes.Buffer
+	var img image.Image
+
+	img, err := readRawImage(p1)
+	if err != nil {
+		return
+	}
+
+	if err := webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality}); err != nil {
 		log.Error(err)
 		return
 	}
-	if err = ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {
+
+	if err := ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {
 		log.Error(err)
 		return
 	}
 
-	log.Info("Save to " + p2 + " ok!\n")
+	convertLog("WebP", p1, p2, quality)
 
-	return nil
+}
+
+func convertLog(itype, p1 string, p2 string, quality float32) {
+	oldf, _ := os.Stat(p1)
+	newf, _ := os.Stat(p2)
+	log.Infof("%s@%.2f%%: %s->%s %d->%d %.2f%% deflated", itype, quality,
+		p1, p2, oldf.Size(), newf.Size(), float32(newf.Size())/float32(oldf.Size())*100)
 }

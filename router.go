@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -24,14 +23,12 @@ func convert(c *fiber.Ctx) error {
 		rawImageAbs = path.Join(config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 	}
 	var imgFilename = path.Base(reqURI) // pure filename, 123.jpg
-	var finalFile string                // We'll only need one c.sendFile()
-	var ua = c.Get("User-Agent")
-	var accept = c.Get("accept")
-	log.Debugf("Incoming connection from %s@%s with %s", ua, c.IP(), imgFilename)
+	log.Debugf("Incoming connection from %s %s", c.IP(), imgFilename)
 
-	needOrigin := goOrigin(accept, ua)
-	if needOrigin {
-		log.Debugf("A Safari/IE/whatever user has arrived...%s", ua)
+	goodFormat := guessSupportedFormat(&c.Request().Header)
+
+	// old browser only
+	if len(goodFormat) == 1 {
 		c.Set("ETag", genEtag(rawImageAbs))
 		if proxyMode {
 			localRemoteTmpPath := remoteRaw + reqURI
@@ -42,7 +39,6 @@ func convert(c *fiber.Ctx) error {
 		}
 	}
 
-	// check ext
 	var allowed = false
 	for _, ext := range config.AllowedTypes {
 		haystack := strings.ToLower(imgFilename)
@@ -81,45 +77,27 @@ func convert(c *fiber.Ctx) error {
 		return errors.New(msg)
 	}
 
-	_, webpAbsPath := genWebpAbs(rawImageAbs, config.ExhaustPath, imgFilename, reqURI)
+	// generate with timestamp to make sure files are update-to-date
+	avifAbs, webpAbs := genOptimizedAbs(rawImageAbs, config.ExhaustPath, imgFilename, reqURI)
+	convertFilter(rawImageAbs, avifAbs, webpAbs, nil)
 
-	if imageExists(webpAbsPath) {
-		finalFile = webpAbsPath
-	} else {
-		// we don't have abc.jpg.png1582558990.webp
-		// delete the old pic and convert a new one.
-		// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-		destHalfFile := path.Clean(path.Join(webpAbsPath, path.Dir(reqURI), imgFilename))
-		matches, err := filepath.Glob(destHalfFile + "*")
-		if err != nil {
-			log.Error(err.Error())
-		} else {
-			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558100.webp <- older ones will be removed
-			// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp <- keep the latest one
-			for _, p := range matches {
-				if strings.Compare(destHalfFile, p) != 0 {
-					_ = os.Remove(p)
-				}
-			}
+	var availableFiles = []string{rawImageAbs}
+	for _, v := range goodFormat {
+		if "avif" == v {
+			availableFiles = append(availableFiles, avifAbs)
 		}
-
-		//for webp, we need to create dir first
-		err = os.MkdirAll(path.Dir(webpAbsPath), 0755)
-		q, _ := strconv.ParseFloat(config.Quality, 32)
-		err = webpEncoder(rawImageAbs, webpAbsPath, float32(q))
-
-		if err != nil {
-			log.Error(err)
-			_ = c.SendStatus(400)
-			_ = c.Send([]byte("Bad file. " + err.Error()))
-			return err
+		if "webp" == v {
+			availableFiles = append(availableFiles, webpAbs)
 		}
-		finalFile = webpAbsPath
 	}
+
+	var finalFile string
+	finalFile = findSmallestFiles(availableFiles)
 	etag := genEtag(finalFile)
 	c.Set("ETag", etag)
-	c.Set("X-Compression-Rate", getCompressionRate(rawImageAbs, webpAbsPath))
-	finalFile = chooseLocalSmallerFile(rawImageAbs, webpAbsPath)
+	c.Set("X-Compression-Rate", getCompressionRate(rawImageAbs, finalFile))
+	buf, _ := ioutil.ReadFile(finalFile)
+	c.Set("content-type", getFileContentType(buf))
 	return c.SendFile(finalFile)
 
 }
@@ -141,12 +119,8 @@ func proxyHandler(c *fiber.Ctx, reqURI string) error {
 			cleanProxyCache(config.ExhaustPath + reqURI + "*")
 			localRawImagePath := remoteRaw + reqURI
 			_ = fetchRemoteImage(localRawImagePath, realRemoteAddr)
-			q, _ := strconv.ParseFloat(config.Quality, 32)
 			_ = os.MkdirAll(path.Dir(localEtagWebPPath), 0755)
-			err := webpEncoder(localRawImagePath, localEtagWebPPath, float32(q))
-			if err != nil {
-				log.Warning(err)
-			}
+			webpEncoder(localRawImagePath, localEtagWebPPath, config.Quality)
 			chooseProxy(remoteLength, localEtagWebPPath)
 			return c.SendFile(localEtagWebPPath)
 		}
