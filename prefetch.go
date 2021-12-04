@@ -35,6 +35,7 @@ func prefetchImages(confImgPath string, ExhaustPath string) {
 			proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
 			avif, webp := genOptimizedAbs(picAbsPath, ExhaustPath, info.Name(), proposedURI)
 			_ = os.MkdirAll(path.Dir(avif), 0755)
+			log.Infof("Prefetching %s", picAbsPath)
 			go convertFilter(picAbsPath, avif, webp, finishChan)
 			_ = bar.Add(<-finishChan)
 			return nil

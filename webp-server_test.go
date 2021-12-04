@@ -21,7 +21,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "./exhaust", c.ExhaustPath)
 	assert.Equal(t, "127.0.0.1", c.Host)
 	assert.Equal(t, "3333", c.Port)
-	assert.Equal(t, "80", c.Quality)
+	assert.Equal(t, float32(80), c.Quality)
 	assert.Equal(t, "./pics", c.ImgPath)
 	assert.Equal(t, []string{"jpg", "png", "jpeg", "bmp"}, c.AllowedTypes)
 }
@@ -43,7 +43,7 @@ func TestMainFunction(t *testing.T) {
 
 	// run main function
 	go main()
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 5)
 	// verbose, prefetch
 	assert.Equal(t, log.GetLevel(), log.DebugLevel)
 	assert.True(t, verboseMode)

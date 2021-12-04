@@ -1,0 +1,9 @@
+.github/*
+exhaust/*
+pics/*
+remote-raw/*
+scripts/*
+.git/*
+README.md
+LICENSE
+Makefile

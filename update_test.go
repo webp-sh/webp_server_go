@@ -23,7 +23,7 @@ func Test404AutoUpdate(t *testing.T) {
 	dir := "./update"
 	releaseUrl = releaseUrl + "a"
 	autoUpdate()
-	assert.Equal(t, 0, fileCount(dir))
+	assert.Equal(t, int64(0), fileCount(dir))
 	_ = os.RemoveAll(dir)
 }
 

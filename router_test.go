@@ -15,8 +15,10 @@ import (
 )
 
 var (
-	chromeUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
-	safariUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
+	chromeUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
+	acceptWebP   = "image/webp,image/apng,image/*,*/*;q=0.8"
+	acceptLegacy = "image/jpeg"
+	safariUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
 )
 
 func setupParam() {
@@ -29,10 +31,14 @@ func setupParam() {
 	remoteRaw = "remote-raw"
 }
 
-func requestToServer(url string, app *fiber.App, ua string) (*http.Response, []byte) {
+func requestToServer(url string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
 	req := httptest.NewRequest("GET", url, nil)
 	req.Header.Set("User-Agent", ua)
-	resp, _ := app.Test(req, 60000)
+	req.Header.Set("Accept", accept)
+	resp, err := app.Test(req, 120000)
+	if err != nil {
+		return nil, nil
+	}
 	data, _ := ioutil.ReadAll(resp.Body)
 	return resp, data
 }
@@ -44,7 +50,7 @@ func TestServerHeaders(t *testing.T) {
 	url := "http://127.0.0.1:3333/webp_server.bmp"
 
 	// test for chrome
-	response, _ := requestToServer(url, app, chromeUA)
+	response, _ := requestToServer(url, app, chromeUA, acceptWebP)
 	ratio := response.Header.Get("X-Compression-Rate")
 	etag := response.Header.Get("Etag")
 
@@ -52,7 +58,7 @@ func TestServerHeaders(t *testing.T) {
 	assert.NotEqual(t, "", etag)
 
 	// test for safari
-	response, _ = requestToServer(url, app, safariUA)
+	response, _ = requestToServer(url, app, safariUA, acceptLegacy)
 	ratio = response.Header.Get("X-Compression-Rate")
 	etag = response.Header.Get("Etag")
 
@@ -66,9 +72,9 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/webp_server.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/webp_server.bmp":                 "image/webp",
 		"http://127.0.0.1:3333/webp_server.png":                 "image/webp",
-		"http://127.0.0.1:3333/empty.jpg":                       "text/plain; charset=utf-8",
+		"http://127.0.0.1:3333/empty.jpg":                       "",
 		"http://127.0.0.1:3333/png.jpg":                         "image/webp",
-		"http://127.0.0.1:3333/12314.jpg":                       "text/plain; charset=utf-8",
+		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
 		"http://127.0.0.1:3333/太神啦.png":                         "image/webp",
@@ -78,9 +84,9 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/webp_server.jpg": "image/jpeg",
 		"http://127.0.0.1:3333/webp_server.bmp": "image/bmp",
 		"http://127.0.0.1:3333/webp_server.png": "image/png",
-		"http://127.0.0.1:3333/empty.jpg":       "text/plain; charset=utf-8",
+		"http://127.0.0.1:3333/empty.jpg":       "",
 		"http://127.0.0.1:3333/png.jpg":         "image/png",
-		"http://127.0.0.1:3333/12314.jpg":       "text/plain; charset=utf-8",
+		"http://127.0.0.1:3333/12314.jpg":       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg": "image/jpeg",
 	}
 
@@ -89,14 +95,14 @@ func TestConvert(t *testing.T) {
 
 	// test Chrome
 	for url, respType := range testChromeLink {
-		_, data := requestToServer(url, app, chromeUA)
+		_, data := requestToServer(url, app, chromeUA, acceptWebP)
 		contentType := getFileContentType(data)
 		assert.Equal(t, respType, contentType)
 	}
 
 	// test Safari
 	for url, respType := range testSafariLink {
-		_, data := requestToServer(url, app, safariUA)
+		_, data := requestToServer(url, app, safariUA, acceptLegacy)
 		contentType := getFileContentType(data)
 		assert.Equal(t, respType, contentType)
 	}
@@ -112,13 +118,13 @@ func TestConvertNotAllowed(t *testing.T) {
 
 	// not allowed, but we have the file
 	url := "http://127.0.0.1:3333/webp_server.bmp"
-	_, data := requestToServer(url, app, chromeUA)
+	_, data := requestToServer(url, app, chromeUA, acceptWebP)
 	contentType := getFileContentType(data)
 	assert.Equal(t, "image/bmp", contentType)
 
 	// not allowed, random file
 	url = url + "hagdgd"
-	_, data = requestToServer(url, app, chromeUA)
+	_, data = requestToServer(url, app, chromeUA, acceptWebP)
 	assert.Contains(t, string(data), "File extension not allowed")
 
 }
@@ -132,7 +138,7 @@ func TestConvertProxyModeBad(t *testing.T) {
 
 	// this is local random image, should be 500
 	url := "http://127.0.0.1:3333/webp_8888server.bmp"
-	resp, _ := requestToServer(url, app, chromeUA)
+	resp, _ := requestToServer(url, app, chromeUA, acceptWebP)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
 }
@@ -147,29 +153,26 @@ func TestConvertProxyModeWork(t *testing.T) {
 	config.ImgPath = "https://webp.sh"
 	url := "https://webp.sh/images/cover.jpg"
 
-	resp, data := requestToServer(url, app, chromeUA)
+	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "image/webp", getFileContentType(data))
 
 	// test proxyMode with Safari
-	resp, data = requestToServer(url, app, safariUA)
+	resp, data = requestToServer(url, app, safariUA, acceptLegacy)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "image/jpeg", getFileContentType(data))
 }
 
 func TestConvertBigger(t *testing.T) {
 	setupParam()
-	config.Quality = "100"
-
-	jpg, _ := ioutil.ReadFile("pics/big.jpg")
+	config.Quality = 100
 
 	var app = fiber.New()
 	app.Get("/*", convert)
 
 	url := "http://127.0.0.1:3333/big.jpg"
-	response, data := requestToServer(url, app, chromeUA)
+	response, data := requestToServer(url, app, chromeUA, acceptWebP)
 	assert.Equal(t, "image/jpeg", response.Header.Get("content-type"))
-	assert.True(t, len(data) == len(jpg))
-
+	assert.Equal(t, "image/jpeg", getFileContentType(data))
 	_ = os.RemoveAll(config.ExhaustPath)
 }

@@ -81,8 +81,7 @@ func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
 	} else if strings.Contains(contentType, "bmp") {
 		img, err = bmp.Decode(bytes.NewReader(data))
 	}
-
-	if err != nil {
+	if err != nil || img == nil {
 		errinfo := fmt.Sprintf("image file %s is corrupted: %v", imgPath, err)
 		log.Errorln(errinfo)
 		return nil, errors.New(errinfo)

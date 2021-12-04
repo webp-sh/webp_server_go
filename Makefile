@@ -14,6 +14,7 @@ default:
 	make clean
 	go build -o builds/webp-server-$(OS)-$(ARCH) .
 	ls builds
+
 all:
 	make clean
 	./scripts/build.sh $(OS) $(ARCH)
@@ -26,4 +27,4 @@ clean:
 	rm -rf prefetch
 
 docker:
-	go build -ldflags="-s -w" -o webp-server .
+	DOCKER_BUILDKIT=1 docker build -t webpsh/webps .
