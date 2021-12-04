@@ -23,7 +23,6 @@ func prefetchImages(confImgPath string, ExhaustPath string) {
 	//prefetch, recursive through the dir
 	all := fileCount(confImgPath)
 	var bar = progressbar.Default(all, "Prefetching...")
-	//count := 0
 	err := filepath.Walk(confImgPath,
 		func(picAbsPath string, info os.FileInfo, err error) error {
 			if err != nil {

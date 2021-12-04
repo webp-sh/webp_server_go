@@ -91,8 +91,7 @@ func convert(c *fiber.Ctx) error {
 		}
 	}
 
-	var finalFile string
-	finalFile = findSmallestFiles(availableFiles)
+	var finalFile = findSmallestFiles(availableFiles)
 	etag := genEtag(finalFile)
 	c.Set("ETag", etag)
 	c.Set("X-Compression-Rate", getCompressionRate(rawImageAbs, finalFile))

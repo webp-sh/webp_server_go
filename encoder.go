@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -25,6 +26,7 @@ func convertFilter(raw, avifPath, webpPath string, c chan int) {
 	if !imageExists(avifPath) {
 		convertImage(raw, avifPath, "avif")
 	}
+
 	if !imageExists(webpPath) {
 		convertImage(raw, webpPath, "webp")
 	}
@@ -65,7 +67,7 @@ func convertImage(raw, optimized, itype string) {
 
 }
 
-func readRawImage(imgPath string) (img image.Image, err error) {
+func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
 	data, err := ioutil.ReadFile(imgPath)
 	if err != nil {
 		log.Errorln(err)
@@ -73,16 +75,23 @@ func readRawImage(imgPath string) (img image.Image, err error) {
 
 	contentType := getFileContentType(data[:512])
 	if strings.Contains(contentType, "jpeg") {
-		img, _ = jpeg.Decode(bytes.NewReader(data))
+		img, err = jpeg.Decode(bytes.NewReader(data))
 	} else if strings.Contains(contentType, "png") {
-		img, _ = png.Decode(bytes.NewReader(data))
+		img, err = png.Decode(bytes.NewReader(data))
 	} else if strings.Contains(contentType, "bmp") {
-		img, _ = bmp.Decode(bytes.NewReader(data))
+		img, err = bmp.Decode(bytes.NewReader(data))
 	}
 
-	if img == nil {
-		errinfo := "image file " + path.Base(imgPath) + " is corrupted or not supported"
+	if err != nil {
+		errinfo := fmt.Sprintf("image file %s is corrupted: %v", imgPath, err)
 		log.Errorln(errinfo)
+		return nil, errors.New(errinfo)
+	}
+
+	x, y := img.Bounds().Max.X, img.Bounds().Max.Y
+	if x > maxPixel || y > maxPixel {
+		errinfo := fmt.Sprintf("WebP: %s(%dx%d) is too large", imgPath, x, y)
+		log.Warnf(errinfo)
 		return nil, errors.New(errinfo)
 	}
 
@@ -95,7 +104,8 @@ func avifEncoder(p1, p2 string, quality float32) {
 	if err != nil {
 		log.Fatalf("Can't create destination file: %v", err)
 	}
-	img, err = readRawImage(p1)
+	// AVIF has a maximum resolution of 65536 x 65536 pixels.
+	img, err = readRawImage(p1, avifMax)
 	if err != nil {
 		return
 	}
@@ -113,8 +123,8 @@ func webpEncoder(p1, p2 string, quality float32) {
 	// if convert fails, return error; success nil
 	var buf bytes.Buffer
 	var img image.Image
-
-	img, err := readRawImage(p1)
+	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
+	img, err := readRawImage(p1, webpMax)
 	if err != nil {
 		return
 	}

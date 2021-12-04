@@ -211,7 +211,11 @@ func findSmallestFiles(files []string) string {
 	var small int64
 	var final string
 	for _, f := range files {
-		stat, _ := os.Stat(f)
+		stat, err := os.Stat(f)
+		if err != nil {
+			log.Warnf("%s not found on filesystem", f)
+			continue
+		}
 		if stat.Size() < small || small == 0 {
 			small = stat.Size()
 			final = f
