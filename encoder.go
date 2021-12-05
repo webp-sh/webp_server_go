@@ -112,7 +112,7 @@ func avifEncoder(p1, p2 string, quality float32) {
 	var avifQuality = int((100 - quality) / 100 * avif.MaxQuality)
 	err = avif.Encode(dst, img, &avif.Options{Quality: avifQuality})
 	if err != nil {
-		log.Fatalf("Can't encode source image: %v", err)
+		log.Fatalf("Can't encode source image: %v to AVIF", err)
 	}
 
 	convertLog("AVIF", p1, p2, quality)
@@ -128,9 +128,9 @@ func webpEncoder(p1, p2 string, quality float32) {
 		return
 	}
 
-	if err := webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality}); err != nil {
-		log.Error(err)
-		return
+	err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality})
+	if err != nil {
+		log.Fatalf("Can't encode source image: %v to WebP", err)
 	}
 
 	if err := ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {

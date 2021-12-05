@@ -3,14 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
-	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	log "github.com/sirupsen/logrus"
 )
 
 func convert(c *fiber.Ctx) error {
@@ -27,7 +27,7 @@ func convert(c *fiber.Ctx) error {
 
 	goodFormat := guessSupportedFormat(&c.Request().Header)
 
-	// old browser only
+	// old browser only, send the original image or fetch from remote and send.
 	if len(goodFormat) == 1 {
 		c.Set("ETag", genEtag(rawImageAbs))
 		if proxyMode {
@@ -39,19 +39,7 @@ func convert(c *fiber.Ctx) error {
 		}
 	}
 
-	var allowed = false
-	for _, ext := range config.AllowedTypes {
-		haystack := strings.ToLower(imgFilename)
-		needle := strings.ToLower("." + ext)
-		if strings.HasSuffix(haystack, needle) {
-			allowed = true
-			break
-		} else {
-			allowed = false
-		}
-	}
-
-	if !allowed {
+	if !checkAllowedType(imgFilename) {
 		msg := "File extension not allowed! " + imgFilename
 		log.Warn(msg)
 		if imageExists(rawImageAbs) {

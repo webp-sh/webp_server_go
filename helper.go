@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"hash/crc32"
 	"io"
 	"io/ioutil"
@@ -13,9 +12,12 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/valyala/fasthttp"
+
+	"strings"
+
 	"github.com/h2non/filetype"
 	log "github.com/sirupsen/logrus"
-	"strings"
 )
 
 func avifMatcher(buf []byte) bool {
@@ -59,6 +61,17 @@ func imageExists(filename string) bool {
 	}
 	log.Debugf("file %s exists!", filename)
 	return !info.IsDir()
+}
+
+func checkAllowedType(imgFilename string) bool {
+	imgFilename = strings.ToLower(imgFilename)
+	for _, allowedType := range config.AllowedTypes {
+		allowedType = "." + strings.ToLower(allowedType)
+		if strings.HasSuffix(imgFilename, allowedType) {
+			return true
+		}
+	}
+	return false
 }
 
 // Check for remote filepath, e.g: https://test.webp.sh/node.png
@@ -124,6 +137,7 @@ func genOptimizedAbs(rawImagePath string, exhaustPath string, imageName string, 
 	ModifiedTime := STAT.ModTime().Unix()
 	// webpFilename: abc.jpg.png -> abc.jpg.png.1582558990.webp
 	webpFilename := fmt.Sprintf("%s.%d.webp", imageName, ModifiedTime)
+	// avifFilename: abc.jpg.png -> abc.jpg.png.1582558990.avif
 	avifFilename := fmt.Sprintf("%s.%d.avif", imageName, ModifiedTime)
 
 	// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
@@ -148,16 +162,16 @@ func genEtag(ImgAbsPath string) string {
 func getCompressionRate(RawImagePath string, optimizedImg string) string {
 	originFileInfo, err := os.Stat(RawImagePath)
 	if err != nil {
-		log.Warnf("fail to get raw image %v", err)
+		log.Warnf("Failed to get raw image %v", err)
 		return ""
 	}
 	optimizedFileInfo, err := os.Stat(optimizedImg)
 	if err != nil {
-		log.Warnf("fail to get webp image %v", err)
+		log.Warnf("Failed to get optimized image %v", err)
 		return ""
 	}
 	compressionRate := float64(optimizedFileInfo.Size()) / float64(originFileInfo.Size())
-	log.Debugf("The compress rate is %d/%d=%.2f", originFileInfo.Size(), optimizedFileInfo.Size(), compressionRate)
+	log.Debugf("The compression rate is %d/%d=%.2f", originFileInfo.Size(), optimizedFileInfo.Size(), compressionRate)
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
