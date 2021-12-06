@@ -11,6 +11,7 @@ type Config struct {
 	Quality      float32  `json:"QUALITY,string"`
 	AllowedTypes []string `json:"ALLOWED_TYPES"`
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
+	EnableAVIF   bool     `json:"ENABLE_AVIF"`
 }
 
 var (
@@ -33,7 +34,8 @@ const (
   "QUALITY": "80",
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ENABLE_AVIF": false
 }`
 
 	sampleSystemd = `

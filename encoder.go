@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/Kagami/go-avif"
+	"github.com/chai2010/webp"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/image/bmp"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -11,19 +15,14 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/Kagami/go-avif"
-	"github.com/chai2010/webp"
-	"golang.org/x/image/bmp"
 )
 
 func convertFilter(raw, avifPath, webpPath string, c chan int) {
 	// all absolute paths
 
-	if !imageExists(avifPath) {
+	if !imageExists(avifPath) && config.EnableAVIF {
 		convertImage(raw, avifPath, "avif")
 	}
 
@@ -109,10 +108,15 @@ func avifEncoder(p1, p2 string, quality float32) {
 		return
 	}
 
-	var avifQuality = int((100 - quality) / 100 * avif.MaxQuality)
-	err = avif.Encode(dst, img, &avif.Options{Quality: avifQuality})
+	err = avif.Encode(dst, img, &avif.Options{
+		Threads:        runtime.NumCPU(),
+		Speed:          avif.MaxSpeed,
+		Quality:        int((100 - quality) / 100 * avif.MaxQuality),
+		SubsampleRatio: nil,
+	})
+
 	if err != nil {
-		log.Fatalf("Can't encode source image: %v to AVIF", err)
+		log.Warnf("Can't encode source image: %v to AVIF", err)
 	}
 
 	convertLog("AVIF", p1, p2, quality)
@@ -130,7 +134,7 @@ func webpEncoder(p1, p2 string, quality float32) {
 
 	err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality})
 	if err != nil {
-		log.Fatalf("Can't encode source image: %v to WebP", err)
+		log.Warnf("Can't encode source image: %v to WebP", err)
 	}
 
 	if err := ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {

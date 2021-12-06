@@ -15,7 +15,7 @@ func TestPrefetchImages(t *testing.T) {
 	_ = os.Mkdir(fp, 0755)
 	prefetchImages("./pics/dir1/", "./prefetch")
 	count := fileCount("./prefetch")
-	assert.Equal(t, int64(2), count)
+	assert.Equal(t, int64(1), count)
 	_ = os.RemoveAll(fp)
 }
 
