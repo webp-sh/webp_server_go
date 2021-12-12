@@ -1,0 +1,35 @@
+on:
+  push:
+    tags:
+      - '*'
+
+name: Release WebP Server Go Binaries
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.3
+
+      - name: Make WebP Server Go
+        run: |
+          sudo apt-get update && sudo apt install libaom-dev
+          make
+          sha256sum builds/webp-server-linux-amd64 > builds/webp-server-linux-amd64.sha256
+      
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          title: "WebP Server Go"
+          files: |
+            builds/webp-server-linux-amd64
+            builds/webp-server-linux-amd64.sha256
