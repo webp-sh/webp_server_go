@@ -7,12 +7,11 @@ require (
 	github.com/chai2010/webp v1.1.0
 	github.com/gofiber/fiber/v2 v2.4.0
 	github.com/h2non/filetype v1.1.3
-	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/schollz/progressbar/v3 v3.8.3
 	github.com/sirupsen/logrus v1.8.1
 	github.com/staktrace/go-update v0.0.0-20210525161054-fc019945f9a2
 	github.com/stretchr/testify v1.3.0
-	github.com/valyala/fasthttp v1.18.0
+	github.com/valyala/fasthttp v1.31.0
 	golang.org/x/image v0.0.0-20200119044424-58c23975cae1
 	golang.org/x/sys v0.0.0-20211204120058-94396e421777 // indirect
 )
