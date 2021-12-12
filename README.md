@@ -32,12 +32,13 @@ Download the `webp-server` from [release](https://github.com/webp-sh/webp_server
 The default `config.json` may look like this.
 ```json
 {
-	"HOST": "127.0.0.1",
-	"PORT": "3333",
-	"QUALITY": "80",
-	"IMG_PATH": "/path/to/pics",
-	"EXHAUST_PATH": "/path/to/exhaust",
-	"ALLOWED_TYPES": ["jpg","png","jpeg"]
+  "HOST": "127.0.0.1",
+  "PORT": "3333",
+  "QUALITY": "80",
+  "IMG_PATH": "/path/to/pics",
+  "EXHAUST_PATH": "/path/to/exhaust",
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ENABLE_AVIF": false
 }
 ```
 

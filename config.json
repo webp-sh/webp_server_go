@@ -4,10 +4,6 @@
   "QUALITY": "80",
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
-  "ALLOWED_TYPES": [
-    "jpg",
-    "png",
-    "jpeg",
-    "bmp"
-  ]
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ENABLE_AVIF": false
 }
