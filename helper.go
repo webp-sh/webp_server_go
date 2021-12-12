@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -11,26 +12,35 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/valyala/fasthttp"
+
 	"strings"
 
+	"github.com/h2non/filetype"
 	log "github.com/sirupsen/logrus"
 )
 
-func chanErr(ccc chan int) {
-	if ccc != nil {
-		ccc <- 1
-	}
+func avifMatcher(buf []byte) bool {
+	// 0000001C 66747970 6D696631 00000000 6D696631 61766966 6D696166 000000F4
+	return len(buf) > 1 && bytes.Equal(buf[:28], []byte{
+		0x0, 0x0, 0x0, 0x1c,
+		0x66, 0x74, 0x79, 0x70,
+		0x6d, 0x69, 0x66, 0x31,
+		0x0, 0x0, 0x0, 0x0,
+		0x6d, 0x69, 0x66, 0x31,
+		0x61, 0x76, 0x69, 0x66,
+		0x6d, 0x69, 0x61, 0x66,
+	})
 }
-
 func getFileContentType(buffer []byte) string {
-	// Use the net/http package's handy DectectContentType function. Always returns a valid
-	// content-type by returning "application/octet-stream" if no others seemed to match.
-	contentType := http.DetectContentType(buffer)
-	return contentType
+	var avifType = filetype.NewType("avif", "image/avif")
+	filetype.AddMatcher(avifType, avifMatcher)
+	kind, _ := filetype.Match(buffer)
+	return kind.MIME.Value
 }
 
-func fileCount(dir string) int {
-	count := 0
+func fileCount(dir string) int64 {
+	var count int64 = 0
 	_ = filepath.Walk(dir,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -51,6 +61,17 @@ func imageExists(filename string) bool {
 	}
 	log.Debugf("file %s exists!", filename)
 	return !info.IsDir()
+}
+
+func checkAllowedType(imgFilename string) bool {
+	imgFilename = strings.ToLower(imgFilename)
+	for _, allowedType := range config.AllowedTypes {
+		allowedType = "." + strings.ToLower(allowedType)
+		if strings.HasSuffix(imgFilename, allowedType) {
+			return true
+		}
+	}
+	return false
 }
 
 // Check for remote filepath, e.g: https://test.webp.sh/node.png
@@ -106,22 +127,24 @@ func cleanProxyCache(cacheImagePath string) {
 	}
 }
 
-func genWebpAbs(RawImagePath string, ExhaustPath string, ImgFilename string, reqURI string) (string, string) {
+func genOptimizedAbs(rawImagePath string, exhaustPath string, imageName string, reqURI string) (string, string) {
 	// get file mod time
-	STAT, err := os.Stat(RawImagePath)
+	STAT, err := os.Stat(rawImagePath)
 	if err != nil {
 		log.Error(err.Error())
 		return "", ""
 	}
 	ModifiedTime := STAT.ModTime().Unix()
 	// webpFilename: abc.jpg.png -> abc.jpg.png.1582558990.webp
-	WebpFilename := fmt.Sprintf("%s.%d.webp", ImgFilename, ModifiedTime)
-	cwd, _ := os.Getwd()
+	webpFilename := fmt.Sprintf("%s.%d.webp", imageName, ModifiedTime)
+	// avifFilename: abc.jpg.png -> abc.jpg.png.1582558990.avif
+	avifFilename := fmt.Sprintf("%s.%d.avif", imageName, ModifiedTime)
 
 	// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
 	// Custom Exhaust: /path/to/exhaust/web_path/web_to/tsuki.jpg.1582558990.webp
-	WebpAbsolutePath := path.Clean(path.Join(ExhaustPath, path.Dir(reqURI), WebpFilename))
-	return cwd, WebpAbsolutePath
+	webpAbsolutePath := path.Clean(path.Join(exhaustPath, path.Dir(reqURI), webpFilename))
+	avifAbsolutePath := path.Clean(path.Join(exhaustPath, path.Dir(reqURI), avifFilename))
+	return avifAbsolutePath, webpAbsolutePath
 }
 
 func genEtag(ImgAbsPath string) string {
@@ -136,64 +159,60 @@ func genEtag(ImgAbsPath string) string {
 	return fmt.Sprintf(`W/"%d-%08X"`, len(data), crc)
 }
 
-func getCompressionRate(RawImagePath string, webpAbsPath string) string {
+func getCompressionRate(RawImagePath string, optimizedImg string) string {
 	originFileInfo, err := os.Stat(RawImagePath)
 	if err != nil {
-		log.Warnf("fail to get raw image %v", err)
+		log.Warnf("Failed to get raw image %v", err)
 		return ""
 	}
-	webpFileInfo, err := os.Stat(webpAbsPath)
+	optimizedFileInfo, err := os.Stat(optimizedImg)
 	if err != nil {
-		log.Warnf("fail to get webp image %v", err)
+		log.Warnf("Failed to get optimized image %v", err)
 		return ""
 	}
-	compressionRate := float64(webpFileInfo.Size()) / float64(originFileInfo.Size())
-	log.Debugf("The compress rate is %d/%d=%.2f", originFileInfo.Size(), webpFileInfo.Size(), compressionRate)
+	compressionRate := float64(optimizedFileInfo.Size()) / float64(originFileInfo.Size())
+	log.Debugf("The compression rate is %d/%d=%.2f", originFileInfo.Size(), optimizedFileInfo.Size(), compressionRate)
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
-func goOrigin(header, ua string) bool {
-	// We'll first check accept headers, if accept headers is false, we'll then go to UA part
-	if headerOrigin(header) && uaOrigin(ua) {
-		return true
-	} else {
-		return false
-	}
-}
+func guessSupportedFormat(header *fasthttp.RequestHeader) []string {
+	var supported = map[string]bool{
+		"raw":  true,
+		"webp": false,
+		"avif": false}
 
-func uaOrigin(ua string) bool {
-	// iOS 14 and iPadOS 14 supports webp, the identification token is iPhone OS 14_2_1 and CPU OS 14_2
-	// for more information, please check test case
-	if strings.Contains(ua, "iPhone OS 14") || strings.Contains(ua, "CPU OS 14") {
-		// this is iOS 14/iPadOS 14
-		return false
-	} else if strings.Contains(ua, "Firefox") || strings.Contains(ua, "Chrome") {
-		// Chrome or firefox on macOS Windows
+	var ua = string(header.Peek("user-agent"))
+	var accept = strings.ToLower(string(header.Peek("accept")))
+	log.Debugf("%s\t%s\n", ua, accept)
+
+	if strings.Contains(accept, "image/webp") {
+		supported["webp"] = true
+	}
+	if strings.Contains(accept, "image/avif") {
+		supported["avif"] = true
+	}
+
+	// chrome on iOS will not send valid image accept header
+	if strings.Contains(ua, "iPhone OS 14") || strings.Contains(ua, "CPU OS 14") ||
+		strings.Contains(ua, "iPhone OS 15") || strings.Contains(ua, "CPU OS 15") {
+		supported["webp"] = true
 	} else if strings.Contains(ua, "Android") || strings.Contains(ua, "Linux") {
-		// on Android and Linux
-	} else if strings.Contains(ua, "FxiOS") || strings.Contains(ua, "CriOS") {
-		//firefox and Chrome on iOS
-		return true
-	} else {
-		return true
+		supported["webp"] = true
 	}
-	return false
+
+	var accepted []string
+	for k, v := range supported {
+		if v {
+			accepted = append(accepted, k)
+		}
+	}
+	return accepted
+
 }
 
-func headerOrigin(header string) bool {
-	// Webkit is really weird especially on iOS, it doesn't even send out effective accept headers.
-	// Head to test case if you want to know more
-	if strings.Contains(header, "image/webp") {
-		return false
-	} else {
-		// go to origin
-		return true
-	}
-}
-
-func chooseProxy(proxyRawSize string, webpAbsPath string) bool {
+func chooseProxy(proxyRawSize string, optimizedAbs string) bool {
 	var proxyRaw, _ = strconv.Atoi(proxyRawSize)
-	webp, _ := ioutil.ReadFile(webpAbsPath)
+	webp, _ := ioutil.ReadFile(optimizedAbs)
 	if len(webp) > proxyRaw {
 		return true
 	} else {
@@ -201,12 +220,20 @@ func chooseProxy(proxyRawSize string, webpAbsPath string) bool {
 	}
 }
 
-func chooseLocalSmallerFile(rawImageAbs, webpAbsPath string) string {
-	raw, _ := ioutil.ReadFile(rawImageAbs)
-	webp, _ := ioutil.ReadFile(webpAbsPath)
-	if len(webp) > len(raw) {
-		return rawImageAbs
-	} else {
-		return webpAbsPath
+func findSmallestFiles(files []string) string {
+	// walk files
+	var small int64
+	var final string
+	for _, f := range files {
+		stat, err := os.Stat(f)
+		if err != nil {
+			log.Warnf("%s not found on filesystem", f)
+			continue
+		}
+		if stat.Size() < small || small == 0 {
+			small = stat.Size()
+			final = f
+		}
 	}
+	return final
 }

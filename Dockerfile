@@ -1,16 +1,16 @@
-FROM golang:alpine as builder
+FROM golang:1.17.4-alpine as builder
 
 ARG IMG_PATH=/opt/pics
 ARG EXHAUST_PATH=/opt/exhaust
-RUN apk update && apk add alpine-sdk && mkdir /build
+RUN apk update && apk add alpine-sdk aom-dev && mkdir /build
 COPY go.mod /build
 RUN cd /build && go mod download
 
 COPY . /build
-RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json \
-&& sed -i "s|\"\"|\"${EXHAUST_PATH}\"|g" config.json \
-&& sed -i 's/127.0.0.1/0.0.0.0/g' config.json \
-&& make docker
+RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
+    && sed -i "s|\"\"|\"${EXHAUST_PATH}\"|g" config.json  \
+    && sed -i 's/127.0.0.1/0.0.0.0/g' config.json  \
+    && go build -ldflags="-s -w" -o webp-server .
 
 
 

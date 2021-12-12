@@ -8,9 +8,10 @@ type Config struct {
 	Host         string   `json:"HOST"`
 	Port         string   `json:"PORT"`
 	ImgPath      string   `json:"IMG_PATH"`
-	Quality      string   `json:"QUALITY"`
+	Quality      float32  `json:"QUALITY,string"`
 	AllowedTypes []string `json:"ALLOWED_TYPES"`
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
+	EnableAVIF   bool     `json:"ENABLE_AVIF"`
 }
 
 var (
@@ -21,7 +22,7 @@ var (
 	prefetch, proxyMode      bool
 	remoteRaw                = "remote-raw"
 	config                   Config
-	version                  = "0.3.2"
+	version                  = "0.4.0"
 	releaseUrl               = "https://github.com/webp-sh/webp_server_go/releases/latest/download/"
 )
 
@@ -33,7 +34,8 @@ const (
   "QUALITY": "80",
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"]
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ENABLE_AVIF": false
 }`
 
 	sampleSystemd = `
@@ -52,4 +54,9 @@ RestartSec=3s
 
 [Install]
 WantedBy=multi-user.target`
+)
+
+const (
+	webpMax = 16383
+	avifMax = 65536
 )

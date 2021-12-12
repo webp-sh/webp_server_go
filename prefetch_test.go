@@ -11,24 +11,15 @@ import (
 )
 
 func TestPrefetchImages(t *testing.T) {
-	// single thread
 	fp := "./prefetch"
 	_ = os.Mkdir(fp, 0755)
-	prefetchImages("./pics", "./prefetch", "80")
+	prefetchImages("./pics/dir1/", "./prefetch")
 	count := fileCount("./prefetch")
-	assert.Equal(t, 8, count)
-	_ = os.RemoveAll(fp)
-
-	// concurrency
-	jobs = 2
-	_ = os.Mkdir(fp, 0755)
-	prefetchImages("./pics", "./prefetch", "80")
-	count = fileCount("./prefetch")
-	assert.Equal(t, 6, count)
+	assert.Equal(t, int64(1), count)
 	_ = os.RemoveAll(fp)
 }
 
 func TestBadPrefetch(t *testing.T) {
 	jobs = 1
-	prefetchImages("./pics2", "./prefetch", "80")
+	prefetchImages("./pics2", "./prefetch")
 }

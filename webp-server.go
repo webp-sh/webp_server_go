@@ -41,7 +41,7 @@ func deferInit() {
 		FullTimestamp:             true,
 		TimestampFormat:           "2006-01-02 15:04:05",
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			return fmt.Sprintf("[%s()]", f.Function), ""
+			return fmt.Sprintf("[%d:%s()]", f.Line, f.Function), ""
 		},
 	}
 	log.SetFormatter(Formatter)
@@ -99,7 +99,7 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 	switchProxyMode()
 
 	if prefetch {
-		go prefetchImages(config.ImgPath, config.ExhaustPath, config.Quality)
+		go prefetchImages(config.ImgPath, config.ExhaustPath)
 	}
 
 	app := fiber.New(fiber.Config{

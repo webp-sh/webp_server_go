@@ -3,13 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"github.com/staktrace/go-update"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path"
 	"runtime"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func autoUpdate() {
@@ -47,12 +45,13 @@ func autoUpdate() {
 		log.Debugf("%s-%s not found on release.", runtime.GOOS, runtime.GOARCH)
 		return
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
-	_ = os.Mkdir("update", 0755)
-	err := ioutil.WriteFile(path.Join("update", filename), data, 0755)
 
-	if err == nil {
-		log.Info("Update complete. Please find your binary from update directory.")
+	err := update.Apply(resp.Body, update.Options{})
+	if err != nil {
+		// error handling
+		log.Errorf("Update error. %v", err)
+	} else {
+		log.Info("Update complete. Please restart to apply changes.")
 	}
 	_ = resp.Body.Close()
 }
