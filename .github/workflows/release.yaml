@@ -3,7 +3,7 @@ on:
     tags:
       - '*'
 
-name: Release WebP Server Go Binaries
+name: Release Binaries
 
 jobs:
   build:
