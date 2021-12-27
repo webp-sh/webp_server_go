@@ -19,3 +19,8 @@ jobs:
       - name: run test cases
         run: sudo apt install libaom-dev && make test && make
 
+      - name: Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./coverage.txt
+          verbose: true
