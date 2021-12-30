@@ -16,6 +16,10 @@ import (
 func convert(c *fiber.Ctx) error {
 	//basic vars
 	var reqURI, _ = url.QueryUnescape(c.Path()) // /mypic/123.jpg
+
+	// delete ../ in reqURI to mitigate directory traversal
+	reqURI = path.Clean(reqURI)
+
 	var rawImageAbs string
 	if proxyMode {
 		rawImageAbs = config.ImgPath + reqURI
