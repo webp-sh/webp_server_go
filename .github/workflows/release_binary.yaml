@@ -1,9 +1,9 @@
+name: Release Binaries
+
 on:
   push:
     tags:
       - '*'
-
-name: Release Binaries
 
 jobs:
   build:
