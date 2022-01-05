@@ -1,6 +1,10 @@
-name: CI
+name: CI check on every push
 on:
   push:
+    paths-ignore:
+    - '**.md'
+    - 'Makefile'
+    - 'config.json'
 
 jobs:
   ci:

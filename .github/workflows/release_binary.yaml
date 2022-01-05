@@ -1,9 +1,13 @@
+name: Release Binaries
+
 on:
   push:
+    paths-ignore:
+      - '**.md'
+      - 'Makefile'
+      - 'config.json'
     tags:
       - '*'
-
-name: Release Binaries
 
 jobs:
   build:
