@@ -29,6 +29,14 @@ func convert(c *fiber.Ctx) error {
 	var imgFilename = path.Base(reqURI) // pure filename, 123.jpg
 	log.Debugf("Incoming connection from %s %s", c.IP(), imgFilename)
 
+	if !checkAllowedType(imgFilename) {
+		msg := "File extension not allowed! " + imgFilename
+		log.Warn(msg)
+		c.Status(http.StatusBadRequest)
+		_ = c.Send([]byte(msg))
+		return nil
+	}
+
 	goodFormat := guessSupportedFormat(&c.Request().Header)
 
 	// old browser only, send the original image or fetch from remote and send.
@@ -40,19 +48,6 @@ func convert(c *fiber.Ctx) error {
 			return c.SendFile(localRemoteTmpPath)
 		} else {
 			return c.SendFile(rawImageAbs)
-		}
-	}
-
-	if !checkAllowedType(imgFilename) {
-		msg := "File extension not allowed! " + imgFilename
-		log.Warn(msg)
-		if imageExists(rawImageAbs) {
-			c.Set("ETag", genEtag(rawImageAbs))
-			return c.SendFile(rawImageAbs)
-		} else {
-			c.Status(http.StatusBadRequest)
-			_ = c.Send([]byte(msg))
-			return nil
 		}
 	}
 
