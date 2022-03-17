@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -16,28 +15,8 @@ import (
 
 	"strings"
 
-	"github.com/h2non/filetype"
 	log "github.com/sirupsen/logrus"
 )
-
-func avifMatcher(buf []byte) bool {
-	// 0000001C 66747970 6D696631 00000000 6D696631 61766966 6D696166 000000F4
-	return len(buf) > 1 && bytes.Equal(buf[:28], []byte{
-		0x0, 0x0, 0x0, 0x1c,
-		0x66, 0x74, 0x79, 0x70,
-		0x6d, 0x69, 0x66, 0x31,
-		0x0, 0x0, 0x0, 0x0,
-		0x6d, 0x69, 0x66, 0x31,
-		0x61, 0x76, 0x69, 0x66,
-		0x6d, 0x69, 0x61, 0x66,
-	})
-}
-func getFileContentType(buffer []byte) string {
-	var avifType = filetype.NewType("avif", "image/avif")
-	filetype.AddMatcher(avifType, avifMatcher)
-	kind, _ := filetype.Match(buffer)
-	return kind.MIME.Value
-}
 
 func fileCount(dir string) int64 {
 	var count int64 = 0
@@ -127,7 +106,7 @@ func cleanProxyCache(cacheImagePath string) {
 	}
 }
 
-func genOptimizedAbs(rawImagePath string, exhaustPath string, imageName string, reqURI string) (string, string) {
+func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string) (string, string) {
 	// get file mod time
 	STAT, err := os.Stat(rawImagePath)
 	if err != nil {

@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -65,7 +64,7 @@ func convert(c *fiber.Ctx) error {
 	}
 
 	// generate with timestamp to make sure files are update-to-date
-	avifAbs, webpAbs := genOptimizedAbs(rawImageAbs, config.ExhaustPath, imgFilename, reqURI)
+	avifAbs, webpAbs := genOptimizedAbsPath(rawImageAbs, config.ExhaustPath, imgFilename, reqURI)
 	convertFilter(rawImageAbs, avifAbs, webpAbs, nil)
 
 	var availableFiles = []string{rawImageAbs}
@@ -78,14 +77,18 @@ func convert(c *fiber.Ctx) error {
 		}
 	}
 
-	var finalFile = findSmallestFiles(availableFiles)
-	etag := genEtag(finalFile)
-	c.Set("ETag", etag)
-	c.Set("X-Compression-Rate", getCompressionRate(rawImageAbs, finalFile))
-	buf, _ := ioutil.ReadFile(finalFile)
-	c.Set("content-type", getFileContentType(buf))
-	return c.SendFile(finalFile)
+	var finalFileName = findSmallestFiles(availableFiles)
+	var finalFileExtension = path.Ext(finalFileName)
+	if finalFileExtension == ".webp" {
+		c.Set("Content-Type", "image/webp")
+	} else if finalFileExtension == ".avif" {
+		c.Set("Content-Type", "image/avif")
+	}
 
+	etag := genEtag(finalFileName)
+	c.Set("ETag", etag)
+	c.Set("X-Compression-Rate", getCompressionRate(rawImageAbs, finalFileName))
+	return c.SendFile(finalFileName)
 }
 
 func proxyHandler(c *fiber.Ctx, reqURI string) error {
