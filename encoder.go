@@ -74,7 +74,7 @@ func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
 	}
 
 	imgExtension := strings.ToLower(path.Ext(imgPath))
-	if strings.Contains(imgExtension, "jpeg") {
+	if strings.Contains(imgExtension, "jpeg") || strings.Contains(imgExtension, "jpg") {
 		img, err = jpeg.Decode(bytes.NewReader(data))
 	} else if strings.Contains(imgExtension, "png") {
 		img, err = png.Decode(bytes.NewReader(data))
