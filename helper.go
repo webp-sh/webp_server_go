@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/h2non/filetype"
 	"hash/crc32"
 	"io"
 	"io/ioutil"
@@ -16,7 +17,6 @@ import (
 
 	"strings"
 
-	"github.com/h2non/filetype"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,6 +33,7 @@ func avifMatcher(buf []byte) bool {
 	})
 }
 func getFileContentType(buffer []byte) string {
+	// TODO deprecated.
 	var avifType = filetype.NewType("avif", "image/avif")
 	filetype.AddMatcher(avifType, avifMatcher)
 	kind, _ := filetype.Match(buffer)
@@ -127,7 +128,7 @@ func cleanProxyCache(cacheImagePath string) {
 	}
 }
 
-func genOptimizedAbs(rawImagePath string, exhaustPath string, imageName string, reqURI string) (string, string) {
+func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string) (string, string) {
 	// get file mod time
 	STAT, err := os.Stat(rawImagePath)
 	if err != nil {

@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/schollz/progressbar/v3"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/schollz/progressbar/v3"
+	log "github.com/sirupsen/logrus"
 )
 
 func prefetchImages(confImgPath string, ExhaustPath string) {
@@ -33,7 +34,7 @@ func prefetchImages(confImgPath string, ExhaustPath string) {
 			}
 			// RawImagePath string, ImgFilename string, reqURI string
 			proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
-			avif, webp := genOptimizedAbs(picAbsPath, ExhaustPath, info.Name(), proposedURI)
+			avif, webp := genOptimizedAbsPath(picAbsPath, ExhaustPath, info.Name(), proposedURI)
 			_ = os.MkdirAll(path.Dir(avif), 0755)
 			log.Infof("Prefetching %s", picAbsPath)
 			go convertFilter(picAbsPath, avif, webp, finishChan)

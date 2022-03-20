@@ -4,10 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/Kagami/go-avif"
-	"github.com/chai2010/webp"
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/image/bmp"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -17,6 +13,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/Kagami/go-avif"
+	"github.com/chai2010/webp"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/image/bmp"
 )
 
 func convertFilter(raw, avifPath, webpPath string, c chan int) {
@@ -72,12 +73,12 @@ func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
 		log.Errorln(err)
 	}
 
-	contentType := getFileContentType(data[:512])
-	if strings.Contains(contentType, "jpeg") {
+	imgExtension := strings.ToLower(path.Ext(imgPath))
+	if strings.Contains(imgExtension, "jpeg") || strings.Contains(imgExtension, "jpg") {
 		img, err = jpeg.Decode(bytes.NewReader(data))
-	} else if strings.Contains(contentType, "png") {
+	} else if strings.Contains(imgExtension, "png") {
 		img, err = png.Decode(bytes.NewReader(data))
-	} else if strings.Contains(contentType, "bmp") {
+	} else if strings.Contains(imgExtension, "bmp") {
 		img, err = bmp.Decode(bytes.NewReader(data))
 	}
 	if err != nil || img == nil {
