@@ -6,13 +6,15 @@ on:
       - '**.md'
       - 'Makefile'
       - 'config.json'
-    tags:
-      - '*'
+    branches:
+      - 'degrade-glibc-version'
 
 jobs:
   build:
     name: Create Release
     runs-on: ubuntu-latest
+    container:
+      image: centos:centos7
 
     steps:
       - name: Checkout code
@@ -22,18 +24,23 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.17.3
+      
+      - name: Setup necessary packages
+        run: |
+          yum install epel-release -y
+          yum groupinstall 'Development Tools' -y
+          yum install libaom-devel -y
 
       - name: Make WebP Server Go
         run: |
-          sudo apt-get update && sudo apt install libaom-dev
           make
           sha256sum builds/webp-server-linux-amd64 > builds/webp-server-linux-amd64.sha256
       
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: true
-          title: "WebP Server Go"
-          files: |
-            builds/webp-server-linux-amd64
-            builds/webp-server-linux-amd64.sha256
+      # - uses: "marvinpinto/action-automatic-releases@latest"
+      #   with:
+      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
+      #     prerelease: true
+      #     title: "WebP Server Go"
+      #     files: |
+      #       builds/webp-server-linux-amd64
+      #       builds/webp-server-linux-amd64.sha256

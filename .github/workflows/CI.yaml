@@ -9,6 +9,8 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    container:
+      image: centos:centos7
     steps:
       - name: Checkout
         uses: actions/checkout@v2
