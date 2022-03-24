@@ -5,13 +5,14 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -73,7 +74,7 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/webp_server.bmp":                 "image/webp",
 		"http://127.0.0.1:3333/webp_server.png":                 "image/webp",
 		"http://127.0.0.1:3333/empty.jpg":                       "",
-		"http://127.0.0.1:3333/png.jpg":                         "image/webp",
+		"http://127.0.0.1:3333/png.jpg":                         "image/png",
 		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
@@ -116,11 +117,10 @@ func TestConvertNotAllowed(t *testing.T) {
 	var app = fiber.New()
 	app.Get("/*", convert)
 
-	// not allowed, but we have the file
+	// not allowed, but we have the file, this should return File extension not allowed
 	url := "http://127.0.0.1:3333/webp_server.bmp"
 	_, data := requestToServer(url, app, chromeUA, acceptWebP)
-	contentType := getFileContentType(data)
-	assert.Equal(t, "image/bmp", contentType)
+	assert.Contains(t, string(data), "File extension not allowed")
 
 	// not allowed, random file
 	url = url + "hagdgd"
