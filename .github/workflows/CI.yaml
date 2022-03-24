@@ -8,20 +8,27 @@ on:
 
 jobs:
   ci:
+    name: CI check on every push
     runs-on: ubuntu-latest
+    container:
+      image: centos:centos7
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-        with:
-          submodules: true
 
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.3
+          go-version: 1.18
+
+      - name: Setup necessary packages
+        run: |
+          yum install epel-release -y
+          yum groupinstall 'Development Tools' -y
+          yum install libaom-devel -y
 
       - name: run test cases
-        run: sudo apt install libaom-dev && make test && make
+        run: make test && make
 
       - name: Codecov
         uses: codecov/codecov-action@v2
