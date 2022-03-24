@@ -6,8 +6,8 @@ on:
       - '**.md'
       - 'Makefile'
       - 'config.json'
-    branches:
-      - 'degrade-glibc-version'
+    tags:
+      - '*'
 
 jobs:
   build:
@@ -41,11 +41,11 @@ jobs:
           ldd --version
           ldd builds/webp-server-linux-amd64
       
-      # - uses: "marvinpinto/action-automatic-releases@latest"
-      #   with:
-      #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
-      #     prerelease: true
-      #     title: "WebP Server Go"
-      #     files: |
-      #       builds/webp-server-linux-amd64
-      #       builds/webp-server-linux-amd64.sha256
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: true
+          title: "WebP Server Go"
+          files: |
+            builds/webp-server-linux-amd64
+            builds/webp-server-linux-amd64.sha256
