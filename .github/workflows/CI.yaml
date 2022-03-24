@@ -8,6 +8,7 @@ on:
 
 jobs:
   ci:
+    name: CI check on every push
     runs-on: ubuntu-latest
     container:
       image: centos:centos7
