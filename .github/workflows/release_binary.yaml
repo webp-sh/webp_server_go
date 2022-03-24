@@ -36,6 +36,11 @@ jobs:
           make
           sha256sum builds/webp-server-linux-amd64 > builds/webp-server-linux-amd64.sha256
       
+      - name: Check for ldd version
+        run: |
+          ldd --version
+          ldd builds/webp-server-linux-amd64
+      
       # - uses: "marvinpinto/action-automatic-releases@latest"
       #   with:
       #     repo_token: "${{ secrets.GITHUB_TOKEN }}"
