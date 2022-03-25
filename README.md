@@ -20,12 +20,33 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 > We've now support Safari/Chrome/Firefox on iOS 14/iPadOS 14
 
 
-## Simple Usage Steps
+## Simple Usage Steps(with Binary)
 
-### 1. Download or build the binary
+### 1. Prepare the environment
+
+If you'd like to run binary directly on your machine, you need to install some dependencies(as AVIF encoder needs it):
+
+#### Ubuntu
+
+```
+apt install libaom-dev -y
+cp /usr/lib/x86_64-linux-gnu/libaom.so /usr/lib/x86_64-linux-gnu/libaom.so.3
+```
+
+#### CentOS7
+
+```
+yum install libaom-devel -y
+```
+
+If you don't like to hassle around with your system, so do us, why not have a try using Docker? >> [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/)
+
+
+
+### 2. Download the binary
 Download the `webp-server` from [release](https://github.com/webp-sh/webp_server_go/releases) page.
 
-### 2. Dump config file
+### 3. Dump config file
 
 ```
 ./webp-server -dump-config > config.json
@@ -43,6 +64,7 @@ The default `config.json` may look like this.
   "ENABLE_AVIF": false
 }
 ```
+> AVIF support is disabled by default as converting images to AVIF is CPU consuming.
 
 #### Config Example
 
@@ -52,7 +74,7 @@ In the following example, the image path and website URL.
 | ------------------------------------- | ------------------------------------ |
 | `/var/www/img.webp.sh/path/tsuki.jpg` | `https://img.webp.sh/path/tsuki.jpg` |
 
-The `config.json` should be like:
+The `IMG_PATH` inside `config.json` should be like:
 
 | IMG_PATH               |
 | ---------------------- |
