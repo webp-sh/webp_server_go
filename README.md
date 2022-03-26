@@ -30,7 +30,7 @@ If you'd like to run binary directly on your machine, you need to install some d
 
 ```
 apt install libaom-dev -y
-cp /usr/lib/x86_64-linux-gnu/libaom.so /usr/lib/x86_64-linux-gnu/libaom.so.3
+ln -s /usr/lib/x86_64-linux-gnu/libaom.so /usr/lib/x86_64-linux-gnu/libaom.so.3
 ```
 
 #### CentOS7
