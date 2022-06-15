@@ -67,6 +67,9 @@ func imageExists(filename string) bool {
 func checkAllowedType(imgFilename string) bool {
 	imgFilename = strings.ToLower(imgFilename)
 	for _, allowedType := range config.AllowedTypes {
+		if allowedType == "*" {
+			return true
+		}
 		allowedType = "." + strings.ToLower(allowedType)
 		if strings.HasSuffix(imgFilename, allowedType) {
 			return true
