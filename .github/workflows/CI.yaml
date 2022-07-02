@@ -1,6 +1,8 @@
-name: CI check on every push
+name: CI check on every PR
 on:
-  push:
+  pull_request:
+    branches:
+      - master
     paths-ignore:
     - '**.md'
     - 'Makefile'
