@@ -1,6 +1,8 @@
-name: CI check on every push
+name: CI check on every PR
 on:
-  push:
+  pull_request:
+    branches:
+      - master
     paths-ignore:
     - '**.md'
     - 'Makefile'
@@ -76,11 +78,29 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
-      - name: Scan for possible CVEs
-        uses: aquasecurity/trivy-action@master
+      - name: Install trivy
+        run: |
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy -y
+      
+      - name: Scan for CVE
+        uses: mathiasvr/command-output@v1
+        id: trivy
         with:
-          image-ref: ghcr.io/${{ steps.ghcr_string.outputs.lowercase }}
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
+          run: |
+            trivy image --no-progress --severity "HIGH,CRITICAL" ghcr.io/${{ steps.ghcr_string.outputs.lowercase }}
+      
+      - name: Print CVE
+        run: |
+          echo "${{ steps.trivy.outputs.stdout }}"
+
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v1
+        with:
+          message: |
+            ```
+            ${{ steps.trivy.outputs.stdout }}
+            ```
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
