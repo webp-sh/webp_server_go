@@ -1,4 +1,4 @@
-FROM golang:1.17.4-alpine as builder
+FROM golang:1.19.0-alpine as builder
 
 ARG IMG_PATH=/opt/pics
 ARG EXHAUST_PATH=/opt/exhaust
@@ -10,7 +10,7 @@ COPY . /build
 RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
     && sed -i "s|\"\"|\"${EXHAUST_PATH}\"|g" config.json  \
     && sed -i 's/127.0.0.1/0.0.0.0/g' config.json  \
-    && go build -ldflags="-s -w" -o webp-server .
+    && go build -ldflags="-s -w" -buildvcs=false -o webp-server .
 
 
 
@@ -22,8 +22,7 @@ COPY --from=builder /build/config.json /etc/config.json
 COPY --from=builder /usr/lib/libaom.a /usr/lib/libaom.a
 COPY --from=builder /usr/lib/libaom.so /usr/lib/libaom.so
 COPY --from=builder /usr/lib/libaom.so.3 /usr/lib/libaom.so.3
-COPY --from=builder /usr/lib/libaom.so.3 /usr/lib/libaom.so.3
-COPY --from=builder /usr/lib/libaom.so.3.2.0 /usr/lib/libaom.so.3.2.0
+COPY --from=builder /usr/lib/libaom.so.3.3.0 /usr/lib/libaom.so.3.3.0
 
 
 WORKDIR /opt
