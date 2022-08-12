@@ -60,7 +60,7 @@ func convert(c *fiber.Ctx) error {
 		_ = c.Send([]byte(msg))
 		log.Warn(msg)
 		_ = c.SendStatus(404)
-		return errors.New(msg)
+		return nil
 	}
 
 	// generate with timestamp to make sure files are update-to-date
