@@ -10,10 +10,7 @@ COPY . /build
 RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
     && sed -i "s|\"\"|\"${EXHAUST_PATH}\"|g" config.json  \
     && sed -i 's/127.0.0.1/0.0.0.0/g' config.json  \
-    && rm -rf .git \
     && go build -ldflags="-s -w" -o webp-server .
-
-
 
 FROM alpine
 
