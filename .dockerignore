@@ -3,7 +3,8 @@ exhaust/*
 pics/*
 remote-raw/*
 scripts/*
-.git/*
+.git
+.dockerignore
 README.md
 LICENSE
 Makefile
