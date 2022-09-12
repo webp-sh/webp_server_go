@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.4.0
 	github.com/h2non/filetype v1.1.3
 	github.com/rivo/uniseg v0.3.4 // indirect
-	github.com/schollz/progressbar/v3 v3.10.1
+	github.com/schollz/progressbar/v3 v3.11.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/staktrace/go-update v0.0.0-20210525161054-fc019945f9a2
 	github.com/stretchr/testify v1.8.0
