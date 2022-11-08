@@ -22,8 +22,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.2 h1:YwD0ulJSJytLpiaWua0sBDusfsCZohxjxzVTYjwxfV8=
 github.com/rivo/uniseg v0.4.2/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
-github.com/schollz/progressbar/v3 v3.12.0 h1:BVFNM+V/l20JUYkJ5fO/CnOYPV3Et3tON8FmJepkdq4=
-github.com/schollz/progressbar/v3 v3.12.0/go.mod h1:g7QSuwyGpqCjVQPFZXA31MSxtrhka9Y9LMdF+XT77/Y=
+github.com/schollz/progressbar/v3 v3.12.1 h1:JAhtIrLWAn6/p7i82SrpSG3fgAwlAxi+Sy12r4AzBvQ=
+github.com/schollz/progressbar/v3 v3.12.1/go.mod h1:g7QSuwyGpqCjVQPFZXA31MSxtrhka9Y9LMdF+XT77/Y=
 github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=
 github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/staktrace/go-update v0.0.0-20210525161054-fc019945f9a2 h1:kyTDvRL8TyTHOx0aK1PKMPVfkI7rCLDC1nrKF7SYOBc=
