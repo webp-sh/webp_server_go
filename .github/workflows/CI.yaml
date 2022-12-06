@@ -47,12 +47,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
       - name: Cache Docker layers
         uses: actions/cache@v2
         with:
@@ -61,19 +55,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Docker metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: |
-            ghcr.io/${{ github.event.repository.full_name }}
-
       - name: Build and load image
         uses: docker/build-push-action@v3
         with:
           context: .
           load: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ghcr.io/${{ github.event.repository.full_name }}:latest
 
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
@@ -90,7 +78,7 @@ jobs:
         id: trivy
         with:
           run: |
-            trivy image --no-progress --severity "HIGH,CRITICAL" ghcr.io/${{ steps.ghcr_string.outputs.lowercase }}
+            trivy image --no-progress --severity "HIGH,CRITICAL" ghcr.io/${{ github.event.repository.full_name }}
       
       - name: Print CVE
         run: |
