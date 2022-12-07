@@ -15,13 +15,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
-      - name: Get the tag name
-        run: echo "TAG=${GITHUB_REF/refs\/tags\//}" >> $GITHUB_ENV
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            ghcr.io/${{ github.event.repository.full_name }}
+            webpsh/webp_server_go
+            webpsh/webp-server-go
+            webpsh/webps
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -36,53 +56,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Lower case for ghcr
-        id: ghcr_string
-        uses: ASzc/change-string-case-action@v1
-        with:
-          string: ${{ github.event.repository.full_name }}
-
       - name: Build and push latest images
-        if: ${{ github.ref == 'refs/heads/master' }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: .
           platforms: linux/arm,linux/amd64,linux/arm64
           push: true
-          tags: |
-            webpsh/webp_server_go
-            webpsh/webp-server-go
-            webpsh/webps
-            ghcr.io/${{ steps.ghcr_string.outputs.lowercase }}
-
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
-
-      - name: Build and push tagged images
-        if: ${{ github.ref != 'refs/heads/master' }}
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          platforms: linux/arm,linux/amd64,linux/arm64
-          push: true
-          tags: |
-            webpsh/webp_server_go:${{ env.TAG }}
-            webpsh/webp-server-go:${{ env.TAG }}
-            webpsh/webps:${{ env.TAG }}
-            ghcr.io/${{ steps.ghcr_string.outputs.lowercase }}:${{ env.TAG }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
