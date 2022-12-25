@@ -123,14 +123,14 @@ func avifEncoder(p1, p2 string, quality float32) {
 	convertLog("AVIF", p1, p2, quality)
 }
 
-func webpEncoder(p1, p2 string, quality float32) {
+func webpEncoder(p1, p2 string, quality float32) error {
 	// if convert fails, return error; success nil
 	var buf bytes.Buffer
 	var img image.Image
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
 	img, err := readRawImage(p1, webpMax)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality})
@@ -140,11 +140,11 @@ func webpEncoder(p1, p2 string, quality float32) {
 
 	if err := ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {
 		log.Error(err)
-		return
+		return err
 	}
 
 	convertLog("WebP", p1, p2, quality)
-
+	return nil
 }
 
 func convertLog(itype, p1 string, p2 string, quality float32) {
