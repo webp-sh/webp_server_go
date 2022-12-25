@@ -25,32 +25,26 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 
 ### 1. Prepare the environment
 
-If you'd like to run binary directly on your machine, you need to install some dependencies(as AVIF encoder needs it):
+If you'd like to run binary directly on your machine, you need to install `libaom`:
 
-#### Ubuntu
+`libaom` is for AVIF support, you can install it by `apt install libaom-dev` on Ubuntu, `yum install libaom-devel` on CentOS.
 
-```
-apt install libaom-dev -y
-ln -s /usr/lib/x86_64-linux-gnu/libaom.so /usr/lib/x86_64-linux-gnu/libaom.so.3
-```
+Without this library, you may encounter error like this: `libaom.so.3: cannot open shared object file: No such file or directory`
 
-#### CentOS7
+If you are using Intel Mac, you can install it by `brew install aom`
 
-```
-yum install libaom-devel -y
-```
+If you are using Apple Silicon, you need to `brew install aom && export CPATH=/opt/homebrew/opt/aom/include/;LIBRARY_PATH=/opt/homebrew/opt/aom/lib/`, more references can be found at [在M1 Mac下开发WebP Server Go | 土豆不好吃](https://dmesg.app/m1-aom.html).
 
 If you don't like to hassle around with your system, so do us, why not have a try using Docker? >> [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/)
 
-
-
 ### 2. Download the binary
-Download the `webp-server` from [release](https://github.com/webp-sh/webp_server_go/releases) page.
+
+Download the `webp-server-linux-amd64` from [Releases](https://github.com/webp-sh/webp_server_go/releases) page.
 
 ### 3. Dump config file
 
 ```
-./webp-server -dump-config > config.json
+./webp-server-linux-amd64 -dump-config > config.json
 ```
 
 The default `config.json` may look like this.
@@ -88,15 +82,16 @@ in the example above, your `webp` image will be saved at `/var/cache/webp/pics/t
 ### 3. Run
 
 ```
-./webp-server --config=/path/to/config.json
+./webp-server-linux-amd64 --config=/path/to/config.json
 ```
 
 ### 4. Nginx proxy_pass
-Let Nginx to `proxy_pass http://localhost:3333/;`, and your webp-server is on-the-fly.
+
+Let Nginx to `proxy_pass http://localhost:3333/;`, and your WebP Server is on-the-fly.
 
 ## Advanced Usage
 
-For supervisor, Docker sections, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
+For supervisor, Docker sections or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
 
 ## License
 

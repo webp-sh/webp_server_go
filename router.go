@@ -109,7 +109,11 @@ func proxyHandler(c *fiber.Ctx, reqURI string) error {
 			localRawImagePath := remoteRaw + reqURI
 			_ = fetchRemoteImage(localRawImagePath, realRemoteAddr)
 			_ = os.MkdirAll(path.Dir(localEtagWebPPath), 0755)
-			webpEncoder(localRawImagePath, localEtagWebPPath, config.Quality)
+			encodeErr := webpEncoder(localRawImagePath, localEtagWebPPath, config.Quality)
+			if encodeErr != nil {
+				// Send as it is.
+				return c.SendFile(localRawImagePath)
+			}
 			chooseProxy(remoteLength, localEtagWebPPath)
 			return c.SendFile(localEtagWebPPath)
 		}
