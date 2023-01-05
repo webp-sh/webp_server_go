@@ -12,7 +12,7 @@ require (
 	github.com/staktrace/go-update v0.0.0-20210525161054-fc019945f9a2
 	github.com/stretchr/testify v1.8.1
 	github.com/valyala/fasthttp v1.43.0
-	golang.org/x/image v0.2.0
+	golang.org/x/image v0.3.0
 )
 
 require (
