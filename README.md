@@ -93,6 +93,16 @@ Let Nginx to `proxy_pass http://localhost:3333/;`, and your WebP Server is on-th
 
 For supervisor, Docker sections or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
 
+## Support us
+
+If you find this project useful, please consider supporting
+us [becoming a sponsor](https://github.com/sponsors/webp-sh) or using Stripe
+
+| USD(Card, Apple Pay and Google Pay)              | SEK(Card, Apple Pay and Google Pay)              | CNY(Card, Apple Pay, Google Pay and Alipay)      |
+|--------------------------------------------------|--------------------------------------------------|--------------------------------------------------|
+| [USD](https://buy.stripe.com/cN203sdZB98RevC3cd) | [SEK](https://buy.stripe.com/bIYbMa9JletbevCaEE) | [CNY](https://buy.stripe.com/dR67vU4p13Ox73a6oq) |
+| ![](pics/USD.png)                                | ![](pics/SEK.png)                                | ![](pics/CNY.png)                                |
+
 ## License
 
 WebP Server is under the GPLv3. See the [LICENSE](./LICENSE) file for details.
