@@ -60,6 +60,10 @@ func imageExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
+	if info.Size() < 100 {
+		// means something wrong in exhaust file system
+		return false
+	}
 	log.Debugf("file %s exists!", filename)
 	return !info.IsDir()
 }
