@@ -5,7 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/staktrace/go-update"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"runtime"
 )
@@ -24,7 +24,7 @@ func autoUpdate() {
 	var res Result
 	log.Debugf("Requesting to %s", api)
 	resp1, _ := http.Get(api)
-	data1, _ := ioutil.ReadAll(resp1.Body)
+	data1, _ := io.ReadAll(resp1.Body)
 	_ = json.Unmarshal(data1, &res)
 	var gitVersion = res.TagName
 

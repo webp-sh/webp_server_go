@@ -5,7 +5,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -40,7 +40,7 @@ func requestToServer(url string, app *fiber.App, ua, accept string) (*http.Respo
 	if err != nil {
 		return nil, nil
 	}
-	data, _ := ioutil.ReadAll(resp.Body)
+	data, _ := io.ReadAll(resp.Body)
 	return resp, data
 }
 

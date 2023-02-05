@@ -3,8 +3,8 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -153,7 +153,7 @@ func TestFetchRemoteImage(t *testing.T) {
 	url := "http://github.com/favicon.ico"
 	err := fetchRemoteImage(fp, url)
 	assert.Equal(t, err, nil)
-	data, _ := ioutil.ReadFile(fp)
+	data, _ := os.ReadFile(fp)
 	assert.Equal(t, "image/vnd.microsoft.icon", getFileContentType(data))
 
 	// test can't create file
@@ -168,7 +168,7 @@ func TestFetchRemoteImage(t *testing.T) {
 func TestCleanProxyCache(t *testing.T) {
 	// test normal situation
 	fp := filepath.Join("./exhaust", "sample.png.12345.webp")
-	_ = ioutil.WriteFile(fp, []byte("1234"), 0755)
+	_ = os.WriteFile(fp, []byte("1234"), 0755)
 	assert.True(t, imageExists(fp))
 	cleanProxyCache(fp)
 	assert.False(t, imageExists(fp))
