@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func walker() []string {
@@ -60,7 +60,7 @@ func runEncoder(t *testing.T, file string, dest string) {
 }
 
 func assertType(t *testing.T, dest, mime string) {
-	data, _ := ioutil.ReadFile(dest)
+	data, _ := os.ReadFile(dest)
 	types := getFileContentType(data[:512])
 	assert.Equalf(t, mime, types, "File %s should be %s", dest, mime)
 }

@@ -3,15 +3,15 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/h2non/filetype"
 	"hash/crc32"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
+
+	"github.com/h2non/filetype"
 
 	"github.com/valyala/fasthttp"
 
@@ -159,7 +159,7 @@ func genEtag(ImgAbsPath string) string {
 	if proxyMode {
 		ImgAbsPath = path.Join(remoteRaw, strings.Replace(ImgAbsPath, config.ImgPath, "", -1))
 	}
-	data, err := ioutil.ReadFile(ImgAbsPath)
+	data, err := os.ReadFile(ImgAbsPath)
 	if err != nil {
 		log.Warn(err)
 	}
@@ -220,7 +220,7 @@ func guessSupportedFormat(header *fasthttp.RequestHeader) []string {
 
 func chooseProxy(proxyRawSize string, optimizedAbs string) bool {
 	var proxyRaw, _ = strconv.Atoi(proxyRawSize)
-	webp, _ := ioutil.ReadFile(optimizedAbs)
+	webp, _ := os.ReadFile(optimizedAbs)
 	if len(webp) > proxyRaw {
 		return true
 	} else {
