@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/h2non/filetype"
 	"hash/crc32"
 	"io"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+
+	"github.com/h2non/filetype"
 
 	"github.com/valyala/fasthttp"
 
@@ -57,6 +58,10 @@ func fileCount(dir string) int64 {
 func imageExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
+		return false
+	}
+	if info.Size() < 100 {
+		// means something wrong in exhaust file system
 		return false
 	}
 	log.Debugf("file %s exists!", filename)

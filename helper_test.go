@@ -3,6 +3,7 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
+
 	"net/http"
 	"os"
 	"path/filepath"
@@ -32,7 +33,7 @@ func TestFileCount(t *testing.T) {
 
 func TestImageExists(t *testing.T) {
 	var data = "./pics/empty.jpg"
-	var result = !imageExists(data)
+	var result = imageExists(data)
 
 	if result {
 		t.Errorf("Result: [%v], Expected: [%v]", result, false)
@@ -168,7 +169,8 @@ func TestFetchRemoteImage(t *testing.T) {
 func TestCleanProxyCache(t *testing.T) {
 	// test normal situation
 	fp := filepath.Join("./exhaust", "sample.png.12345.webp")
-	_ = os.WriteFile(fp, []byte("1234"), 0755)
+	buf := make([]byte, 0x1000)
+	_ = os.WriteFile(fp, buf, 0755)
 	assert.True(t, imageExists(fp))
 	cleanProxyCache(fp)
 	assert.False(t, imageExists(fp))
