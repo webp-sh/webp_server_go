@@ -169,7 +169,8 @@ func TestFetchRemoteImage(t *testing.T) {
 func TestCleanProxyCache(t *testing.T) {
 	// test normal situation
 	fp := filepath.Join("./exhaust", "sample.png.12345.webp")
-	_ = os.WriteFile(fp, []byte("1234"), 0755)
+	buf := make([]byte, 0x1000)
+	_ = os.WriteFile(fp, buf, 0755)
 	assert.True(t, imageExists(fp))
 	cleanProxyCache(fp)
 	assert.False(t, imageExists(fp))
