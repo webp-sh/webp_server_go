@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -60,7 +59,7 @@ func convertImage(raw, optimized, itype string) {
 
 	switch itype {
 	case "webp":
-		webpEncoder(raw, optimized, config.Quality)
+		_ = webpEncoder(raw, optimized, config.Quality)
 	case "avif":
 		avifEncoder(raw, optimized, config.Quality)
 	}
@@ -68,7 +67,7 @@ func convertImage(raw, optimized, itype string) {
 }
 
 func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
-	data, err := ioutil.ReadFile(imgPath)
+	data, err := os.ReadFile(imgPath)
 	if err != nil {
 		log.Errorln(err)
 	}
@@ -138,7 +137,7 @@ func webpEncoder(p1, p2 string, quality float32) error {
 		log.Warnf("Can't encode source image: %v to WebP", err)
 	}
 
-	if err := ioutil.WriteFile(p2, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(p2, buf.Bytes(), 0644); err != nil {
 		log.Error(err)
 		return err
 	}
