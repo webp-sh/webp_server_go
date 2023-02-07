@@ -1,6 +1,9 @@
 package main
 
 import (
+	log "github.com/sirupsen/logrus"
+	"github.com/valyala/fasthttp"
+
 	"net/http"
 	"os"
 	"path/filepath"

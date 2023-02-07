@@ -59,7 +59,7 @@ func convertImage(raw, optimized, itype string) {
 
 	switch itype {
 	case "webp":
-		webpEncoder(raw, optimized, config.Quality)
+		_ = webpEncoder(raw, optimized, config.Quality)
 	case "avif":
 		avifEncoder(raw, optimized, config.Quality)
 	}

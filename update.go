@@ -3,6 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"github.com/staktrace/go-update"
+
 	"io"
 	"net/http"
 	"runtime"

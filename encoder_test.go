@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/stretchr/testify/assert"
+
 	"os"
 	"path"
 	"path/filepath"
@@ -40,13 +42,13 @@ func TestAvifEncoder(t *testing.T) {
 
 func TestNonExistImage(t *testing.T) {
 	var dest = "/tmp/test-result"
-	webpEncoder("./pics/empty.jpg", dest, 80)
+	_ = webpEncoder("./pics/empty.jpg", dest, 80)
 	avifEncoder("./pics/empty.jpg", dest, 80)
 }
 
 func TestConvertFail(t *testing.T) {
 	var dest = "/tmp/test-result"
-	webpEncoder("./pics/webp_server.jpg", dest, -1)
+	_ = webpEncoder("./pics/webp_server.jpg", dest, -1)
 	avifEncoder("./pics/webp_server.jpg", dest, -1)
 }
 
@@ -54,7 +56,7 @@ func runEncoder(t *testing.T, file string, dest string) {
 	if file == "pics/empty.jpg" {
 		t.Log("Empty file, that's okay.")
 	}
-	webpEncoder(file, dest, 80)
+	_ = webpEncoder(file, dest, 80)
 	assertType(t, dest, "image/webp")
 
 }
