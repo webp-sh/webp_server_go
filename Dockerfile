@@ -1,8 +1,8 @@
-FROM golang:1.20-alpine as builder
+FROM golang:1.20 as builder
 
 ARG IMG_PATH=/opt/pics
 ARG EXHAUST_PATH=/opt/exhaust
-RUN apk update && apk add alpine-sdk aom-dev && mkdir /build
+RUN apt update && apt install libaom-dev -y && mkdir /build
 COPY go.mod /build
 RUN cd /build && go mod download
 
@@ -12,15 +12,12 @@ RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
     && sed -i 's/127.0.0.1/0.0.0.0/g' config.json  \
     && go build -ldflags="-s -w" -o webp-server .
 
-FROM alpine
+FROM debian:bullseye-slim
 
 COPY --from=builder /build/webp-server  /usr/bin/webp-server
 COPY --from=builder /build/config.json /etc/config.json
 
-COPY --from=builder /usr/lib/libaom.a /usr/lib/libaom.a
-COPY --from=builder /usr/lib/libaom.so /usr/lib/libaom.so
-COPY --from=builder /usr/lib/libaom.so.3 /usr/lib/libaom.so.3
-COPY --from=builder /usr/lib/libaom.so.3.5.0 /usr/lib/libaom.so.3.5.0
+COPY --from=builder //usr/lib/x86_64-linux-gnu/libaom.so /usr/lib/libaom.so.0
 
 
 WORKDIR /opt

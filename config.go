@@ -22,7 +22,7 @@ var (
 	prefetch, proxyMode      bool
 	remoteRaw                = "remote-raw"
 	config                   Config
-	version                  = "0.4.9"
+	version                  = "0.5.0"
 	releaseUrl               = "https://github.com/webp-sh/webp_server_go/releases/latest/download/"
 )
 

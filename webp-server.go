@@ -48,7 +48,7 @@ func deferInit() {
 
 	if verboseMode {
 		log.SetLevel(log.DebugLevel)
-		log.Debug("Debug mode is enable!")
+		log.Debug("Debug mode is enabled!")
 	} else {
 		log.SetLevel(log.InfoLevel)
 	}
@@ -103,7 +103,7 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 	}
 
 	app := fiber.New(fiber.Config{
-		ServerHeader:          "Webp-Server-Go",
+		ServerHeader:          "Webp Server Go",
 		DisableStartupMessage: true,
 	})
 	app.Use(logger.New())
@@ -112,7 +112,7 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 	app.Get("/*", convert)
 
 	fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner, 0x1B)
-	fmt.Println("Webp-Server-Go is Running on http://" + listenAddress)
+	fmt.Println("Webp Server Go is Running on http://" + listenAddress)
 
 	_ = app.Listen(listenAddress)
 
