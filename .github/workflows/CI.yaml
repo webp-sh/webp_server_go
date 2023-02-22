@@ -63,6 +63,7 @@ jobs:
         with:
           context: .
           load: true
+          platforms: linux/arm,linux/amd64,linux/arm64
           tags: |
             ghcr.io/${{ github.event.repository.full_name }}:latest
 
