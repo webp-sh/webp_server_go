@@ -17,7 +17,7 @@ FROM debian:bullseye-slim
 COPY --from=builder /build/webp-server  /usr/bin/webp-server
 COPY --from=builder /build/config.json /etc/config.json
 
-COPY --from=builder //usr/lib/x86_64-linux-gnu/libaom.so /usr/lib/libaom.so.0
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libaom.so /usr/lib/libaom.so.0
 
 
 WORKDIR /opt
