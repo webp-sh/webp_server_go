@@ -42,7 +42,7 @@ func autoUpdate() {
 		filename += ".exe"
 	}
 	log.Info("Downloading binary to update...")
-	resp, _ := http.Get(releaseUrl + filename)
+	resp, _ := http.Get(releaseURL + filename)
 	if resp.StatusCode != 200 {
 		log.Debugf("%s-%s not found on release.", runtime.GOOS, runtime.GOARCH)
 		return

@@ -60,7 +60,7 @@ func TestServerHeaders(t *testing.T) {
 
 	// test for safari
 	response, _ = requestToServer(url, app, safariUA, acceptLegacy)
-	ratio = response.Header.Get("X-Compression-Rate")
+	// ratio = response.Header.Get("X-Compression-Rate")
 	etag = response.Header.Get("Etag")
 
 	assert.NotEqual(t, "", etag)

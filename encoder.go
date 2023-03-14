@@ -55,6 +55,9 @@ func convertImage(raw, optimized, itype string) {
 
 	//we need to create dir first
 	err = os.MkdirAll(path.Dir(optimized), 0755)
+	if err != nil {
+		log.Error(err.Error())
+	}
 	//q, _ := strconv.ParseFloat(config.Quality, 32)
 
 	switch itype {

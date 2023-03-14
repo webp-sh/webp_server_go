@@ -5,9 +5,10 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNormalAutoUpdate(t *testing.T) {
@@ -21,7 +22,7 @@ func TestNormalAutoUpdate(t *testing.T) {
 func Test404AutoUpdate(t *testing.T) {
 	version = "0.0.1"
 	dir := "./update"
-	releaseUrl = releaseUrl + "a"
+	releaseURL = releaseURL + "a"
 	autoUpdate()
 	assert.Equal(t, int64(0), fileCount(dir))
 	_ = os.RemoveAll(dir)
