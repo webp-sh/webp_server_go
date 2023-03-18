@@ -52,6 +52,7 @@ func TestServerHeaders(t *testing.T) {
 
 	// test for chrome
 	response, _ := requestToServer(url, app, chromeUA, acceptWebP)
+	defer response.Body.Close()
 	ratio := response.Header.Get("X-Compression-Rate")
 	etag := response.Header.Get("Etag")
 
@@ -60,7 +61,8 @@ func TestServerHeaders(t *testing.T) {
 
 	// test for safari
 	response, _ = requestToServer(url, app, safariUA, acceptLegacy)
-	ratio = response.Header.Get("X-Compression-Rate")
+	defer response.Body.Close()
+	// ratio = response.Header.Get("X-Compression-Rate")
 	etag = response.Header.Get("Etag")
 
 	assert.NotEqual(t, "", etag)
@@ -96,14 +98,16 @@ func TestConvert(t *testing.T) {
 
 	// test Chrome
 	for url, respType := range testChromeLink {
-		_, data := requestToServer(url, app, chromeUA, acceptWebP)
+		resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+		defer resp.Body.Close()
 		contentType := getFileContentType(data)
 		assert.Equal(t, respType, contentType)
 	}
 
 	// test Safari
 	for url, respType := range testSafariLink {
-		_, data := requestToServer(url, app, safariUA, acceptLegacy)
+		resp, data := requestToServer(url, app, safariUA, acceptLegacy)
+		defer resp.Body.Close()
 		contentType := getFileContentType(data)
 		assert.Equal(t, respType, contentType)
 	}
@@ -119,12 +123,14 @@ func TestConvertNotAllowed(t *testing.T) {
 
 	// not allowed, but we have the file, this should return File extension not allowed
 	url := "http://127.0.0.1:3333/webp_server.bmp"
-	_, data := requestToServer(url, app, chromeUA, acceptWebP)
+	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
 	assert.Contains(t, string(data), "File extension not allowed")
 
 	// not allowed, random file
 	url = url + "hagdgd"
-	_, data = requestToServer(url, app, chromeUA, acceptWebP)
+	resp, data = requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
 	assert.Contains(t, string(data), "File extension not allowed")
 
 }
@@ -139,6 +145,7 @@ func TestConvertProxyModeBad(t *testing.T) {
 	// this is local random image, should be 500
 	url := "http://127.0.0.1:3333/webp_8888server.bmp"
 	resp, _ := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
 }
@@ -154,11 +161,13 @@ func TestConvertProxyModeWork(t *testing.T) {
 	url := "https://webp.sh/images/cover.jpg"
 
 	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "image/webp", getFileContentType(data))
 
 	// test proxyMode with Safari
 	resp, data = requestToServer(url, app, safariUA, acceptLegacy)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "image/jpeg", getFileContentType(data))
 }
@@ -171,8 +180,9 @@ func TestConvertBigger(t *testing.T) {
 	app.Get("/*", convert)
 
 	url := "http://127.0.0.1:3333/big.jpg"
-	response, data := requestToServer(url, app, chromeUA, acceptWebP)
-	assert.Equal(t, "image/jpeg", response.Header.Get("content-type"))
+	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, "image/jpeg", resp.Header.Get("content-type"))
 	assert.Equal(t, "image/jpeg", getFileContentType(data))
 	_ = os.RemoveAll(config.ExhaustPath)
 }

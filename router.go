@@ -69,10 +69,10 @@ func convert(c *fiber.Ctx) error {
 
 	var availableFiles = []string{rawImageAbs}
 	for _, v := range goodFormat {
-		if "avif" == v {
+		if v == "avif" {
 			availableFiles = append(availableFiles, avifAbs)
 		}
-		if "webp" == v {
+		if v == "webp" {
 			availableFiles = append(availableFiles, webpAbs)
 		}
 	}

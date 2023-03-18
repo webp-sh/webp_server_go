@@ -25,7 +25,11 @@ func autoUpdate() {
 	}
 	var res Result
 	log.Debugf("Requesting to %s", api)
-	resp1, _ := http.Get(api)
+	resp1, err := http.Get(api)
+	if err != nil {
+		log.Errorf("Error requesting to %s", api)
+	}
+	defer resp1.Body.Close()
 	data1, _ := io.ReadAll(resp1.Body)
 	_ = json.Unmarshal(data1, &res)
 	var gitVersion = res.TagName
@@ -42,13 +46,13 @@ func autoUpdate() {
 		filename += ".exe"
 	}
 	log.Info("Downloading binary to update...")
-	resp, _ := http.Get(releaseUrl + filename)
+	resp, _ := http.Get(releaseURL + filename)
 	if resp.StatusCode != 200 {
 		log.Debugf("%s-%s not found on release.", runtime.GOOS, runtime.GOARCH)
 		return
 	}
 
-	err := update.Apply(resp.Body, update.Options{})
+	err = update.Apply(resp.Body, update.Options{})
 	if err != nil {
 		// error handling
 		log.Errorf("Update error. %v", err)

@@ -23,7 +23,7 @@ var (
 	remoteRaw                = "remote-raw"
 	config                   Config
 	version                  = "0.5.0"
-	releaseUrl               = "https://github.com/webp-sh/webp_server_go/releases/latest/download/"
+	releaseURL               = "https://github.com/webp-sh/webp_server_go/releases/latest/download/"
 )
 
 const (

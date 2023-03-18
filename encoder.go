@@ -55,6 +55,9 @@ func convertImage(raw, optimized, itype string) {
 
 	//we need to create dir first
 	err = os.MkdirAll(path.Dir(optimized), 0755)
+	if err != nil {
+		log.Error(err.Error())
+	}
 	//q, _ := strconv.ParseFloat(config.Quality, 32)
 
 	switch itype {
@@ -137,7 +140,7 @@ func webpEncoder(p1, p2 string, quality float32) error {
 		log.Warnf("Can't encode source image: %v to WebP", err)
 	}
 
-	if err := os.WriteFile(p2, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(p2, buf.Bytes(), 0600); err != nil {
 		log.Error(err)
 		return err
 	}

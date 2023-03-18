@@ -84,12 +84,13 @@ func checkAllowedType(imgFilename string) bool {
 
 // Check for remote filepath, e.g: https://test.webp.sh/node.png
 // return StatusCode, etagValue and length
-func getRemoteImageInfo(fileUrl string) (int, string, string) {
-	res, err := http.Head(fileUrl)
+func getRemoteImageInfo(fileURL string) (int, string, string) {
+	res, err := http.Head(fileURL)
 	if err != nil {
 		log.Errorln("Connection to remote error!")
 		return http.StatusInternalServerError, "", ""
 	}
+	defer res.Body.Close()
 	if res.StatusCode != 404 {
 		etagValue := res.Header.Get("etag")
 		if etagValue == "" {
