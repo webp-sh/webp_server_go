@@ -90,6 +90,7 @@ func getRemoteImageInfo(fileURL string) (int, string, string) {
 		log.Errorln("Connection to remote error!")
 		return http.StatusInternalServerError, "", ""
 	}
+	defer res.Body.Close()
 	if res.StatusCode != 404 {
 		etagValue := res.Header.Get("etag")
 		if etagValue == "" {

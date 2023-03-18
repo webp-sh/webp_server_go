@@ -29,7 +29,7 @@ install-staticcheck: tools-dir
 static-check: install-staticcheck
 	#S1000,SA1015,SA4006,SA4011,S1023,S1034,ST1003,ST1005,ST1016,ST1020,ST1021
 	tools/bin/staticcheck -checks all,-ST1000 ./...
-	GO111MODULE=on CGO_ENABLED=0 tools/bin/golangci-lint run -v $$($(PACKAGE_DIRECTORIES)) --config .golangci.yml
+	GO111MODULE=on tools/bin/golangci-lint run -v $$($(PACKAGE_DIRECTORIES)) --config .golangci.yml
 
 test: static-check
 	go test -v -coverprofile=coverage.txt -covermode=atomic
