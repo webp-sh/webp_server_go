@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/Kagami/go-avif"
 	"github.com/chai2010/webp"
@@ -22,20 +23,39 @@ import (
 func convertFilter(raw, avifPath, webpPath string, c chan int) {
 	// all absolute paths
 
+	var wg sync.WaitGroup
+	wg.Add(2)
 	if !imageExists(avifPath) && config.EnableAVIF {
-		convertImage(raw, avifPath, "avif")
+		go func() {
+			err := convertImage(raw, avifPath, "avif")
+			if err != nil {
+				log.Errorln(err)
+			}
+			defer wg.Done()
+		}()
+	} else {
+		wg.Done()
 	}
 
 	if !imageExists(webpPath) {
-		convertImage(raw, webpPath, "webp")
+		go func() {
+			err := convertImage(raw, webpPath, "webp")
+			if err != nil {
+				log.Errorln(err)
+			}
+			defer wg.Done()
+		}()
+	} else {
+		wg.Done()
 	}
+	wg.Wait()
 
 	if c != nil {
 		c <- 1
 	}
 }
 
-func convertImage(raw, optimized, itype string) {
+func convertImage(raw, optimized, itype string) error {
 	// we don't have abc.jpg.png1582558990.webp
 	// delete the old pic and convert a new one.
 	// optimized: /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
@@ -62,11 +82,11 @@ func convertImage(raw, optimized, itype string) {
 
 	switch itype {
 	case "webp":
-		_ = webpEncoder(raw, optimized, config.Quality)
+		err = webpEncoder(raw, optimized, config.Quality)
 	case "avif":
-		avifEncoder(raw, optimized, config.Quality)
+		err = avifEncoder(raw, optimized, config.Quality)
 	}
-
+	return err
 }
 
 func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
@@ -91,7 +111,7 @@ func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
 
 	x, y := img.Bounds().Max.X, img.Bounds().Max.Y
 	if x > maxPixel || y > maxPixel {
-		errinfo := fmt.Sprintf("WebP: %s(%dx%d) is too large", imgPath, x, y)
+		errinfo := fmt.Sprintf("Read image error: %s(%dx%d) is too large", imgPath, x, y)
 		log.Warnf(errinfo)
 		return nil, errors.New(errinfo)
 	}
@@ -99,7 +119,7 @@ func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
 	return img, nil
 }
 
-func avifEncoder(p1, p2 string, quality float32) {
+func avifEncoder(p1, p2 string, quality float32) error {
 	var img image.Image
 	dst, err := os.Create(p2)
 	if err != nil {
@@ -108,7 +128,7 @@ func avifEncoder(p1, p2 string, quality float32) {
 	// AVIF has a maximum resolution of 65536 x 65536 pixels.
 	img, err = readRawImage(p1, avifMax)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = avif.Encode(dst, img, &avif.Options{
@@ -123,6 +143,7 @@ func avifEncoder(p1, p2 string, quality float32) {
 	}
 
 	convertLog("AVIF", p1, p2, quality)
+	return nil
 }
 
 func webpEncoder(p1, p2 string, quality float32) error {

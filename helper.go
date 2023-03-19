@@ -137,6 +137,7 @@ func cleanProxyCache(cacheImagePath string) {
 }
 
 func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string) (string, string) {
+	fmt.Println("genOptimizedAbsPath: ", rawImagePath, exhaustPath, imageName, reqURI)
 	// get file mod time
 	STAT, err := os.Stat(rawImagePath)
 	if err != nil {

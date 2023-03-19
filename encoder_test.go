@@ -40,13 +40,13 @@ func TestAvifEncoder(t *testing.T) {
 
 func TestNonExistImage(t *testing.T) {
 	var dest = "/tmp/test-result"
-	_ = webpEncoder("./pics/empty.jpg", dest, 80)
+	webpEncoder("./pics/empty.jpg", dest, 80)
 	avifEncoder("./pics/empty.jpg", dest, 80)
 }
 
 func TestConvertFail(t *testing.T) {
 	var dest = "/tmp/test-result"
-	_ = webpEncoder("./pics/webp_server.jpg", dest, -1)
+	webpEncoder("./pics/webp_server.jpg", dest, -1)
 	avifEncoder("./pics/webp_server.jpg", dest, -1)
 }
 
@@ -54,7 +54,7 @@ func runEncoder(t *testing.T, file string, dest string) {
 	if file == "pics/empty.jpg" {
 		t.Log("Empty file, that's okay.")
 	}
-	_ = webpEncoder(file, dest, 80)
+	webpEncoder(file, dest, 80)
 	assertType(t, dest, "image/webp")
 
 }
