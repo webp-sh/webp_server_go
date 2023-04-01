@@ -10,32 +10,46 @@
 
 [Documentation](https://docs.webp.sh/) | [Website](https://webp.sh/)
 
-This is a Server based on Golang, which allows you to serve WebP images on the fly. 
-It will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.json`.. 
-* currently supported  image format: JPEG, PNG, BMP, GIF(static image for now)
+This Golang-based server allows you to serve WebP images on the fly, converting jpg, jpeg, png files by default.
 
+The conversion options can be customized by editing the `config.json` file.
 
-> e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp` format without changing the URL.
+* The server currently supports the following image formats: JPEG, PNG, BMP, and GIF (static image for now).
+
+> For example, when you visit the URL `https://your.website/pics/tsuki.jpg`,
+> the image will be served in `image/webp` format without altering the URL.
 >
-> ~~For Safari and Opera users, the original image will be used.~~ 
-> We've now support Safari/Chrome/Firefox on iOS 14/iPadOS 14
-
+> Previously, Safari and Opera users would receive the original image,
+> but now we also support Safari, Chrome, and Firefox on iOS 14 and iPadOS 14.
 
 ## Simple Usage Steps(with Binary)
 
 ### 1. Prepare the environment
 
-If you'd like to run binary directly on your machine, you need to install `libaom`:
+To run the binary directly on your machine, you need to install libaom:
 
-`libaom` is for AVIF support, you can install it by `apt install libaom-dev` on Ubuntu, `yum install libaom-devel` on CentOS.
+To enable AVIF support, `libaom` needs to be installed.
 
-Without this library, you may encounter error like this: `libaom.so.3: cannot open shared object file: No such file or directory`
+If `libaom` is not installed, you may encounter an error message like this:
+`libaom.so.3: cannot open shared object file: No such file or directory.`
 
-If you are using Intel Mac, you can install it by `brew install aom`
+* If you're using Ubuntu, you can install it by running `apt install libaom-dev`.
+* If you're using CentOS, you can install it by running `yum install libaom-devel`.
+* If you are using an Intel-based Mac, you can install the aom library by running `brew install aom` in your terminal.
+* However, if you are using an Apple Silicon-based Mac,
+  you need to run the following commands to install the aom library and set the environment variables for the library:
 
-If you are using Apple Silicon, you need to `brew install aom && export CPATH=/opt/homebrew/opt/aom/include/;LIBRARY_PATH=/opt/homebrew/opt/aom/lib/`, more references can be found at [在M1 Mac下开发WebP Server Go | 土豆不好吃](https://dmesg.app/m1-aom.html).
+```shell
+brew install aom
+export CPATH=/opt/homebrew/opt/aom/include/
+export LIBRARY_PATH=/opt/homebrew/opt/aom/lib/
+```
 
-If you don't like to hassle around with your system, so do us, why not have a try using Docker? >> [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/)
+For more information, you can refer to this
+guide:  [在M1 Mac下开发WebP Server Go | 土豆不好吃](https://dmesg.app/m1-aom.html).
+
+If you prefer to avoid dealing with system dependencies, you can try running the server using
+Docker. [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/)
 
 ### 2. Download the binary
 
@@ -47,7 +61,8 @@ Download the `webp-server-linux-amd64` from [Releases](https://github.com/webp-s
 ./webp-server-linux-amd64 -dump-config > config.json
 ```
 
-The default `config.json` may look like this.
+Here's an example of what the `config.json` file may look like by default:
+
 ```json
 {
   "HOST": "127.0.0.1",
@@ -55,29 +70,37 @@ The default `config.json` may look like this.
   "QUALITY": "80",
   "IMG_PATH": "/path/to/pics",
   "EXHAUST_PATH": "/path/to/exhaust",
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ALLOWED_TYPES": [
+    "jpg",
+    "png",
+    "jpeg",
+    "bmp"
+  ],
   "ENABLE_AVIF": false
 }
 ```
-> AVIF support is disabled by default as converting images to AVIF is CPU consuming.
+
+> By default, AVIF support is disabled in the server because the process of converting images to AVIF format is
+> CPU-intensive.
 
 #### Config Example
 
-In the following example, the image path and website URL.
+The table below shows an example of the image path and corresponding website URL.
 
 | Image Path                            | Website Path                         |
-| ------------------------------------- | ------------------------------------ |
+|---------------------------------------|--------------------------------------|
 | `/var/www/img.webp.sh/path/tsuki.jpg` | `https://img.webp.sh/path/tsuki.jpg` |
 
-The `IMG_PATH` inside `config.json` should be like:
+The `IMG_PATH` in the `config.json` file should be set as follows:
 
 | IMG_PATH               |
-| ---------------------- |
+|------------------------|
 | `/var/www/img.webp.sh` |
 
+The `EXHAUST_PATH` is the cache folder where the output webp images are stored.
 
-`EXHAUST_PATH` is cache folder for output `webp` images, with `EXHAUST_PATH` set to `/var/cache/webp` 
-in the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
+In the example above, if `EXHAUST_PATH` is set to `/var/cache/webp`,
+your webp image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
 
 ### 3. Run
 
@@ -87,16 +110,18 @@ in the example above, your `webp` image will be saved at `/var/cache/webp/pics/t
 
 ### 4. Nginx proxy_pass
 
-Let Nginx to `proxy_pass http://localhost:3333/;`, and your WebP Server is on-the-fly.
+You can make your WebP server on-the-fly by configuring Nginx to `proxy_pass http://localhost:3333/;`.
 
 ## Advanced Usage
 
-For supervisor, Docker sections or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
+For more information on configuring the WebP Server with supervisor, Docker, or detailed Nginx settings,
+please refer to our documentation located at: [https://docs.webp.sh/](https://docs.webp.sh/)
 
 ## Support us
 
-If you find this project useful, please consider supporting
-us [becoming a sponsor](https://github.com/sponsors/webp-sh) or using Stripe
+Consider supporting this project
+if you find it useful by becoming a sponsor through [becoming a sponsor](https://github.com/sponsors/webp-sh) or using
+Stripe.
 
 | USD(Card, Apple Pay and Google Pay)              | SEK(Card, Apple Pay and Google Pay)              | CNY(Card, Apple Pay, Google Pay and Alipay)      |
 |--------------------------------------------------|--------------------------------------------------|--------------------------------------------------|
@@ -105,5 +130,5 @@ us [becoming a sponsor](https://github.com/sponsors/webp-sh) or using Stripe
 
 ## License
 
-WebP Server is under the GPLv3. See the [LICENSE](./LICENSE) file for details.
+WebP Server Go is released under the GPLv3 license. See the [LICENSE](./LICENSE) file for details.
 
