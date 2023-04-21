@@ -11,7 +11,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/staktrace/go-update v0.0.0-20210525161054-fc019945f9a2
 	github.com/stretchr/testify v1.8.2
-	github.com/valyala/fasthttp v1.45.0
+	github.com/valyala/fasthttp v1.46.0
 	golang.org/x/image v0.7.0
 )
 
