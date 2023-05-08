@@ -23,7 +23,7 @@ jobs:
 
       - name: Setup necessary packages
         run: |
-          apt install libvips-dev -y
+          sudo apt install libvips-dev -y
 
       - name: run test cases
         run: make test && make

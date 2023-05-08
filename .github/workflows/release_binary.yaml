@@ -24,7 +24,7 @@ jobs:
       
       - name: Setup necessary packages
         run: |
-          apt install libvips-dev -y
+          sudo apt install libvips-dev -y
 
       - name: Make WebP Server Go
         run: |
