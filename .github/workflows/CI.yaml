@@ -12,8 +12,6 @@ jobs:
   ci:
     name: CI check on every push
     runs-on: ubuntu-latest
-    container:
-      image: centos:centos7
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -25,9 +23,7 @@ jobs:
 
       - name: Setup necessary packages
         run: |
-          yum install epel-release -y
-          yum groupinstall 'Development Tools' -y
-          yum install libaom-devel -y
+          apt install libvips-dev
 
       - name: run test cases
         run: make test && make
