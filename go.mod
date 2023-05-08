@@ -3,8 +3,8 @@ module webp_server_go
 go 1.20
 
 require (
-	github.com/Kagami/go-avif v0.1.0
-	github.com/chai2010/webp v1.1.0
+	github.com/davidbyttow/govips v0.0.0-20201026223743-b1b72c7305d9
+	github.com/davidbyttow/govips/v2 v2.13.0
 	github.com/gofiber/fiber/v2 v2.4.0
 	github.com/h2non/filetype v1.1.3
 	github.com/schollz/progressbar/v3 v3.13.1
@@ -25,8 +25,10 @@ require (
 	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/term v0.6.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

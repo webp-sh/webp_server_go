@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"runtime"
 
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	log "github.com/sirupsen/logrus"
@@ -97,6 +98,9 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 	// go autoUpdate()
 	config = loadConfig(configPath)
 	switchProxyMode()
+
+	vips.Startup(nil)
+	defer vips.Shutdown()
 
 	if prefetch {
 		go prefetchImages(config.ImgPath, config.ExhaustPath)

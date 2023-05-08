@@ -8,7 +8,7 @@ type Config struct {
 	Host         string   `json:"HOST"`
 	Port         string   `json:"PORT"`
 	ImgPath      string   `json:"IMG_PATH"`
-	Quality      float32  `json:"QUALITY,string"`
+	Quality      int      `json:"QUALITY,string"`
 	AllowedTypes []string `json:"ALLOWED_TYPES"`
 	ExhaustPath  string   `json:"EXHAUST_PATH"`
 	EnableAVIF   bool     `json:"ENABLE_AVIF"`

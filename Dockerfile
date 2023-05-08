@@ -2,7 +2,7 @@ FROM golang:1.20 as builder
 
 ARG IMG_PATH=/opt/pics
 ARG EXHAUST_PATH=/opt/exhaust
-RUN apt update && apt install libaom-dev -y && mkdir /build
+RUN apt update && apt install libaom-dev libvips-dev -y && mkdir /build
 COPY go.mod /build
 RUN cd /build && go mod download
 
@@ -14,10 +14,10 @@ RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
 
 FROM debian:bullseye-slim
 
+RUN apt update && apt install libaom-dev libvips-dev -y && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /build/webp-server  /usr/bin/webp-server
 COPY --from=builder /build/config.json /etc/config.json
-
-RUN apt update && apt install libaom-dev -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt
 VOLUME /opt/exhaust

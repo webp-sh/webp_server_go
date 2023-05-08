@@ -10,12 +10,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 
-	"github.com/Kagami/go-avif"
-	"github.com/chai2010/webp"
+	"github.com/davidbyttow/govips/v2/vips"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/image/bmp"
 )
@@ -73,12 +71,11 @@ func convertImage(raw, optimized, itype string) error {
 		}
 	}
 
-	//we need to create dir first
+	// we need to create dir first
 	err = os.MkdirAll(path.Dir(optimized), 0755)
 	if err != nil {
 		log.Error(err.Error())
 	}
-	//q, _ := strconv.ParseFloat(config.Quality, 32)
 
 	switch itype {
 	case "webp":
@@ -119,49 +116,70 @@ func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
 	return img, nil
 }
 
-func avifEncoder(p1, p2 string, quality float32) error {
-	var img image.Image
-	dst, err := os.Create(p2)
-	if err != nil {
-		log.Fatalf("Can't create destination file: %v", err)
-	}
+func avifEncoder(p1, p2 string, quality int) error {
+	// if convert fails, return error; success nil
+	var buf []byte
 	// AVIF has a maximum resolution of 65536 x 65536 pixels.
-	img, err = readRawImage(p1, avifMax)
+	img, err := vips.NewImageFromFile(p1)
 	if err != nil {
 		return err
 	}
 
-	err = avif.Encode(dst, img, &avif.Options{
-		Threads:        runtime.NumCPU(),
-		Speed:          avif.MaxSpeed,
-		Quality:        int((100 - quality) / 100 * avif.MaxQuality),
-		SubsampleRatio: nil,
-	})
+	// If quality >= 100, we use lossless mode
+	if quality >= 100 {
+		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
+			Lossless:      true,
+			StripMetadata: true,
+		})
+	} else {
+		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
+			Quality:       quality,
+			Lossless:      false,
+			StripMetadata: true,
+		})
+	}
 
 	if err != nil {
 		log.Warnf("Can't encode source image: %v to AVIF", err)
+	}
+
+	if err := os.WriteFile(p2, buf, 0600); err != nil {
+		log.Error(err)
+		return err
 	}
 
 	convertLog("AVIF", p1, p2, quality)
 	return nil
 }
 
-func webpEncoder(p1, p2 string, quality float32) error {
+func webpEncoder(p1, p2 string, quality int) error {
 	// if convert fails, return error; success nil
-	var buf bytes.Buffer
-	var img image.Image
+	var buf []byte
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
-	img, err := readRawImage(p1, webpMax)
+	img, err := vips.NewImageFromFile(p1)
 	if err != nil {
 		return err
 	}
 
-	err = webp.Encode(&buf, img, &webp.Options{Lossless: false, Quality: quality})
+	// If quality >= 100, we use lossless mode
+	if quality >= 100 {
+		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
+			Lossless:      true,
+			StripMetadata: true,
+		})
+	} else {
+		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
+			Quality:       quality,
+			Lossless:      false,
+			StripMetadata: true,
+		})
+	}
+
 	if err != nil {
 		log.Warnf("Can't encode source image: %v to WebP", err)
 	}
 
-	if err := os.WriteFile(p2, buf.Bytes(), 0600); err != nil {
+	if err := os.WriteFile(p2, buf, 0600); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -170,7 +188,7 @@ func webpEncoder(p1, p2 string, quality float32) error {
 	return nil
 }
 
-func convertLog(itype, p1 string, p2 string, quality float32) {
+func convertLog(itype, p1 string, p2 string, quality int) {
 	oldf, _ := os.Stat(p1)
 	newf, _ := os.Stat(p2)
 	log.Infof("%s@%.2f%%: %s->%s %d->%d %.2f%% deflated", itype, quality,
