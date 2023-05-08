@@ -1,13 +1,10 @@
-// webp_server_go - prefetch_test.go
-// 2020-11-10 09:27
-// Benny <benny.think@gmail.com>
-
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPrefetchImages(t *testing.T) {

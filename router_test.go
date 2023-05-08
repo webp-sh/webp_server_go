@@ -1,7 +1,3 @@
-// webp_server_go - webp-server_test
-// 2020-11-09 11:55
-// Benny <benny.think@gmail.com>
-
 package main
 
 import (

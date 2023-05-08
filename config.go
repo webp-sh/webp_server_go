@@ -1,7 +1,3 @@
-// webp_server_go - config
-// 2020-11-27 13:05
-// Benny <benny.think@gmail.com>
-
 package main
 
 type Config struct {
@@ -22,7 +18,7 @@ var (
 	prefetch, proxyMode      bool
 	remoteRaw                = "remote-raw"
 	config                   Config
-	version                  = "0.5.1"
+	version                  = "0.6.0"
 	releaseURL               = "https://github.com/webp-sh/webp_server_go/releases/latest/download/"
 )
 

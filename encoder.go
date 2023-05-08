@@ -1,12 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
-	"image"
-	"image/jpeg"
-	"image/png"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,7 +9,6 @@ import (
 
 	"github.com/davidbyttow/govips/v2/vips"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/image/bmp"
 )
 
 func convertFilter(raw, avifPath, webpPath string, c chan int) {
@@ -84,36 +77,6 @@ func convertImage(raw, optimized, itype string) error {
 		err = avifEncoder(raw, optimized, config.Quality)
 	}
 	return err
-}
-
-func readRawImage(imgPath string, maxPixel int) (img image.Image, err error) {
-	data, err := os.ReadFile(imgPath)
-	if err != nil {
-		log.Errorln(err)
-	}
-
-	imgExtension := strings.ToLower(path.Ext(imgPath))
-	if strings.Contains(imgExtension, "jpeg") || strings.Contains(imgExtension, "jpg") {
-		img, err = jpeg.Decode(bytes.NewReader(data))
-	} else if strings.Contains(imgExtension, "png") {
-		img, err = png.Decode(bytes.NewReader(data))
-	} else if strings.Contains(imgExtension, "bmp") {
-		img, err = bmp.Decode(bytes.NewReader(data))
-	}
-	if err != nil || img == nil {
-		errinfo := fmt.Sprintf("image file %s is corrupted: %v", imgPath, err)
-		log.Errorln(errinfo)
-		return nil, errors.New(errinfo)
-	}
-
-	x, y := img.Bounds().Max.X, img.Bounds().Max.Y
-	if x > maxPixel || y > maxPixel {
-		errinfo := fmt.Sprintf("Read image error: %s(%dx%d) is too large", imgPath, x, y)
-		log.Warnf(errinfo)
-		return nil, errors.New(errinfo)
-	}
-
-	return img, nil
 }
 
 func avifEncoder(p1, p2 string, quality int) error {
