@@ -50,3 +50,8 @@ RestartSec=3s
 [Install]
 WantedBy=multi-user.target`
 )
+
+const (
+	webpMax = 16383
+	avifMax = 65536
+)

@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+var dest = "/tmp/test-result"
+
 func walker() []string {
 	var list []string
 	_ = filepath.Walk("./pics", func(p string, info os.FileInfo, err error) error {
@@ -23,7 +25,6 @@ func walker() []string {
 
 func TestWebPEncoder(t *testing.T) {
 	// Go through every files
-	var dest = "/tmp/test-result"
 	var target = walker()
 	for _, f := range target {
 		runEncoder(t, f, dest)
@@ -33,28 +34,25 @@ func TestWebPEncoder(t *testing.T) {
 
 func TestAvifEncoder(t *testing.T) {
 	// Only one file: img_over_16383px.jpg might cause memory issues on CI environment
-	var dest = "/tmp/test-result"
-	avifEncoder("./pics/big.jpg", dest, 80)
+	assert.Nil(t, avifEncoder("./pics/big.jpg", dest, 80))
 	assertType(t, dest, "image/avif")
 }
 
 func TestNonExistImage(t *testing.T) {
-	var dest = "/tmp/test-result"
-	webpEncoder("./pics/empty.jpg", dest, 80)
-	avifEncoder("./pics/empty.jpg", dest, 80)
+	assert.NotNil(t, webpEncoder("./pics/empty.jpg", dest, 80))
+	assert.NotNil(t, avifEncoder("./pics/empty.jpg", dest, 80))
 }
 
-func TestConvertFail(t *testing.T) {
-	var dest = "/tmp/test-result"
-	webpEncoder("./pics/webp_server.jpg", dest, -1)
-	avifEncoder("./pics/webp_server.jpg", dest, -1)
+func TestHighResolutionImage(t *testing.T) {
+	assert.NotNil(t, webpEncoder("./pics/img_over_16383px.jpg", dest, 80))
+	assert.Nil(t, avifEncoder("./pics/img_over_16383px.jpg", dest, 80))
 }
 
 func runEncoder(t *testing.T, file string, dest string) {
 	if file == "pics/empty.jpg" {
 		t.Log("Empty file, that's okay.")
 	}
-	webpEncoder(file, dest, 80)
+	_ = webpEncoder(file, dest, 80)
 	assertType(t, dest, "image/webp")
 
 }

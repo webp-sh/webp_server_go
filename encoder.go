@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path"
 	"path/filepath"
@@ -82,12 +83,14 @@ func convertImage(raw, optimized, itype string) error {
 func avifEncoder(p1, p2 string, quality int) error {
 	// if convert fails, return error; success nil
 	var buf []byte
-	// AVIF has a maximum resolution of 65536 x 65536 pixels.
 	img, err := vips.NewImageFromFile(p1)
 	if err != nil {
 		return err
 	}
-
+	// AVIF has a maximum resolution of 65536 x 65536 pixels.
+	if img.Metadata().Width > avifMax || img.Metadata().Height > avifMax {
+		return errors.New("WebP: image too large")
+	}
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
@@ -118,12 +121,15 @@ func avifEncoder(p1, p2 string, quality int) error {
 func webpEncoder(p1, p2 string, quality int) error {
 	// if convert fails, return error; success nil
 	var buf []byte
-	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
 	img, err := vips.NewImageFromFile(p1)
 	if err != nil {
 		return err
 	}
 
+	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
+	if img.Metadata().Width > webpMax || img.Metadata().Height > webpMax {
+		return errors.New("WebP: image too large")
+	}
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
