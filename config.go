@@ -19,7 +19,6 @@ var (
 	remoteRaw                = "remote-raw"
 	config                   Config
 	version                  = "0.6.0"
-	releaseURL               = "https://github.com/webp-sh/webp_server_go/releases/latest/download/"
 )
 
 const (
@@ -50,9 +49,4 @@ RestartSec=3s
 
 [Install]
 WantedBy=multi-user.target`
-)
-
-const (
-	webpMax = 16383
-	avifMax = 65536
 )
