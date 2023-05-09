@@ -98,7 +98,9 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 	config = loadConfig(configPath)
 	switchProxyMode()
 
-	vips.Startup(nil)
+	vips.Startup(&vips.Config{
+		ConcurrencyLevel: runtime.NumCPU(),
+	})
 	defer vips.Shutdown()
 
 	if prefetch {
