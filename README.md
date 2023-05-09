@@ -24,10 +24,26 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 
 ### 1. Prepare the environment
 
-Install `libvips` on your machine, more info [here](https://github.com/davidbyttow/govips)
+#### If you are using version after 0.6.0
 
-* Ubuntu `apt install libvips-dev`
-* macOS `brew install vips pkg-config`
+> Install `libvips` on your machine, more info [here](https://github.com/davidbyttow/govips)
+>
+> * Ubuntu `apt install libvips-dev`
+> * macOS `brew install vips pkg-config`
+
+#### If you are using version before 0.6.0
+
+> If you'd like to run binary directly on your machine, you need to install `libaom`:
+>
+> `libaom` is for AVIF support, you can install it by `apt install libaom-dev` on Ubuntu, `yum install libaom-devel` on CentOS.
+>
+> Without this library, you may encounter error like this: `libaom.so.3: cannot open shared object file: No such file or directory`
+>
+> If you are using Intel Mac, you can install it by `brew install aom`
+>
+> If you are using Apple Silicon, you need to `brew install aom && export CPATH=/opt/homebrew/opt/aom/include/;LIBRARY_PATH=/opt/homebrew/opt/aom/lib/`, more references can be found at [在M1 Mac下开发WebP Server Go | 土豆不好吃](https://dmesg.app/m1-aom.html).
+>
+> If you don't like to hassle around with your system, so do us, why not have a try using Docker? >> [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/)
 
 ### 2. Download the binary
 

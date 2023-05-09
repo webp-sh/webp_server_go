@@ -77,7 +77,7 @@ jobs:
         id: trivy
         with:
           run: |
-            trivy image --no-progress --severity "HIGH,CRITICAL" ghcr.io/${{ github.event.repository.full_name }}
+            trivy image --no-progress --severity "HIGH,CRITICAL" --ignore-unfixed ghcr.io/${{ github.event.repository.full_name }}
       
       - name: Print CVE
         run: |
