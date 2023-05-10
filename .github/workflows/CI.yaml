@@ -12,8 +12,6 @@ jobs:
   ci:
     name: CI check on every push
     runs-on: ubuntu-latest
-    container:
-      image: centos:centos7
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -25,9 +23,7 @@ jobs:
 
       - name: Setup necessary packages
         run: |
-          yum install epel-release -y
-          yum groupinstall 'Development Tools' -y
-          yum install libaom-devel -y
+          sudo apt install libvips-dev -y
 
       - name: run test cases
         run: make test && make
@@ -81,14 +77,14 @@ jobs:
         id: trivy
         with:
           run: |
-            trivy image --no-progress --severity "HIGH,CRITICAL" ghcr.io/${{ github.event.repository.full_name }}
+            trivy image --no-progress --severity "HIGH,CRITICAL" --ignore-unfixed ghcr.io/${{ github.event.repository.full_name }}
       
       - name: Print CVE
         run: |
           echo "${{ steps.trivy.outputs.stdout }}"
 
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v1
+        uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
             ```

@@ -13,9 +13,6 @@ jobs:
   build:
     name: Create Release
     runs-on: ubuntu-latest
-    container:
-      image: centos:centos7
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -27,9 +24,7 @@ jobs:
       
       - name: Setup necessary packages
         run: |
-          yum install epel-release -y
-          yum groupinstall 'Development Tools' -y
-          yum install libaom-devel -y
+          sudo apt install libvips-dev -y
 
       - name: Make WebP Server Go
         run: |

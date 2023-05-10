@@ -1,17 +1,14 @@
-// webp_server_go - webp-server_test
-// 2020-11-10 09:41
-// Benny <benny.think@gmail.com>
-
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"net"
 	"os"
 	"runtime"
 	"testing"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
 
 // due to test limit, we can't test for cli param part.
@@ -21,7 +18,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "./exhaust", c.ExhaustPath)
 	assert.Equal(t, "127.0.0.1", c.Host)
 	assert.Equal(t, "3333", c.Port)
-	assert.Equal(t, float32(80), c.Quality)
+	assert.Equal(t, 80, c.Quality)
 	assert.Equal(t, "./pics", c.ImgPath)
 	assert.Equal(t, []string{"jpg", "png", "jpeg", "bmp"}, c.AllowedTypes)
 }

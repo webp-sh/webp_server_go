@@ -1,7 +1,3 @@
-// webp_server_go - webp-server_test
-// 2020-11-09 11:55
-// Benny <benny.think@gmail.com>
-
 package main
 
 import (
@@ -76,7 +72,7 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/webp_server.bmp":                 "image/webp",
 		"http://127.0.0.1:3333/webp_server.png":                 "image/webp",
 		"http://127.0.0.1:3333/empty.jpg":                       "",
-		"http://127.0.0.1:3333/png.jpg":                         "image/png",
+		"http://127.0.0.1:3333/png.jpg":                         "image/webp",
 		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
