@@ -34,25 +34,25 @@ func TestWebPEncoder(t *testing.T) {
 
 func TestAvifEncoder(t *testing.T) {
 	// Only one file: img_over_16383px.jpg might cause memory issues on CI environment
-	assert.Nil(t, avifEncoder("./pics/big.jpg", dest, 80))
+	assert.Nil(t, avifEncoder("./pics/big.jpg", dest, 80, ExtraParams{Width: 0, Height: 0}))
 	assertType(t, dest, "image/avif")
 }
 
 func TestNonExistImage(t *testing.T) {
-	assert.NotNil(t, webpEncoder("./pics/empty.jpg", dest, 80))
-	assert.NotNil(t, avifEncoder("./pics/empty.jpg", dest, 80))
+	assert.NotNil(t, webpEncoder("./pics/empty.jpg", dest, 80, ExtraParams{Width: 0, Height: 0}))
+	assert.NotNil(t, avifEncoder("./pics/empty.jpg", dest, 80, ExtraParams{Width: 0, Height: 0}))
 }
 
 func TestHighResolutionImage(t *testing.T) {
-	assert.NotNil(t, webpEncoder("./pics/img_over_16383px.jpg", dest, 80))
-	assert.Nil(t, avifEncoder("./pics/img_over_16383px.jpg", dest, 80))
+	assert.NotNil(t, webpEncoder("./pics/img_over_16383px.jpg", dest, 80, ExtraParams{Width: 0, Height: 0}))
+	assert.Nil(t, avifEncoder("./pics/img_over_16383px.jpg", dest, 80, ExtraParams{Width: 0, Height: 0}))
 }
 
 func runEncoder(t *testing.T, file string, dest string) {
 	if file == "pics/empty.jpg" {
 		t.Log("Empty file, that's okay.")
 	}
-	_ = webpEncoder(file, dest, 80)
+	_ = webpEncoder(file, dest, 80, ExtraParams{Width: 0, Height: 0})
 	assertType(t, dest, "image/webp")
 
 }

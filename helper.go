@@ -136,7 +136,7 @@ func cleanProxyCache(cacheImagePath string) {
 	}
 }
 
-func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string) (string, string) {
+func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string, extraParams ExtraParams) (string, string) {
 	// get file mod time
 	STAT, err := os.Stat(rawImagePath)
 	if err != nil {
@@ -148,6 +148,11 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 	webpFilename := fmt.Sprintf("%s.%d.webp", imageName, ModifiedTime)
 	// avifFilename: abc.jpg.png -> abc.jpg.png.1582558990.avif
 	avifFilename := fmt.Sprintf("%s.%d.avif", imageName, ModifiedTime)
+
+	if config.EnableExtraParams {
+		webpFilename = webpFilename + extraParams.String()
+		avifFilename = avifFilename + extraParams.String()
+	}
 
 	// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
 	// Custom Exhaust: /path/to/exhaust/web_path/web_to/tsuki.jpg.1582558990.webp
