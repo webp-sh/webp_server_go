@@ -16,6 +16,8 @@ import (
 func convert(c *fiber.Ctx) error {
 	//basic vars
 	var reqURI, _ = url.QueryUnescape(c.Path()) // /mypic/123.jpg
+	// delete ../ in reqURI to mitigate directory traversal
+	reqURI = path.Clean(reqURI)
 
 	// Begin Extra params
 	var extraParams ExtraParams
@@ -34,9 +36,6 @@ func convert(c *fiber.Ctx) error {
 		Height: HeightInt,
 	}
 	// End Extra params
-
-	// delete ../ in reqURI to mitigate directory traversal
-	reqURI = path.Clean(reqURI)
 
 	var rawImageAbs string
 	if proxyMode {
@@ -83,7 +82,9 @@ func convert(c *fiber.Ctx) error {
 	}
 
 	// generate with timestamp to make sure files are update-to-date
-	// If contain extraParams like tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp?width=200
+	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
+	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
 	avifAbs, webpAbs := genOptimizedAbsPath(rawImageAbs, config.ExhaustPath, imgFilename, reqURI, extraParams)
 	convertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
 

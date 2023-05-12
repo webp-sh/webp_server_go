@@ -149,6 +149,9 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 	// avifFilename: abc.jpg.png -> abc.jpg.png.1582558990.avif
 	avifFilename := fmt.Sprintf("%s.%d.avif", imageName, ModifiedTime)
 
+	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
+	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
 	if config.EnableExtraParams {
 		webpFilename = webpFilename + extraParams.String()
 		avifFilename = avifFilename + extraParams.String()
@@ -221,7 +224,6 @@ func guessSupportedFormat(header *fasthttp.RequestHeader) []string {
 		}
 	}
 	return accepted
-
 }
 
 func chooseProxy(proxyRawSize string, optimizedAbs string) bool {
