@@ -18,7 +18,7 @@ type ExtraParams struct {
 	Height int // in px
 }
 
-// String: convert ExtraParams to string, used to generate cache path
+// String : convert ExtraParams to string, used to generate cache path
 func (e *ExtraParams) String() string {
 	return fmt.Sprintf("_width=%d&height=%d", e.Width, e.Height)
 }

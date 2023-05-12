@@ -96,9 +96,15 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	if config.EnableExtraParams {
 		imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
 		if extraParams.Width > 0 && extraParams.Height > 0 {
-			img.Thumbnail(extraParams.Width, extraParams.Height, 0)
+			err = img.Thumbnail(extraParams.Width, extraParams.Height, 0)
+			if err != nil {
+				return err
+			}
 		} else if extraParams.Width > 0 {
-			img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+			err = img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -145,9 +151,15 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	if config.EnableExtraParams {
 		imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
 		if extraParams.Width > 0 && extraParams.Height > 0 {
-			img.Thumbnail(extraParams.Width, extraParams.Height, 0)
+			err = img.Thumbnail(extraParams.Width, extraParams.Height, 0)
+			if err != nil {
+				return err
+			}
 		} else if extraParams.Width > 0 {
-			img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+			err = img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
