@@ -100,8 +100,13 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 			if err != nil {
 				return err
 			}
-		} else if extraParams.Width > 0 {
+		} else if extraParams.Width > 0 && extraParams.Height == 0 {
 			err = img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+			if err != nil {
+				return err
+			}
+		} else if extraParams.Height > 0 && extraParams.Width == 0 {
+			err = img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
 			if err != nil {
 				return err
 			}
@@ -155,8 +160,13 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 			if err != nil {
 				return err
 			}
-		} else if extraParams.Width > 0 {
+		} else if extraParams.Width > 0 && extraParams.Height == 0 {
 			err = img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+			if err != nil {
+				return err
+			}
+		} else if extraParams.Height > 0 && extraParams.Width == 0 {
+			err = img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
 			if err != nil {
 				return err
 			}
