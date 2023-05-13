@@ -88,10 +88,6 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	if err != nil {
 		return err
 	}
-	// AVIF has a maximum resolution of 65536 x 65536 pixels.
-	if img.Metadata().Width > avifMax || img.Metadata().Height > avifMax {
-		return errors.New("WebP: image too large")
-	}
 
 	if config.EnableExtraParams {
 		imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
@@ -111,6 +107,11 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 				return err
 			}
 		}
+	}
+
+	// AVIF has a maximum resolution of 65536 x 65536 pixels.
+	if img.Metadata().Width > avifMax || img.Metadata().Height > avifMax {
+		return errors.New("AVIF: image too large")
 	}
 
 	// If quality >= 100, we use lossless mode
@@ -148,11 +149,6 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 		return err
 	}
 
-	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
-	if img.Metadata().Width > webpMax || img.Metadata().Height > webpMax {
-		return errors.New("WebP: image too large")
-	}
-
 	if config.EnableExtraParams {
 		imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
 		if extraParams.Width > 0 && extraParams.Height > 0 {
@@ -171,6 +167,11 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 				return err
 			}
 		}
+	}
+
+	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
+	if img.Metadata().Width > webpMax || img.Metadata().Height > webpMax {
+		return errors.New("WebP: image too large")
 	}
 
 	// If quality >= 100, we use lossless mode
