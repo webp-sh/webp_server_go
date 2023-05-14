@@ -12,6 +12,27 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func resizeImage(img *vips.ImageRef, extraParams ExtraParams) error {
+	imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
+	if extraParams.Width > 0 && extraParams.Height > 0 {
+		err := img.Thumbnail(extraParams.Width, extraParams.Height, 0)
+		if err != nil {
+			return err
+		}
+	} else if extraParams.Width > 0 && extraParams.Height == 0 {
+		err := img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+		if err != nil {
+			return err
+		}
+	} else if extraParams.Height > 0 && extraParams.Width == 0 {
+		err := img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func convertFilter(raw, avifPath, webpPath string, extraParams ExtraParams, c chan int) {
 	// all absolute paths
 
@@ -90,23 +111,7 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	}
 
 	if config.EnableExtraParams {
-		imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
-		if extraParams.Width > 0 && extraParams.Height > 0 {
-			err = img.Thumbnail(extraParams.Width, extraParams.Height, 0)
-			if err != nil {
-				return err
-			}
-		} else if extraParams.Width > 0 && extraParams.Height == 0 {
-			err = img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
-			if err != nil {
-				return err
-			}
-		} else if extraParams.Height > 0 && extraParams.Width == 0 {
-			err = img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
-			if err != nil {
-				return err
-			}
-		}
+		resizeImage(img, extraParams)
 	}
 
 	// AVIF has a maximum resolution of 65536 x 65536 pixels.
@@ -150,23 +155,7 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	}
 
 	if config.EnableExtraParams {
-		imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
-		if extraParams.Width > 0 && extraParams.Height > 0 {
-			err = img.Thumbnail(extraParams.Width, extraParams.Height, 0)
-			if err != nil {
-				return err
-			}
-		} else if extraParams.Width > 0 && extraParams.Height == 0 {
-			err = img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
-			if err != nil {
-				return err
-			}
-		} else if extraParams.Height > 0 && extraParams.Width == 0 {
-			err = img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
-			if err != nil {
-				return err
-			}
-		}
+		resizeImage(img, extraParams)
 	}
 
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
