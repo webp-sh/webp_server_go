@@ -17,6 +17,12 @@ func convert(c *fiber.Ctx) error {
 	//basic vars
 	var reqURI, _ = url.QueryUnescape(c.Path())                 // /mypic/123.jpg
 	var reqURIwithQuery, _ = url.QueryUnescape(c.OriginalURL()) // /mypic/123.jpg?someother=200&somebugs=200
+	// Sometimes reqURIwithQuery can be https://example.tld/mypic/123.jpg?someother=200&somebugs=200, we need to extract it.
+	u, err := url.Parse(reqURIwithQuery)
+	if err != nil {
+		log.Errorln(err)
+	}
+	reqURIwithQuery = u.RequestURI()
 	// delete ../ in reqURI to mitigate directory traversal
 	reqURI = path.Clean(reqURI)
 	reqURIwithQuery = path.Clean(reqURIwithQuery)

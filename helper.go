@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha1" //#nosec
 	"encoding/hex"
 	"fmt"
 	"hash/crc32"
@@ -257,6 +257,7 @@ func findSmallestFiles(files []string) string {
 }
 
 func Sha1Path(uri string) string {
+	/* #nosec */
 	h := sha1.New()
 	h.Write([]byte(uri))
 	return hex.EncodeToString(h.Sum(nil))
