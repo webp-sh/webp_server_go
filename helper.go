@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -252,4 +254,10 @@ func findSmallestFiles(files []string) string {
 		}
 	}
 	return final
+}
+
+func Sha1Path(uri string) string {
+	h := sha1.New()
+	h.Write([]byte(uri))
+	return hex.EncodeToString(h.Sum(nil))
 }
