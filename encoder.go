@@ -111,7 +111,10 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	}
 
 	if config.EnableExtraParams {
-		resizeImage(img, extraParams)
+		err = resizeImage(img, extraParams)
+		if err != nil {
+			return err
+		}
 	}
 
 	// AVIF has a maximum resolution of 65536 x 65536 pixels.
@@ -155,7 +158,10 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	}
 
 	if config.EnableExtraParams {
-		resizeImage(img, extraParams)
+		err = resizeImage(img, extraParams)
+		if err != nil {
+			return err
+		}
 	}
 
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
