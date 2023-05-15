@@ -47,7 +47,7 @@ func TestImageExists(t *testing.T) {
 
 func TestGenWebpAbs(t *testing.T) {
 	cwd, cooked := genOptimizedAbsPath("./pics/webp_server.png", "/tmp",
-		"test", "a")
+		"test", "a", ExtraParams{Width: 0, Height: 0})
 	if !strings.Contains(cwd, "webp_server_go") {
 		t.Logf("Result: [%v], Expected: [%v]", cwd, "webp_server_go")
 	}

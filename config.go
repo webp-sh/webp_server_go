@@ -1,13 +1,26 @@
 package main
 
+import "fmt"
+
 type Config struct {
-	Host         string   `json:"HOST"`
-	Port         string   `json:"PORT"`
-	ImgPath      string   `json:"IMG_PATH"`
-	Quality      int      `json:"QUALITY,string"`
-	AllowedTypes []string `json:"ALLOWED_TYPES"`
-	ExhaustPath  string   `json:"EXHAUST_PATH"`
-	EnableAVIF   bool     `json:"ENABLE_AVIF"`
+	Host              string   `json:"HOST"`
+	Port              string   `json:"PORT"`
+	ImgPath           string   `json:"IMG_PATH"`
+	Quality           int      `json:"QUALITY,string"`
+	AllowedTypes      []string `json:"ALLOWED_TYPES"`
+	ExhaustPath       string   `json:"EXHAUST_PATH"`
+	EnableAVIF        bool     `json:"ENABLE_AVIF"`
+	EnableExtraParams bool     `json:"ENABLE_EXTRA_PARAMS"`
+}
+
+type ExtraParams struct {
+	Width  int // in px
+	Height int // in px
+}
+
+// String : convert ExtraParams to string, used to generate cache path
+func (e *ExtraParams) String() string {
+	return fmt.Sprintf("_width=%d&height=%d", e.Width, e.Height)
 }
 
 var (
@@ -18,7 +31,7 @@ var (
 	prefetch, proxyMode      bool
 	remoteRaw                = "remote-raw"
 	config                   Config
-	version                  = "0.6.0"
+	version                  = "0.7.0"
 )
 
 const (
@@ -30,7 +43,8 @@ const (
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
   "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
-  "ENABLE_AVIF": false
+  "ENABLE_AVIF": false,
+  "ENABLE_EXTRA_PARAMS": false
 }`
 
 	sampleSystemd = `

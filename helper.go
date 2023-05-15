@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1" //#nosec
+	"encoding/hex"
 	"fmt"
 	"hash/crc32"
 	"io"
@@ -136,7 +138,7 @@ func cleanProxyCache(cacheImagePath string) {
 	}
 }
 
-func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string) (string, string) {
+func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string, extraParams ExtraParams) (string, string) {
 	// get file mod time
 	STAT, err := os.Stat(rawImagePath)
 	if err != nil {
@@ -148,6 +150,14 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 	webpFilename := fmt.Sprintf("%s.%d.webp", imageName, ModifiedTime)
 	// avifFilename: abc.jpg.png -> abc.jpg.png.1582558990.avif
 	avifFilename := fmt.Sprintf("%s.%d.avif", imageName, ModifiedTime)
+
+	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
+	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
+	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
+	if config.EnableExtraParams {
+		webpFilename = webpFilename + extraParams.String()
+		avifFilename = avifFilename + extraParams.String()
+	}
 
 	// /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
 	// Custom Exhaust: /path/to/exhaust/web_path/web_to/tsuki.jpg.1582558990.webp
@@ -216,7 +226,6 @@ func guessSupportedFormat(header *fasthttp.RequestHeader) []string {
 		}
 	}
 	return accepted
-
 }
 
 func chooseProxy(proxyRawSize string, optimizedAbs string) bool {
@@ -245,4 +254,11 @@ func findSmallestFiles(files []string) string {
 		}
 	}
 	return final
+}
+
+func Sha1Path(uri string) string {
+	/* #nosec */
+	h := sha1.New()
+	h.Write([]byte(uri))
+	return hex.EncodeToString(h.Sum(nil))
 }

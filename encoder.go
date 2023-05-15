@@ -12,14 +12,35 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func convertFilter(raw, avifPath, webpPath string, c chan int) {
+func resizeImage(img *vips.ImageRef, extraParams ExtraParams) error {
+	imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
+	if extraParams.Width > 0 && extraParams.Height > 0 {
+		err := img.Thumbnail(extraParams.Width, extraParams.Height, 0)
+		if err != nil {
+			return err
+		}
+	} else if extraParams.Width > 0 && extraParams.Height == 0 {
+		err := img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+		if err != nil {
+			return err
+		}
+	} else if extraParams.Height > 0 && extraParams.Width == 0 {
+		err := img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func convertFilter(raw, avifPath, webpPath string, extraParams ExtraParams, c chan int) {
 	// all absolute paths
 
 	var wg sync.WaitGroup
 	wg.Add(2)
 	if !imageExists(avifPath) && config.EnableAVIF {
 		go func() {
-			err := convertImage(raw, avifPath, "avif")
+			err := convertImage(raw, avifPath, "avif", extraParams)
 			if err != nil {
 				log.Errorln(err)
 			}
@@ -31,7 +52,7 @@ func convertFilter(raw, avifPath, webpPath string, c chan int) {
 
 	if !imageExists(webpPath) {
 		go func() {
-			err := convertImage(raw, webpPath, "webp")
+			err := convertImage(raw, webpPath, "webp", extraParams)
 			if err != nil {
 				log.Errorln(err)
 			}
@@ -47,11 +68,12 @@ func convertFilter(raw, avifPath, webpPath string, c chan int) {
 	}
 }
 
-func convertImage(raw, optimized, itype string) error {
-	// we don't have abc.jpg.png1582558990.webp
-	// delete the old pic and convert a new one.
+func convertImage(raw, optimized, itype string, extraParams ExtraParams) error {
+	// we don't have /path/to/tsuki.jpg.1582558990.webp, maybe we have /path/to/tsuki.jpg.1082008000.webp
+	// delete the old converted pic and convert a new one.
 	// optimized: /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
 	// we'll delete file starts with /home/webp_server/exhaust/path/to/tsuki.jpg.ts.itype
+	// If contain extraParams like tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp?width=200
 
 	s := strings.Split(path.Base(optimized), ".")
 	pattern := path.Join(path.Dir(optimized), s[0]+"."+s[1]+".*."+s[len(s)-1])
@@ -73,24 +95,33 @@ func convertImage(raw, optimized, itype string) error {
 
 	switch itype {
 	case "webp":
-		err = webpEncoder(raw, optimized, config.Quality)
+		err = webpEncoder(raw, optimized, config.Quality, extraParams)
 	case "avif":
-		err = avifEncoder(raw, optimized, config.Quality)
+		err = avifEncoder(raw, optimized, config.Quality, extraParams)
 	}
 	return err
 }
 
-func avifEncoder(p1, p2 string, quality int) error {
+func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	// if convert fails, return error; success nil
 	var buf []byte
 	img, err := vips.NewImageFromFile(p1)
 	if err != nil {
 		return err
 	}
+
+	if config.EnableExtraParams {
+		err = resizeImage(img, extraParams)
+		if err != nil {
+			return err
+		}
+	}
+
 	// AVIF has a maximum resolution of 65536 x 65536 pixels.
 	if img.Metadata().Width > avifMax || img.Metadata().Height > avifMax {
-		return errors.New("WebP: image too large")
+		return errors.New("AVIF: image too large")
 	}
+
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
@@ -118,7 +149,7 @@ func avifEncoder(p1, p2 string, quality int) error {
 	return nil
 }
 
-func webpEncoder(p1, p2 string, quality int) error {
+func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	// if convert fails, return error; success nil
 	var buf []byte
 	img, err := vips.NewImageFromFile(p1)
@@ -126,10 +157,18 @@ func webpEncoder(p1, p2 string, quality int) error {
 		return err
 	}
 
+	if config.EnableExtraParams {
+		err = resizeImage(img, extraParams)
+		if err != nil {
+			return err
+		}
+	}
+
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
 	if img.Metadata().Width > webpMax || img.Metadata().Height > webpMax {
 		return errors.New("WebP: image too large")
 	}
+
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
