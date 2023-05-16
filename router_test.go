@@ -14,6 +14,7 @@ import (
 var (
 	chromeUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
 	acceptWebP   = "image/webp,image/apng,image/*,*/*;q=0.8"
+	acceptAvif   = "image/avif,image/*,*/*;q=0.8"
 	acceptLegacy = "image/jpeg"
 	safariUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
 )
@@ -76,7 +77,19 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
-		"http://127.0.0.1:3333/太神啦.png":                         "image/webp",
+		"http://127.0.0.1:3333/太神啦.png":                       "image/webp",
+	}
+
+	var testChromeAvifLink = map[string]string{
+		"http://127.0.0.1:3333/webp_server.jpg":                 "image/avif",
+		"http://127.0.0.1:3333/webp_server.bmp":                 "image/avif",
+		"http://127.0.0.1:3333/webp_server.png":                 "image/avif",
+		"http://127.0.0.1:3333/empty.jpg":                       "",
+		"http://127.0.0.1:3333/png.jpg":                         "image/avif",
+		"http://127.0.0.1:3333/12314.jpg":                       "",
+		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/avif",
+		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/avif",
+		"http://127.0.0.1:3333/太神啦.png":                       "image/avif",
 	}
 
 	var testSafariLink = map[string]string{
@@ -108,6 +121,15 @@ func TestConvert(t *testing.T) {
 		assert.Equal(t, respType, contentType)
 	}
 
+	// test Avif is processed in proxy mode
+	config.EnableAVIF = true
+	for url, respType := range testChromeAvifLink {
+		resp, data := requestToServer(url, app, chromeUA, acceptAvif)
+		defer resp.Body.Close()
+		contentType := getFileContentType(data)
+		assert.NotNil(t, respType)
+		assert.Equal(t, respType, contentType)
+	}
 }
 
 func TestConvertNotAllowed(t *testing.T) {
@@ -138,11 +160,11 @@ func TestConvertProxyModeBad(t *testing.T) {
 	var app = fiber.New()
 	app.Get("/*", convert)
 
-	// this is local random image, should be 500
+	// this is local random image, should be 404
 	url := "http://127.0.0.1:3333/webp_8888server.bmp"
 	resp, _ := requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
-	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 
 }
 
