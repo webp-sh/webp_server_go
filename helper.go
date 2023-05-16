@@ -166,9 +166,6 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 }
 
 func genEtag(ImgAbsPath string) string {
-	if proxyMode {
-		ImgAbsPath = path.Join(remoteRaw, strings.Replace(ImgAbsPath, config.ImgPath, "", -1))
-	}
 	data, err := os.ReadFile(ImgAbsPath)
 	if err != nil {
 		log.Warn(err)

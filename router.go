@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	// "os"
 	"path"
 	"strconv"
 
@@ -63,21 +65,11 @@ func convert(c *fiber.Ctx) error {
 
 	goodFormat := guessSupportedFormat(&c.Request().Header)
 
-	// old browser only, send the original image or fetch from remote and send.
-	if len(goodFormat) == 1 {
-		c.Set("ETag", genEtag(rawImageAbs))
-		if proxyMode {
-			localRemoteTmpPath := remoteRaw + reqURI
-			_ = fetchRemoteImage(localRemoteTmpPath, rawImageAbs)
-			return c.SendFile(localRemoteTmpPath)
-		} else {
-			return c.SendFile(rawImageAbs)
-		}
-	}
-
 	if proxyMode {
 		rawImageAbs, _ = proxyHandler(c, reqURIwithQuery)
 	}
+
+	log.Debugf("rawImageAbs=%s", rawImageAbs)
 
 	// Check the original image for existence,
 	if !imageExists(rawImageAbs) {
