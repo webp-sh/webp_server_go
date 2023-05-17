@@ -51,7 +51,7 @@ func convert(c *fiber.Ctx) error {
 
 	var rawImageAbs string
 	if proxyMode {
-		rawImageAbs = config.ImgPath + reqURIwithQuery // /home/xxx/mypic/123.jpg?someother=200&somebugs=200
+		rawImageAbs = config.ImgPath + reqURIwithQuery // https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	} else {
 		rawImageAbs = path.Join(config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 	}
