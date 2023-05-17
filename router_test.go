@@ -17,6 +17,7 @@ var (
 	acceptAvif   = "image/avif,image/*,*/*;q=0.8"
 	acceptLegacy = "image/jpeg"
 	safariUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
+	curlUA       = "curl/7.64.1"
 )
 
 func setupParam() {
@@ -77,7 +78,7 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
-		"http://127.0.0.1:3333/太神啦.png":                       "image/webp",
+		"http://127.0.0.1:3333/太神啦.png":                         "image/webp",
 	}
 
 	var testChromeAvifLink = map[string]string{
@@ -89,7 +90,7 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/avif",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/avif",
-		"http://127.0.0.1:3333/太神啦.png":                       "image/avif",
+		"http://127.0.0.1:3333/太神啦.png":                         "image/avif",
 	}
 
 	var testSafariLink = map[string]string{
@@ -165,6 +166,11 @@ func TestConvertProxyModeBad(t *testing.T) {
 	resp, _ := requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+	// this is local random image, test using cURL, should be 404, ref: https://github.com/webp-sh/webp_server_go/issues/197
+	resp1, _ := requestToServer(url, app, curlUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusNotFound, resp1.StatusCode)
 
 }
 
