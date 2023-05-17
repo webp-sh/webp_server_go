@@ -16,8 +16,11 @@ import (
 
 func convert(c *fiber.Ctx) error {
 	//basic vars
-	var reqURI, _ = url.QueryUnescape(c.Path())                 // /mypic/123.jpg
-	var reqURIwithQuery, _ = url.QueryUnescape(c.OriginalURL()) // /mypic/123.jpg?someother=200&somebugs=200
+	var (
+		reqURI, _          = url.QueryUnescape(c.Path())        // /mypic/123.jpg
+		reqURIwithQuery, _ = url.QueryUnescape(c.OriginalURL()) // /mypic/123.jpg?someother=200&somebugs=200
+		imgFilename        = path.Base(reqURI)                  // pure filename, 123.jpg
+	)
 	// Sometimes reqURIwithQuery can be https://example.tld/mypic/123.jpg?someother=200&somebugs=200, we need to extract it.
 	u, err := url.Parse(reqURIwithQuery)
 	if err != nil {
@@ -52,7 +55,6 @@ func convert(c *fiber.Ctx) error {
 	} else {
 		rawImageAbs = path.Join(config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 	}
-	var imgFilename = path.Base(reqURI) // pure filename, 123.jpg
 	log.Debugf("Incoming connection from %s %s", c.IP(), imgFilename)
 
 	if !checkAllowedType(imgFilename) {
@@ -118,9 +120,9 @@ func proxyHandler(c *fiber.Ctx, reqURIwithQuery string) (string, error) {
 	// Since we cannot store file in format of "mypic/123.jpg?someother=200&somebugs=200", we need to hash it.
 	reqURIwithQueryHash := Sha1Path(reqURIwithQuery) // 378e740ca56144b7587f3af9debeee544842879a
 
-	localRawImagePath := remoteRaw + "/" + reqURIwithQueryHash // For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a
+	localRawImagePath := path.Join(remoteRaw, reqURIwithQueryHash) // For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a
 	// Ping Remote for status code and etag info
-	log.Infof("Remote Addr is %s fetching", realRemoteAddr)
+	log.Infof("Remote Addr is %s, fetching...", realRemoteAddr)
 	statusCode, _, _ := getRemoteImageInfo(realRemoteAddr)
 
 	if statusCode == 200 {

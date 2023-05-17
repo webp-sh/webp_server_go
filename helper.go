@@ -111,6 +111,15 @@ func fetchRemoteImage(filepath string, url string) error {
 		return err
 	}
 	defer resp.Body.Close()
+
+	// Check if remote content-type is image
+	if !strings.Contains(resp.Header.Get("content-type"), "image") {
+		log.Warnf("remote file %s is not image, remote returned %s", url, resp.Header.Get("content-type"))
+		// Delete the file
+		_ = os.Remove(filepath)
+		return fmt.Errorf("remote file %s is not image, remote returned %s", url, resp.Header.Get("content-type"))
+	}
+
 	_ = os.MkdirAll(path.Dir(filepath), 0755)
 	out, err := os.Create(filepath)
 	if err != nil {
