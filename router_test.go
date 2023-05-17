@@ -169,7 +169,7 @@ func TestConvertProxyModeBad(t *testing.T) {
 
 	// this is local random image, test using cURL, should be 404, ref: https://github.com/webp-sh/webp_server_go/issues/197
 	resp1, _ := requestToServer(url, app, curlUA, acceptWebP)
-	defer resp.Body.Close()
+	defer resp1.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp1.StatusCode)
 
 }
