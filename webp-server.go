@@ -100,6 +100,8 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 
 	vips.Startup(&vips.Config{
 		ConcurrencyLevel: runtime.NumCPU(),
+		MaxCacheMem:      50 * 1024 * 1024,
+		MaxCacheSize:     1,
 	})
 	defer vips.Shutdown()
 

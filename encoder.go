@@ -144,6 +144,7 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 		log.Error(err)
 		return err
 	}
+	img.Close()
 
 	convertLog("AVIF", p1, p2, quality)
 	return nil
@@ -191,6 +192,7 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 		log.Error(err)
 		return err
 	}
+	img.Close()
 
 	convertLog("WebP", p1, p2, quality)
 	return nil
