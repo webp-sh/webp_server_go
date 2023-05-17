@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
+
+	// "os"
 	"path"
 	"strconv"
 
@@ -64,21 +65,11 @@ func convert(c *fiber.Ctx) error {
 
 	goodFormat := guessSupportedFormat(&c.Request().Header)
 
-	// old browser only, send the original image or fetch from remote and send.
-	if len(goodFormat) == 1 {
-		c.Set("ETag", genEtag(rawImageAbs))
-		if proxyMode {
-			localRemoteTmpPath := remoteRaw + reqURI
-			_ = fetchRemoteImage(localRemoteTmpPath, rawImageAbs)
-			return c.SendFile(localRemoteTmpPath)
-		} else {
-			return c.SendFile(rawImageAbs)
-		}
+	if proxyMode {
+		rawImageAbs, _ = proxyHandler(c, reqURIwithQuery)
 	}
 
-	if proxyMode {
-		return proxyHandler(c, reqURIwithQuery)
-	}
+	log.Debugf("rawImageAbs=%s", rawImageAbs)
 
 	// Check the original image for existence,
 	if !imageExists(rawImageAbs) {
@@ -120,7 +111,7 @@ func convert(c *fiber.Ctx) error {
 	return c.SendFile(finalFileName)
 }
 
-func proxyHandler(c *fiber.Ctx, reqURIwithQuery string) error {
+func proxyHandler(c *fiber.Ctx, reqURIwithQuery string) (string, error) {
 	// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	realRemoteAddr := config.ImgPath + reqURIwithQuery
 
@@ -130,25 +121,16 @@ func proxyHandler(c *fiber.Ctx, reqURIwithQuery string) error {
 	localRawImagePath := remoteRaw + "/" + reqURIwithQueryHash // For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a
 	// Ping Remote for status code and etag info
 	log.Infof("Remote Addr is %s fetching", realRemoteAddr)
-	statusCode, etagValue, remoteLength := getRemoteImageInfo(realRemoteAddr)
-	localEtagWebPPath := config.ExhaustPath + "/" + reqURIwithQueryHash + "-etag-" + etagValue // For store the remote webp image, /home/webp_server/exhaust/378e740ca56144b7587f3af9debeee544842879a-etag-<etagValue>
+	statusCode, _, _ := getRemoteImageInfo(realRemoteAddr)
 
 	if statusCode == 200 {
-		if imageExists(localEtagWebPPath) {
-			chooseProxy(remoteLength, localEtagWebPPath)
-			return c.SendFile(localEtagWebPPath)
+		if imageExists(localRawImagePath) {
+			return localRawImagePath, nil
 		} else {
 			// Temporary store of remote file.
 			cleanProxyCache(config.ExhaustPath + reqURIwithQuery + "*")
-			_ = fetchRemoteImage(localRawImagePath, realRemoteAddr)
-			_ = os.MkdirAll(path.Dir(localEtagWebPPath), 0755)
-			encodeErr := webpEncoder(localRawImagePath, localEtagWebPPath, config.Quality, ExtraParams{Width: 0, Height: 0})
-			if encodeErr != nil {
-				// Send as it is.
-				return c.SendFile(localRawImagePath)
-			}
-			chooseProxy(remoteLength, localEtagWebPPath)
-			return c.SendFile(localEtagWebPPath)
+			err := fetchRemoteImage(localRawImagePath, realRemoteAddr)
+			return localRawImagePath, err
 		}
 	} else {
 		msg := fmt.Sprintf("Remote returned %d status code!", statusCode)
@@ -156,6 +138,6 @@ func proxyHandler(c *fiber.Ctx, reqURIwithQuery string) error {
 		log.Warn(msg)
 		_ = c.SendStatus(statusCode)
 		cleanProxyCache(config.ExhaustPath + reqURIwithQuery + "*")
-		return errors.New(msg)
+		return "", errors.New(msg)
 	}
 }

@@ -33,7 +33,7 @@ func resizeImage(img *vips.ImageRef, extraParams ExtraParams) error {
 	return nil
 }
 
-func convertFilter(raw, avifPath, webpPath string, extraParams ExtraParams, c chan int) {
+func convertFilter(raw, avifPath string, webpPath string, extraParams ExtraParams, c chan int) {
 	// all absolute paths
 
 	var wg sync.WaitGroup

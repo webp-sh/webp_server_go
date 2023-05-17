@@ -11,7 +11,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 
 	"github.com/h2non/filetype"
 
@@ -167,9 +166,6 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 }
 
 func genEtag(ImgAbsPath string) string {
-	if proxyMode {
-		ImgAbsPath = path.Join(remoteRaw, strings.Replace(ImgAbsPath, config.ImgPath, "", -1))
-	}
 	data, err := os.ReadFile(ImgAbsPath)
 	if err != nil {
 		log.Warn(err)
@@ -226,16 +222,6 @@ func guessSupportedFormat(header *fasthttp.RequestHeader) []string {
 		}
 	}
 	return accepted
-}
-
-func chooseProxy(proxyRawSize string, optimizedAbs string) bool {
-	var proxyRaw, _ = strconv.Atoi(proxyRawSize)
-	webp, _ := os.ReadFile(optimizedAbs)
-	if len(webp) > proxyRaw {
-		return true
-	} else {
-		return false
-	}
 }
 
 func findSmallestFiles(files []string) string {
