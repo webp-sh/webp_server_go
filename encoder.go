@@ -199,8 +199,17 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 }
 
 func convertLog(itype, p1 string, p2 string, quality int) {
-	oldf, _ := os.Stat(p1)
-	newf, _ := os.Stat(p2)
+	oldf, err := os.Stat(p1)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	newf, err := os.Stat(p2)
+	if err != nil {
+		log.Error(err)
+		return
+	}
 	log.Infof("%s@%d%%: %s->%s %d->%d %.2f%% deflated", itype, quality,
 		p1, p2, oldf.Size(), newf.Size(), float32(newf.Size())/float32(oldf.Size())*100)
 }
