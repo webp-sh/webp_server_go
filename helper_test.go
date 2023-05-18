@@ -142,19 +142,23 @@ func TestGetRemoteImageInfo(t *testing.T) {
 func TestFetchRemoteImage(t *testing.T) {
 	// test the normal one
 	fp := filepath.Join("./exhaust", "test.ico")
-	url := "http://github.com/favicon.ico"
-	err := fetchRemoteImage(fp, url)
+
+	err := fetchRemoteImage(fp, "http://github.com/favicon.ico")
 	assert.Equal(t, err, nil)
 	data, _ := os.ReadFile(fp)
 	assert.Equal(t, "image/vnd.microsoft.icon", getFileContentType(data))
 
 	// test can't create file
-	err = fetchRemoteImage("/", url)
+	err = fetchRemoteImage("/", "http://github.com/favicon.ico")
 	assert.NotNil(t, err)
 
 	// test bad url
 	err = fetchRemoteImage(fp, "http://ahjdsgdsghja.cya")
 	assert.NotNil(t, err)
+
+	// test when returned is not image
+	err = fetchRemoteImage(fp, "https://github.com/")
+	assert.Equal(t, err.Error(), "remote file https://github.com/ is not image, remote returned text/html; charset=utf-8")
 }
 
 func TestCleanProxyCache(t *testing.T) {
