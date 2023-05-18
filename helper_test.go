@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"path"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 
@@ -8,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,16 +48,71 @@ func TestImageExists(t *testing.T) {
 
 }
 
-func TestGenWebpAbs(t *testing.T) {
-	cwd, cooked := genOptimizedAbsPath("./pics/webp_server.png", "/tmp",
-		"test", "a", ExtraParams{Width: 0, Height: 0})
-	if !strings.Contains(cwd, "webp_server_go") {
-		t.Logf("Result: [%v], Expected: [%v]", cwd, "webp_server_go")
+func TestGenOptimizedAbsPath(t *testing.T) {
+	// Create a temporary file for testing
+	tempFile, err := os.CreateTemp("", "test_image.*")
+	if err != nil {
+		t.Fatalf("Failed to create temporary file: %v", err)
 	}
-	var parts = strings.Split(cooked, ".")
+	defer os.Remove(tempFile.Name())
 
-	assert.Equalf(t, parts[0], "/tmp/test", "Result: [%v], Expected: [%v]", cooked, "/tmp/test.<ts>.webp")
-	assert.Equalf(t, parts[2], "webp", "Result: [%v], Expected: [%v]", cooked, "/tmp/test.<ts>.webp")
+	// Set the modification time for the temporary file
+	modTime := time.Now()
+	if err := os.Chtimes(tempFile.Name(), modTime, modTime); err != nil {
+		t.Fatalf("Failed to set modification time for the temporary file: %v", err)
+	}
+
+	rawImagePath := tempFile.Name()
+	exhaustPath := "/path/to/exhaust"
+	imageName := "tsuki.jpg"
+	reqURI := "/path/to/tsuki.jpg"
+	extraParams := ExtraParams{Width: 200, Height: 0}
+
+	// Test if config.EnableExtraParams is false
+	config.EnableExtraParams = false
+
+	avifAbsolutePath, webpAbsolutePath := genOptimizedAbsPath(rawImagePath, exhaustPath, imageName, reqURI, extraParams)
+
+	expectedAvifPath := path.Clean(path.Join(exhaustPath, path.Dir(reqURI), fmt.Sprintf("%s.%d.avif", imageName, modTime.Unix())))
+	expectedWebpPath := path.Clean(path.Join(exhaustPath, path.Dir(reqURI), fmt.Sprintf("%s.%d.webp", imageName, modTime.Unix())))
+
+	if avifAbsolutePath != expectedAvifPath {
+		t.Errorf("Avif absolute path is incorrect. Expected: %s, Got: %s", expectedAvifPath, avifAbsolutePath)
+	}
+	if webpAbsolutePath != expectedWebpPath {
+		t.Errorf("Webp absolute path is incorrect. Expected: %s, Got: %s", expectedWebpPath, webpAbsolutePath)
+	}
+
+	// Test if config.EnableExtraParams is true and extraParams is not 0
+	config.EnableExtraParams = true
+
+	avifAbsolutePath, webpAbsolutePath = genOptimizedAbsPath(rawImagePath, exhaustPath, imageName, reqURI, extraParams)
+
+	expectedAvifPath = path.Clean(path.Join(exhaustPath, path.Dir(reqURI), fmt.Sprintf("%s.%d.avif_width=%d&height=%d", imageName, modTime.Unix(), extraParams.Width, extraParams.Height)))
+	expectedWebpPath = path.Clean(path.Join(exhaustPath, path.Dir(reqURI), fmt.Sprintf("%s.%d.webp_width=%d&height=%d", imageName, modTime.Unix(), extraParams.Width, extraParams.Height)))
+
+	if avifAbsolutePath != expectedAvifPath {
+		t.Errorf("Avif absolute path is incorrect. Expected: %s, Got: %s", expectedAvifPath, avifAbsolutePath)
+	}
+	if webpAbsolutePath != expectedWebpPath {
+		t.Errorf("Webp absolute path is incorrect. Expected: %s, Got: %s", expectedWebpPath, webpAbsolutePath)
+	}
+
+	// Test if config.EnableExtraParams is true and extraParams is 0
+	config.EnableExtraParams = true
+	extraParams = ExtraParams{Width: 200, Height: 0}
+
+	avifAbsolutePath, webpAbsolutePath = genOptimizedAbsPath(rawImagePath, exhaustPath, imageName, reqURI, extraParams)
+
+	expectedAvifPath = path.Clean(path.Join(exhaustPath, path.Dir(reqURI), fmt.Sprintf("%s.%d.avif_width=%d&height=%d", imageName, modTime.Unix(), extraParams.Width, extraParams.Height)))
+	expectedWebpPath = path.Clean(path.Join(exhaustPath, path.Dir(reqURI), fmt.Sprintf("%s.%d.webp_width=%d&height=%d", imageName, modTime.Unix(), extraParams.Width, extraParams.Height)))
+
+	if avifAbsolutePath != expectedAvifPath {
+		t.Errorf("Avif absolute path is incorrect. Expected: %s, Got: %s", expectedAvifPath, avifAbsolutePath)
+	}
+	if webpAbsolutePath != expectedWebpPath {
+		t.Errorf("Webp absolute path is incorrect. Expected: %s, Got: %s", expectedWebpPath, webpAbsolutePath)
+	}
 }
 
 func TestGenEtag(t *testing.T) {
