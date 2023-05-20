@@ -122,6 +122,11 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 		return errors.New("AVIF: image too large")
 	}
 
+	err = img.AutoRotate()
+	if err != nil {
+		return err
+	}
+
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
@@ -168,6 +173,11 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
 	if img.Metadata().Width > webpMax || img.Metadata().Height > webpMax {
 		return errors.New("WebP: image too large")
+	}
+
+	err = img.AutoRotate()
+	if err != nil {
+		return err
 	}
 
 	// If quality >= 100, we use lossless mode
