@@ -143,6 +143,7 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 
 	if err != nil {
 		log.Warnf("Can't encode source image: %v to AVIF", err)
+		return err
 	}
 
 	if err := os.WriteFile(p2, buf, 0600); err != nil {
@@ -196,6 +197,7 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 
 	if err != nil {
 		log.Warnf("Can't encode source image: %v to WebP", err)
+		return err
 	}
 
 	if err := os.WriteFile(p2, buf, 0600); err != nil {
