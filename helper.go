@@ -114,6 +114,9 @@ func fetchRemoteImage(filepath string, url string) error {
 	// Copy bytes here
 	bodyBytes := new(bytes.Buffer)
 	_, err = bodyBytes.ReadFrom(resp.Body)
+	if err != nil {
+		return err
+	}
 
 	// Check if remote content-type is image using check by filetype instead of content-type returned by origin
 	kind, _ := filetype.Match(bodyBytes.Bytes())
