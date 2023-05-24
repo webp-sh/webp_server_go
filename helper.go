@@ -97,12 +97,11 @@ func getRemoteImageInfo(fileURL string) (int, string, string) {
 		if etagValue == "" {
 			log.Info("Remote didn't return etag in header, please check.")
 		} else {
-			return 200, etagValue, res.Header.Get("content-length")
+			return res.StatusCode, etagValue, res.Header.Get("content-length")
 		}
 	}
 
 	return res.StatusCode, "", res.Header.Get("content-length")
-
 }
 
 func fetchRemoteImage(filepath string, url string) error {
@@ -112,11 +111,13 @@ func fetchRemoteImage(filepath string, url string) error {
 	}
 	defer resp.Body.Close()
 
-	// Check if remote content-type is image
-	if !strings.Contains(resp.Header.Get("content-type"), "image") {
-		log.Warnf("remote file %s is not image, remote returned %s", url, resp.Header.Get("content-type"))
-		// Delete the file
-		_ = os.Remove(filepath)
+	// Copy bytes here
+	bodyBytes := new(bytes.Buffer)
+	_, err = bodyBytes.ReadFrom(resp.Body)
+
+	// Check if remote content-type is image using check by filetype instead of content-type returned by origin
+	kind, _ := filetype.Match(bodyBytes.Bytes())
+	if kind == filetype.Unknown || !strings.Contains(kind.MIME.Value, "image") {
 		return fmt.Errorf("remote file %s is not image, remote returned %s", url, resp.Header.Get("content-type"))
 	}
 
@@ -127,7 +128,7 @@ func fetchRemoteImage(filepath string, url string) error {
 	}
 	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
+	_, err = io.Copy(out, bodyBytes)
 	return err
 }
 
