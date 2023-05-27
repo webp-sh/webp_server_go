@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash/crc32"
-	"io"
 	"net/http"
 	"os"
 	"path"
@@ -86,30 +85,35 @@ func checkAllowedType(imgFilename string) bool {
 // Check for remote filepath, e.g: https://test.webp.sh/node.png
 // return StatusCode, etagValue and length
 func getRemoteImageInfo(fileURL string) (int, string, string) {
-	res, err := http.Head(fileURL)
+	resp, err := http.Head(fileURL)
 	if err != nil {
-		log.Errorln("Connection to remote error!")
+		log.Errorln("Connection to remote error when getRemoteImageInfo!")
 		return http.StatusInternalServerError, "", ""
 	}
-	defer res.Body.Close()
-	if res.StatusCode != 404 {
-		etagValue := res.Header.Get("etag")
+	defer resp.Body.Close()
+	if resp.StatusCode == 200 {
+		etagValue := resp.Header.Get("etag")
 		if etagValue == "" {
-			log.Info("Remote didn't return etag in header, please check.")
+			log.Info("Remote didn't return etag in header when getRemoteImageInfo, please check.")
 		} else {
-			return res.StatusCode, etagValue, res.Header.Get("content-length")
+			return resp.StatusCode, etagValue, resp.Header.Get("content-length")
 		}
 	}
 
-	return res.StatusCode, "", res.Header.Get("content-length")
+	return resp.StatusCode, "", resp.Header.Get("content-length")
 }
 
 func fetchRemoteImage(filepath string, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
+		log.Errorln("Connection to remote error when fetchRemoteImage!")
 		return err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("remote returned %s when fetching remote image", resp.Status)
+	}
 
 	// Copy bytes here
 	bodyBytes := new(bytes.Buffer)
@@ -125,14 +129,12 @@ func fetchRemoteImage(filepath string, url string) error {
 	}
 
 	_ = os.MkdirAll(path.Dir(filepath), 0755)
-	out, err := os.Create(filepath)
+
+	err = os.WriteFile(filepath, bodyBytes.Bytes(), 0644)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
-
-	_, err = io.Copy(out, bodyBytes)
-	return err
+	return nil
 }
 
 // Given /path/to/node.png
