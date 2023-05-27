@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/h2non/filetype"
 
@@ -64,6 +65,20 @@ func imageExists(filename string) bool {
 		// means something wrong in exhaust file system
 		return false
 	}
+
+	log.Info("chekcing file exists: ", filename)
+	// Check if there is lock in cache, retry after 1 second
+	if _, found := WriteLock.Get(filename); found {
+		log.Infof("file %s is locked, retry after 1 second", filename)
+		time.Sleep(3 * time.Second)
+		if _, found := WriteLock.Get(filename); !found {
+			return !info.IsDir()
+		} else {
+			log.Infof("file %s is still locked after 1 second, return false", filename)
+			return false
+		}
+	}
+
 	log.Debugf("file %s exists!", filename)
 	return !info.IsDir()
 }
@@ -130,10 +145,18 @@ func fetchRemoteImage(filepath string, url string) error {
 
 	_ = os.MkdirAll(path.Dir(filepath), 0755)
 
+	// Create Cache here as a lock
+	// Key: filepath, Value: true
+	WriteLock.Set(filepath, true, -1)
+
 	err = os.WriteFile(filepath, bodyBytes.Bytes(), 0600)
 	if err != nil {
 		return err
 	}
+
+	// Delete lock here
+	WriteLock.Delete(filepath)
+
 	return nil
 }
 
