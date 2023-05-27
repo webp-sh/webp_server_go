@@ -6,8 +6,10 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,6 +30,7 @@ func setupParam() {
 
 	proxyMode = false
 	remoteRaw = "remote-raw"
+	WriteLock = cache.New(5*time.Minute, 10*time.Minute)
 }
 
 func requestToServer(url string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
