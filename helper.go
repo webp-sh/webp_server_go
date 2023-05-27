@@ -66,7 +66,6 @@ func imageExists(filename string) bool {
 		return false
 	}
 
-	log.Info("chekcing file exists: ", filename)
 	// Check if there is lock in cache, retry after 1 second
 	if _, found := WriteLock.Get(filename); found {
 		log.Infof("file %s is locked, retry after 1 second", filename)
