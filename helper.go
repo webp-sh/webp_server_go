@@ -130,7 +130,7 @@ func fetchRemoteImage(filepath string, url string) error {
 
 	_ = os.MkdirAll(path.Dir(filepath), 0755)
 
-	err = os.WriteFile(filepath, bodyBytes.Bytes(), 0644)
+	err = os.WriteFile(filepath, bodyBytes.Bytes(), 0600)
 	if err != nil {
 		return err
 	}
