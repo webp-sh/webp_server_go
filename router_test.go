@@ -22,7 +22,7 @@ var (
 	curlUA       = "curl/7.64.1"
 )
 
-func setupParam() {
+func TestMain(m *testing.M) {
 	// setup parameters here...
 	config.ImgPath = "./pics"
 	config.ExhaustPath = "./exhaust_test"
@@ -46,7 +46,6 @@ func requestToServer(url string, app *fiber.App, ua, accept string) (*http.Respo
 }
 
 func TestServerHeaders(t *testing.T) {
-	setupParam()
 	var app = fiber.New()
 	app.Get("/*", convert)
 	url := "http://127.0.0.1:3333/webp_server.bmp"
@@ -70,7 +69,6 @@ func TestServerHeaders(t *testing.T) {
 }
 
 func TestConvert(t *testing.T) {
-	setupParam()
 	// TODO: old-style test, better update it with accept headers
 	var testChromeLink = map[string]string{
 		"http://127.0.0.1:3333/webp_server.jpg":                 "image/webp",
@@ -137,7 +135,6 @@ func TestConvert(t *testing.T) {
 }
 
 func TestConvertNotAllowed(t *testing.T) {
-	setupParam()
 	config.AllowedTypes = []string{"jpg", "png", "jpeg"}
 
 	var app = fiber.New()
@@ -158,7 +155,6 @@ func TestConvertNotAllowed(t *testing.T) {
 }
 
 func TestConvertProxyModeBad(t *testing.T) {
-	setupParam()
 	proxyMode = true
 
 	var app = fiber.New()
@@ -178,7 +174,6 @@ func TestConvertProxyModeBad(t *testing.T) {
 }
 
 func TestConvertProxyModeWork(t *testing.T) {
-	setupParam()
 	proxyMode = true
 
 	var app = fiber.New()
@@ -200,7 +195,6 @@ func TestConvertProxyModeWork(t *testing.T) {
 }
 
 func TestConvertBigger(t *testing.T) {
-	setupParam()
 	config.Quality = 100
 
 	var app = fiber.New()

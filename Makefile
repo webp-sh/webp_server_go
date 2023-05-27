@@ -24,7 +24,7 @@ tools-dir:
 
 install-staticcheck: tools-dir
 	GOBIN=`pwd`/tools/bin go install honnef.co/go/tools/cmd/staticcheck@latest
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b ./tools/bin v1.51.2
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b ./tools/bin v1.52.2
 
 static-check: install-staticcheck
 	#S1000,SA1015,SA4006,SA4011,S1023,S1034,ST1003,ST1005,ST1016,ST1020,ST1021
