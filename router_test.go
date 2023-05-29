@@ -232,7 +232,9 @@ func TestConvertProxyModeWork(t *testing.T) {
 }
 
 func TestConvertBigger(t *testing.T) {
+	proxyMode = false
 	config.Quality = 100
+	config.ImgPath = "./pics"
 
 	var app = fiber.New()
 	app.Get("/*", convert)
