@@ -5,7 +5,6 @@ import (
 	"crypto/sha1" //#nosec
 	"encoding/hex"
 	"fmt"
-	"hash/crc32"
 	"net/http"
 	"os"
 	"path"
@@ -67,14 +66,20 @@ func imageExists(filename string) bool {
 	}
 
 	// Check if there is lock in cache, retry after 1 second
-	if _, found := WriteLock.Get(filename); found {
-		log.Infof("file %s is locked, retry after 1 second", filename)
-		time.Sleep(1 * time.Second)
-		if _, found := WriteLock.Get(filename); !found {
-			return !info.IsDir()
+	maxRetries := 3
+	retryDelay := 100 * time.Millisecond // Initial retry delay
+
+	for retry := 0; retry < maxRetries; retry++ {
+		if _, found := WriteLock.Get(filename); found {
+			log.Infof("file %s is locked, retrying in %s", filename, retryDelay)
+			time.Sleep(retryDelay)
+			retryDelay *= 2 // Exponential backoff
+
+			if _, found := WriteLock.Get(filename); !found {
+				return true
+			}
 		} else {
-			log.Infof("file %s is still locked after 1 second, return false", filename)
-			return false
+			return !info.IsDir()
 		}
 	}
 
@@ -200,15 +205,6 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 	webpAbsolutePath := path.Clean(path.Join(exhaustPath, path.Dir(reqURI), webpFilename))
 	avifAbsolutePath := path.Clean(path.Join(exhaustPath, path.Dir(reqURI), avifFilename))
 	return avifAbsolutePath, webpAbsolutePath
-}
-
-func genEtag(ImgAbsPath string) string {
-	data, err := os.ReadFile(ImgAbsPath)
-	if err != nil {
-		log.Warn(err)
-	}
-	crc := crc32.ChecksumIEEE(data)
-	return fmt.Sprintf(`W/"%d-%08X"`, len(data), crc)
 }
 
 func getCompressionRate(RawImagePath string, optimizedImg string) string {

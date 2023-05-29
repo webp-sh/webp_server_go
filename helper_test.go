@@ -115,14 +115,6 @@ func TestGenOptimizedAbsPath(t *testing.T) {
 	}
 }
 
-func TestGenEtag(t *testing.T) {
-	var data = "./pics/png.jpg"
-	var expected = "W/\"1020764-262C0329\""
-	var result = genEtag(data)
-
-	assert.Equalf(t, result, expected, "Result: [%s], Expected: [%s]", result, expected)
-}
-
 func TestSelectFormat(t *testing.T) {
 	// this is a complete test case for webp compatibility
 	// func goOrigin(header, ua string) bool
