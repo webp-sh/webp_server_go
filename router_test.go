@@ -199,7 +199,7 @@ func TestConvertProxyModeBad(t *testing.T) {
 	app.Get("/*", convert)
 
 	// this is local random image, should be 404
-	url := "http://127.0.0.1:3333/webp_8888server.bmp"
+	url := "http://127.0.0.1:3333/webp_8888server.jpg"
 	resp, _ := requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
@@ -238,6 +238,7 @@ func TestConvertBigger(t *testing.T) {
 	var app = fiber.New()
 	app.Get("/*", convert)
 
+	config.ImgPath = "./pics"
 	url := "http://127.0.0.1:3333/big.jpg"
 	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
