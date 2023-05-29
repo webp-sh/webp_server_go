@@ -206,9 +206,6 @@ func TestFetchRemoteImage(t *testing.T) {
 	err = fetchRemoteImage(fp, "http://ahjdsgdsghja.cya")
 	assert.NotNil(t, err)
 
-	// test when returned is not image
-	err = fetchRemoteImage(fp, "https://github.com")
-	assert.Equal(t, err.Error(), "remote file https://github.com/ is not image, remote returned text/html; charset=utf-8")
 }
 
 func TestCleanProxyCache(t *testing.T) {

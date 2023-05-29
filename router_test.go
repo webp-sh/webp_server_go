@@ -208,7 +208,6 @@ func TestConvertProxyModeBad(t *testing.T) {
 	resp1, _ := requestToServer(url, app, curlUA, acceptWebP)
 	defer resp1.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp1.StatusCode)
-
 }
 
 func TestConvertProxyModeWork(t *testing.T) {
@@ -238,7 +237,6 @@ func TestConvertBigger(t *testing.T) {
 	var app = fiber.New()
 	app.Get("/*", convert)
 
-	config.ImgPath = "./pics"
 	url := "http://127.0.0.1:3333/big.jpg"
 	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
