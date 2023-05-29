@@ -59,7 +59,6 @@ func Convert(c *fiber.Ctx) error {
 	} else {
 		rawImageAbs = path.Join(config.Config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
 	}
-	log.Debugf("Incoming connection from %s %s", c.IP(), imgFilename)
 
 	if !helper.CheckAllowedType(imgFilename) {
 		msg := "File extension not allowed! " + imgFilename
@@ -74,8 +73,6 @@ func Convert(c *fiber.Ctx) error {
 	if config.ProxyMode {
 		rawImageAbs, _ = proxyHandler(c, reqURIwithQuery)
 	}
-
-	log.Debugf("rawImageAbs=%s", rawImageAbs)
 
 	// Check the original image for existence,
 	if !helper.ImageExists(rawImageAbs) {

@@ -19,7 +19,8 @@ func init() {
 	vips.Startup(&vips.Config{
 		ConcurrencyLevel: runtime.NumCPU(),
 	})
-	defer vips.Shutdown()
+	// TODO can't shutdown vips in init
+	//defer vips.Shutdown()
 }
 
 func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
@@ -43,7 +44,7 @@ func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 	return nil
 }
 
-func ConvertFilter(raw, avifPath string, webpPath string, extraParams config.ExtraParams, c chan int) {
+func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
 	// all absolute paths
 
 	var wg sync.WaitGroup
@@ -180,6 +181,7 @@ func avifEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) err
 }
 
 func webpEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) error {
+
 	// if convert fails, return error; success nil
 	var buf []byte
 	var boolFalse vips.BoolParameter

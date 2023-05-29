@@ -80,7 +80,6 @@ func ImageExists(filename string) bool {
 		}
 	}
 
-	log.Debugf("file %s exists!", filename)
 	return !info.IsDir()
 }
 
@@ -216,7 +215,6 @@ func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 		return ""
 	}
 	compressionRate := float64(optimizedFileInfo.Size()) / float64(originFileInfo.Size())
-	log.Debugf("The compression rate is %d/%d=%.2f", originFileInfo.Size(), optimizedFileInfo.Size(), compressionRate)
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
@@ -228,7 +226,6 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 
 	var ua = string(header.Peek("user-agent"))
 	var accept = strings.ToLower(string(header.Peek("accept")))
-	log.Debugf("%s\t%s\n", ua, accept)
 
 	if strings.Contains(accept, "image/webp") {
 		supported["webp"] = true
