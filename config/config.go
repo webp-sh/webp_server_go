@@ -7,6 +7,7 @@ import (
 	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 	"os"
+	"regexp"
 	"runtime"
 	"time"
 )
@@ -81,6 +82,7 @@ func init() {
 	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
 	flag.Parse()
 	Config = loadConfig()
+	switchProxyMode()
 }
 
 func loadConfig() (config jsonFile) {
@@ -102,4 +104,11 @@ type ExtraParams struct {
 // String : convert ExtraParams to string, used to generate cache path
 func (e *ExtraParams) String() string {
 	return fmt.Sprintf("_width=%d&height=%d", e.Width, e.Height)
+}
+
+func switchProxyMode() {
+	matched, _ := regexp.MatchString(`^https?://`, Config.ImgPath)
+	if matched {
+		ProxyMode = true
+	}
 }

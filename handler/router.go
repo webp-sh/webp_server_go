@@ -1,12 +1,9 @@
 package handler
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
-	"os"
-	"regexp"
+	"strings"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
 	"webp_server_go/helper"
@@ -19,60 +16,55 @@ import (
 )
 
 func Convert(c *fiber.Ctx) error {
-	//basic vars
+	// this function need to do:
+	// 1. get request path, query string
+	// 2. generate rawImagePath, could be local path or remote url(possible with query string)
+	// 3. pass it to encoder, get the result, send it back
+
 	var (
 		reqURI, _          = url.QueryUnescape(c.Path())        // /mypic/123.jpg
 		reqURIwithQuery, _ = url.QueryUnescape(c.OriginalURL()) // /mypic/123.jpg?someother=200&somebugs=200
-		imgFilename        = path.Base(reqURI)                  // pure filename, 123.jpg
+		filename           = path.Base(reqURI)                  // TODO: could be const? pure filename, 123.jpg
 	)
-	// Sometimes reqURIwithQuery can be https://example.tld/mypic/123.jpg?someother=200&somebugs=200, we need to extract it.
-	u, err := url.Parse(reqURIwithQuery)
-	if err != nil {
-		log.Errorln(err)
-	}
-	reqURIwithQuery = u.RequestURI()
-	// delete ../ in reqURI to mitigate directory traversal
-	reqURI = path.Clean(reqURI)
-	reqURIwithQuery = path.Clean(reqURIwithQuery)
 
-	// Begin Extra params
-	var extraParams config.ExtraParams
-	Width := c.Query("width")
-	Height := c.Query("height")
-	WidthInt, err := strconv.Atoi(Width)
-	if err != nil {
-		WidthInt = 0
-	}
-	HeightInt, err := strconv.Atoi(Height)
-	if err != nil {
-		HeightInt = 0
-	}
-	extraParams = config.ExtraParams{
-		Width:  WidthInt,
-		Height: HeightInt,
-	}
-	// End Extra params
-
-	var rawImageAbs string
-	if config.ProxyMode {
-		rawImageAbs = config.Config.ImgPath + reqURIwithQuery // https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
-	} else {
-		rawImageAbs = path.Join(config.Config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
-	}
-
-	if !helper.CheckAllowedType(imgFilename) {
-		msg := "File extension not allowed! " + imgFilename
+	if !helper.CheckAllowedType(filename) {
+		msg := "File extension not allowed! " + filename
 		log.Warn(msg)
 		c.Status(http.StatusBadRequest)
 		_ = c.Send([]byte(msg))
 		return nil
 	}
 
-	goodFormat := helper.GuessSupportedFormat(&c.Request().Header)
+	// Sometimes reqURIwithQuery can be https://example.tld/mypic/123.jpg?someother=200&somebugs=200, we need to extract it.
+	// delete ../ in reqURI to mitigate directory traversal
+	reqURI = path.Clean(reqURI)
+	reqURIwithQuery = path.Clean(reqURIwithQuery)
 
-	if config.ProxyMode {
-		rawImageAbs, _ = proxyHandler(c, reqURIwithQuery)
+	WidthInt, err := strconv.Atoi(c.Query("width"))
+	if err != nil {
+		WidthInt = 0
 	}
+	HeightInt, err := strconv.Atoi(c.Query("height"))
+	if err != nil {
+		HeightInt = 0
+	}
+	var extraParams = config.ExtraParams{
+		Width:  WidthInt,
+		Height: HeightInt,
+	}
+
+	var rawImageAbs string
+	if config.ProxyMode {
+		// this is proxyMode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
+		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
+		rawImageAbs = fetchRemoteImg(config.Config.ImgPath + reqURIwithQuery)
+
+	} else {
+		// not proxyMode, we'll use local path
+		rawImageAbs = path.Join(config.Config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
+	}
+
+	goodFormat := helper.GuessSupportedFormat(&c.Request().Header)
 
 	// Check the original image for existence,
 	if !helper.ImageExists(rawImageAbs) {
@@ -87,7 +79,7 @@ func Convert(c *fiber.Ctx) error {
 	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
 	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
 	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
-	avifAbs, webpAbs := helper.GenOptimizedAbsPath(rawImageAbs, config.Config.ExhaustPath, imgFilename, reqURI, extraParams)
+	avifAbs, webpAbs := helper.GenOptimizedAbsPath(rawImageAbs, config.Config.ExhaustPath, filename, reqURI, extraParams)
 	encoder.ConvertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
 
 	var availableFiles = []string{rawImageAbs}
@@ -100,62 +92,13 @@ func Convert(c *fiber.Ctx) error {
 		}
 	}
 
-	var finalFileName = helper.FindSmallestFiles(availableFiles)
-	var finalFileExtension = path.Ext(finalFileName)
-	if finalFileExtension == ".webp" {
+	finalFilename := helper.FindSmallestFiles(availableFiles)
+	if strings.HasSuffix(finalFilename, ".webp ") {
 		c.Set("Content-Type", "image/webp")
-	} else if finalFileExtension == ".avif" {
+	} else if strings.HasSuffix(finalFilename, ".avif") {
 		c.Set("Content-Type", "image/avif")
 	}
 
-	c.Set("X-Compression-Rate", helper.GetCompressionRate(rawImageAbs, finalFileName))
-	return c.SendFile(finalFileName)
-}
-
-func proxyHandler(c *fiber.Ctx, reqURIwithQuery string) (string, error) {
-	// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
-	realRemoteAddr := config.Config.ImgPath + reqURIwithQuery
-
-	// Ping Remote for status code and etag info
-	log.Infof("Remote Addr is %s, fetching info...", realRemoteAddr)
-	statusCode, etagValue, _ := helper.GetRemoteImageInfo(realRemoteAddr)
-
-	// Since we cannot store file in format of "/mypic/123.jpg?someother=200&somebugs=200", we need to hash it.
-	reqURIwithQueryHash := helper.Sha1Path(reqURIwithQuery) // 378e740ca56144b7587f3af9debeee544842879a
-	etagValueHash := helper.Sha1Path(etagValue)             // 123e740ca56333b7587f3af9debeee5448428123
-
-	localRawImagePath := path.Join(config.RemoteRaw, reqURIwithQueryHash+"-etag-"+etagValueHash) // For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a-etag-123e740ca56333b7587f3af9debeee5448428123
-
-	if statusCode == 200 {
-		if helper.ImageExists(localRawImagePath) {
-			return localRawImagePath, nil
-		} else {
-			// Temporary store of remote file.
-			helper.CleanProxyCache(config.Config.ExhaustPath + reqURIwithQuery + "*")
-			log.Info("Remote file not found in remote-raw path, fetching...")
-			err := helper.FetchRemoteImage(localRawImagePath, realRemoteAddr)
-			return localRawImagePath, err
-		}
-	} else {
-		msg := fmt.Sprintf("Remote returned %d status code!", statusCode)
-		_ = c.Send([]byte(msg))
-		log.Warn(msg)
-		_ = c.SendStatus(statusCode)
-		helper.CleanProxyCache(config.Config.ExhaustPath + reqURIwithQuery + "*")
-		return "", errors.New(msg)
-	}
-}
-
-func switchProxyMode() {
-	// Check for remote address
-	matched, _ := regexp.MatchString(`^https?://`, config.Config.ImgPath)
-	config.ProxyMode = false
-	if matched {
-		config.ProxyMode = true
-	} else {
-		_, err := os.Stat(config.Config.ImgPath)
-		if err != nil {
-			log.Fatalf("Your image path %s is incorrect.Please check and confirm.", config.Config.ImgPath)
-		}
-	}
+	c.Set("X-Compression-Rate", helper.GetCompressionRate(rawImageAbs, finalFilename))
+	return c.SendFile(finalFilename)
 }

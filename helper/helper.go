@@ -5,7 +5,6 @@ import (
 	"crypto/sha1" //#nosec
 	"encoding/hex"
 	"fmt"
-	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -22,6 +21,7 @@ import (
 )
 
 func avifMatcher(buf []byte) bool {
+	// TODO: is this even used? getFileContentType is deprecated.
 	// 0000001c 66747970 61766966 00000000 61766966 6d696631 6d696166
 	return len(buf) > 1 && bytes.Equal(buf[:28], []byte{
 		0x0, 0x0, 0x0, 0x1c,
@@ -42,6 +42,7 @@ func getFileContentType(buffer []byte) string {
 }
 
 func FileCount(dir string) int64 {
+	// TODO: why int64? Think you can have 2^32 files in a directory?
 	var count int64 = 0
 	_ = filepath.Walk(dir,
 		func(path string, info os.FileInfo, err error) error {
@@ -61,11 +62,16 @@ func ImageExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
+	// TODO: WTF is this? Why 100?
+	// png starts with an 8-byte signature, follow by 4 chunks 58 bytes.
+	// JPG is 134 bytes.
+	// webp is 33 bytes.
 	if info.Size() < 100 {
 		// means something wrong in exhaust file system
 		return false
 	}
 
+	// TODO: reason for lock?
 	// Check if there is lock in cache, retry after 1 second
 	maxRetries := 3
 	retryDelay := 100 * time.Millisecond // Initial retry delay
@@ -84,98 +90,22 @@ func ImageExists(filename string) bool {
 }
 
 func CheckAllowedType(imgFilename string) bool {
-	imgFilename = strings.ToLower(imgFilename)
 	for _, allowedType := range config.Config.AllowedTypes {
 		if allowedType == "*" {
 			return true
 		}
 		allowedType = "." + strings.ToLower(allowedType)
-		if strings.HasSuffix(imgFilename, allowedType) {
+		if strings.HasSuffix(strings.ToLower(imgFilename), allowedType) {
 			return true
 		}
 	}
 	return false
 }
 
-// Check for remote filepath, e.g: https://test.webp.sh/node.png
-// return StatusCode, etagValue and length
-func GetRemoteImageInfo(fileURL string) (int, string, string) {
-	resp, err := http.Head(fileURL)
-	if err != nil {
-		log.Errorln("Connection to remote error when getRemoteImageInfo!")
-		return http.StatusInternalServerError, "", ""
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == 200 {
-		etagValue := resp.Header.Get("etag")
-		if etagValue == "" {
-			log.Info("Remote didn't return etag in header when getRemoteImageInfo, please check.")
-		} else {
-			return resp.StatusCode, etagValue, resp.Header.Get("content-length")
-		}
-	}
-
-	return resp.StatusCode, "", resp.Header.Get("content-length")
-}
-
-func FetchRemoteImage(filepath string, url string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Errorln("Connection to remote error when fetchRemoteImage!")
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("remote returned %s when fetching remote image", resp.Status)
-	}
-
-	// Copy bytes here
-	bodyBytes := new(bytes.Buffer)
-	_, err = bodyBytes.ReadFrom(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	// Check if remote content-type is image using check by filetype instead of content-type returned by origin
-	kind, _ := filetype.Match(bodyBytes.Bytes())
-	if kind == filetype.Unknown || !strings.Contains(kind.MIME.Value, "image") {
-		return fmt.Errorf("remote file %s is not image, remote content has MIME type of %s", url, kind.MIME.Value)
-	}
-
-	_ = os.MkdirAll(path.Dir(filepath), 0755)
-
-	// Create Cache here as a lock
-	// Key: filepath, Value: true
-	config.WriteLock.Set(filepath, true, -1)
-
-	err = os.WriteFile(filepath, bodyBytes.Bytes(), 0600)
-	if err != nil {
-		return err
-	}
-
-	// Delete lock here
-	config.WriteLock.Delete(filepath)
-
-	return nil
-}
-
-// Given /path/to/node.png
-// Delete /path/to/node.png*
-func CleanProxyCache(cacheImagePath string) {
-	// Delete /node.png*
-	files, err := filepath.Glob(cacheImagePath + "*")
-	if err != nil {
-		log.Infoln(err)
-	}
-	for _, f := range files {
-		if err := os.Remove(f); err != nil {
-			log.Info(err)
-		}
-	}
-}
-
-func GenOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string, extraParams config.ExtraParams) (string, string) {
+func GenOptimizedAbsPath(rawImagePath, exhaustPath, imageName, reqURI string, extraParams config.ExtraParams) (string, string) {
+	// TODO: only need rawImagePath reqURI and perhaps extraParams
+	// TODO: exhaustPath is not needed, we can use config.Config.ExhaustPath
+	// imageName is not needed, we can use reqURI
 	// get file mod time
 	STAT, err := os.Stat(rawImagePath)
 	if err != nil {
@@ -183,6 +113,7 @@ func GenOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 		return "", ""
 	}
 	ModifiedTime := STAT.ModTime().Unix()
+	// TODO: just hash it?
 	// webpFilename: abc.jpg.png -> abc.jpg.png.1582558990.webp
 	webpFilename := fmt.Sprintf("%s.%d.webp", imageName, ModifiedTime)
 	// avifFilename: abc.jpg.png -> abc.jpg.png.1582558990.avif
@@ -219,11 +150,16 @@ func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 }
 
 func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
+	// TODO: raw? use enum is better
 	var supported = map[string]bool{
 		"raw":  true,
 		"webp": false,
 		"avif": false}
 
+	// TODO: do we need to consider following warning from header.peak
+	// The returned value is valid until the request is released,
+	// either though ReleaseRequest or your request handler returning.
+	// Do not store references to returned value. Make copies instead.
 	var ua = string(header.Peek("user-agent"))
 	var accept = strings.ToLower(string(header.Peek("accept")))
 
@@ -242,6 +178,7 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 		supported["webp"] = true
 	}
 
+	// TODO: WTF is this???
 	var accepted []string
 	for k, v := range supported {
 		if v {
@@ -270,6 +207,7 @@ func FindSmallestFiles(files []string) string {
 }
 
 func Sha1Path(uri string) string {
+	// TODO: use xxHash https://github.com/Cyan4973/xxHash
 	/* #nosec */
 	h := sha1.New()
 	h.Write([]byte(uri))
