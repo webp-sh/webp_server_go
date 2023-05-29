@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/patrickmn/go-cache"
 	"github.com/gofiber/fiber/v2/middleware/etag"
+	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,6 +32,7 @@ func TestMain(m *testing.M) {
 	proxyMode = false
 	remoteRaw = "remote-raw"
 	WriteLock = cache.New(5*time.Minute, 10*time.Minute)
+	m.Run()
 }
 
 func requestToServer(url string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
@@ -54,7 +55,6 @@ func requestToServerHeaders(url string, app *fiber.App, headers map[string]strin
 	return resp, data
 }
 
-
 func TestServerHeaders(t *testing.T) {
 	var app = fiber.New()
 	app.Use(etag.New(etag.Config{
@@ -76,8 +76,8 @@ func TestServerHeaders(t *testing.T) {
 
 	// TestServerHeadersNotModified
 	var headers = map[string]string{
-		"User-Agent": chromeUA,
-		"Accept": acceptWebP,
+		"User-Agent":    chromeUA,
+		"Accept":        acceptWebP,
 		"If-None-Match": etag,
 	}
 	response, _ = requestToServerHeaders(url, app, headers)
