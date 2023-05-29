@@ -144,7 +144,7 @@ func fetchRemoteImage(filepath string, url string) error {
 	// Check if remote content-type is image using check by filetype instead of content-type returned by origin
 	kind, _ := filetype.Match(bodyBytes.Bytes())
 	if kind == filetype.Unknown || !strings.Contains(kind.MIME.Value, "image") {
-		return fmt.Errorf("remote file %s is not image, remote returned %s", url, resp.Header.Get("content-type"))
+		return fmt.Errorf("remote file %s is not image, remote content has MIME type of %s", url, kind.MIME.Value)
 	}
 
 	_ = os.MkdirAll(path.Dir(filepath), 0755)
