@@ -5,12 +5,11 @@ import (
 	"crypto/sha1" //#nosec
 	"encoding/hex"
 	"fmt"
-	"hash/crc32"
-	"io"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/h2non/filetype"
 
@@ -65,6 +64,21 @@ func imageExists(filename string) bool {
 		// means something wrong in exhaust file system
 		return false
 	}
+
+	// Check if there is lock in cache, retry after 1 second
+	maxRetries := 3
+	retryDelay := 100 * time.Millisecond // Initial retry delay
+
+	for retry := 0; retry < maxRetries; retry++ {
+		if _, found := WriteLock.Get(filename); found {
+			log.Infof("file %s is locked, retrying in %s", filename, retryDelay)
+			time.Sleep(retryDelay)
+			retryDelay *= 2 // Exponential backoff
+		} else {
+			return !info.IsDir()
+		}
+	}
+
 	log.Debugf("file %s exists!", filename)
 	return !info.IsDir()
 }
@@ -86,49 +100,64 @@ func checkAllowedType(imgFilename string) bool {
 // Check for remote filepath, e.g: https://test.webp.sh/node.png
 // return StatusCode, etagValue and length
 func getRemoteImageInfo(fileURL string) (int, string, string) {
-	res, err := http.Head(fileURL)
+	resp, err := http.Head(fileURL)
 	if err != nil {
-		log.Errorln("Connection to remote error!")
+		log.Errorln("Connection to remote error when getRemoteImageInfo!")
 		return http.StatusInternalServerError, "", ""
 	}
-	defer res.Body.Close()
-	if res.StatusCode != 404 {
-		etagValue := res.Header.Get("etag")
+	defer resp.Body.Close()
+	if resp.StatusCode == 200 {
+		etagValue := resp.Header.Get("etag")
 		if etagValue == "" {
-			log.Info("Remote didn't return etag in header, please check.")
+			log.Info("Remote didn't return etag in header when getRemoteImageInfo, please check.")
 		} else {
-			return 200, etagValue, res.Header.Get("content-length")
+			return resp.StatusCode, etagValue, resp.Header.Get("content-length")
 		}
 	}
 
-	return res.StatusCode, "", res.Header.Get("content-length")
-
+	return resp.StatusCode, "", resp.Header.Get("content-length")
 }
 
 func fetchRemoteImage(filepath string, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
+		log.Errorln("Connection to remote error when fetchRemoteImage!")
 		return err
 	}
 	defer resp.Body.Close()
 
-	// Check if remote content-type is image
-	if !strings.Contains(resp.Header.Get("content-type"), "image") {
-		log.Warnf("remote file %s is not image, remote returned %s", url, resp.Header.Get("content-type"))
-		// Delete the file
-		_ = os.Remove(filepath)
-		return fmt.Errorf("remote file %s is not image, remote returned %s", url, resp.Header.Get("content-type"))
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("remote returned %s when fetching remote image", resp.Status)
 	}
 
-	_ = os.MkdirAll(path.Dir(filepath), 0755)
-	out, err := os.Create(filepath)
+	// Copy bytes here
+	bodyBytes := new(bytes.Buffer)
+	_, err = bodyBytes.ReadFrom(resp.Body)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
-	return err
+	// Check if remote content-type is image using check by filetype instead of content-type returned by origin
+	kind, _ := filetype.Match(bodyBytes.Bytes())
+	if kind == filetype.Unknown || !strings.Contains(kind.MIME.Value, "image") {
+		return fmt.Errorf("remote file %s is not image, remote content has MIME type of %s", url, kind.MIME.Value)
+	}
+
+	_ = os.MkdirAll(path.Dir(filepath), 0755)
+
+	// Create Cache here as a lock
+	// Key: filepath, Value: true
+	WriteLock.Set(filepath, true, -1)
+
+	err = os.WriteFile(filepath, bodyBytes.Bytes(), 0600)
+	if err != nil {
+		return err
+	}
+
+	// Delete lock here
+	WriteLock.Delete(filepath)
+
+	return nil
 }
 
 // Given /path/to/node.png
@@ -172,15 +201,6 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 	webpAbsolutePath := path.Clean(path.Join(exhaustPath, path.Dir(reqURI), webpFilename))
 	avifAbsolutePath := path.Clean(path.Join(exhaustPath, path.Dir(reqURI), avifFilename))
 	return avifAbsolutePath, webpAbsolutePath
-}
-
-func genEtag(ImgAbsPath string) string {
-	data, err := os.ReadFile(ImgAbsPath)
-	if err != nil {
-		log.Warn(err)
-	}
-	crc := crc32.ChecksumIEEE(data)
-	return fmt.Sprintf(`W/"%d-%08X"`, len(data), crc)
 }
 
 func getCompressionRate(RawImagePath string, optimizedImg string) string {

@@ -7,13 +7,17 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"time"
 
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 )
+
+var WriteLock *cache.Cache
 
 func loadConfig(path string) Config {
 	jsonObject, err := os.Open(path)
@@ -103,6 +107,8 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 		ConcurrencyLevel: runtime.NumCPU(),
 	})
 	defer vips.Shutdown()
+
+	WriteLock = cache.New(5*time.Minute, 10*time.Minute)
 
 	if prefetch {
 		go prefetchImages(config.ImgPath, config.ExhaustPath)

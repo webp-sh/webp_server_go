@@ -6,9 +6,11 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/etag"
+	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +23,7 @@ var (
 	curlUA       = "curl/7.64.1"
 )
 
-func setupParam() {
+func TestMain(m *testing.M) {
 	// setup parameters here...
 	config.ImgPath = "./pics"
 	config.ExhaustPath = "./exhaust_test"
@@ -29,6 +31,8 @@ func setupParam() {
 
 	proxyMode = false
 	remoteRaw = "remote-raw"
+	WriteLock = cache.New(5*time.Minute, 10*time.Minute)
+	m.Run()
 }
 
 func requestToServer(url string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
@@ -51,9 +55,7 @@ func requestToServerHeaders(url string, app *fiber.App, headers map[string]strin
 	return resp, data
 }
 
-
 func TestServerHeaders(t *testing.T) {
-	setupParam()
 	var app = fiber.New()
 	app.Use(etag.New(etag.Config{
 		Weak: true,
@@ -74,8 +76,8 @@ func TestServerHeaders(t *testing.T) {
 
 	// TestServerHeadersNotModified
 	var headers = map[string]string{
-		"User-Agent": chromeUA,
-		"Accept": acceptWebP,
+		"User-Agent":    chromeUA,
+		"Accept":        acceptWebP,
 		"If-None-Match": etag,
 	}
 	response, _ = requestToServerHeaders(url, app, headers)
@@ -105,7 +107,6 @@ func TestServerHeaders(t *testing.T) {
 }
 
 func TestConvert(t *testing.T) {
-	setupParam()
 	// TODO: old-style test, better update it with accept headers
 	var testChromeLink = map[string]string{
 		"http://127.0.0.1:3333/webp_server.jpg":                 "image/webp",
@@ -172,7 +173,6 @@ func TestConvert(t *testing.T) {
 }
 
 func TestConvertNotAllowed(t *testing.T) {
-	setupParam()
 	config.AllowedTypes = []string{"jpg", "png", "jpeg"}
 
 	var app = fiber.New()
@@ -193,14 +193,13 @@ func TestConvertNotAllowed(t *testing.T) {
 }
 
 func TestConvertProxyModeBad(t *testing.T) {
-	setupParam()
 	proxyMode = true
 
 	var app = fiber.New()
 	app.Get("/*", convert)
 
 	// this is local random image, should be 404
-	url := "http://127.0.0.1:3333/webp_8888server.bmp"
+	url := "http://127.0.0.1:3333/webp_8888server.jpg"
 	resp, _ := requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
@@ -209,11 +208,9 @@ func TestConvertProxyModeBad(t *testing.T) {
 	resp1, _ := requestToServer(url, app, curlUA, acceptWebP)
 	defer resp1.Body.Close()
 	assert.Equal(t, http.StatusNotFound, resp1.StatusCode)
-
 }
 
 func TestConvertProxyModeWork(t *testing.T) {
-	setupParam()
 	proxyMode = true
 
 	var app = fiber.New()
@@ -235,8 +232,9 @@ func TestConvertProxyModeWork(t *testing.T) {
 }
 
 func TestConvertBigger(t *testing.T) {
-	setupParam()
+	proxyMode = false
 	config.Quality = 100
+	config.ImgPath = "./pics"
 
 	var app = fiber.New()
 	app.Get("/*", convert)

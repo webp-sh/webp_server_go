@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 
-	// "os"
 	"path"
 	"strconv"
 
@@ -115,13 +114,15 @@ func proxyHandler(c *fiber.Ctx, reqURIwithQuery string) (string, error) {
 	// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	realRemoteAddr := config.ImgPath + reqURIwithQuery
 
-	// Since we cannot store file in format of "mypic/123.jpg?someother=200&somebugs=200", we need to hash it.
-	reqURIwithQueryHash := Sha1Path(reqURIwithQuery) // 378e740ca56144b7587f3af9debeee544842879a
-
-	localRawImagePath := path.Join(remoteRaw, reqURIwithQueryHash) // For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a
 	// Ping Remote for status code and etag info
-	log.Infof("Remote Addr is %s, fetching...", realRemoteAddr)
-	statusCode, _, _ := getRemoteImageInfo(realRemoteAddr)
+	log.Infof("Remote Addr is %s, fetching info...", realRemoteAddr)
+	statusCode, etagValue, _ := getRemoteImageInfo(realRemoteAddr)
+
+	// Since we cannot store file in format of "/mypic/123.jpg?someother=200&somebugs=200", we need to hash it.
+	reqURIwithQueryHash := Sha1Path(reqURIwithQuery) // 378e740ca56144b7587f3af9debeee544842879a
+	etagValueHash := Sha1Path(etagValue)             // 123e740ca56333b7587f3af9debeee5448428123
+
+	localRawImagePath := path.Join(remoteRaw, reqURIwithQueryHash+"-etag-"+etagValueHash) // For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a-etag-123e740ca56333b7587f3af9debeee5448428123
 
 	if statusCode == 200 {
 		if imageExists(localRawImagePath) {
@@ -129,6 +130,7 @@ func proxyHandler(c *fiber.Ctx, reqURIwithQuery string) (string, error) {
 		} else {
 			// Temporary store of remote file.
 			cleanProxyCache(config.ExhaustPath + reqURIwithQuery + "*")
+			log.Info("Remote file not found in remote-raw path, fetching...")
 			err := fetchRemoteImage(localRawImagePath, realRemoteAddr)
 			return localRawImagePath, err
 		}
