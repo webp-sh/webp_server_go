@@ -11,6 +11,7 @@ import (
 
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
@@ -117,6 +118,9 @@ Develop by WebP Server team. https://github.com/webp-sh`, version)
 		ServerHeader:          "Webp Server Go",
 		DisableStartupMessage: true,
 	})
+	app.Use(etag.New(etag.Config{
+		Weak: true,
+	}))
 	app.Use(logger.New())
 
 	listenAddress := config.Host + ":" + config.Port

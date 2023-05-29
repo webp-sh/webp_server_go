@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/patrickmn/go-cache"
+	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,9 +35,17 @@ func TestMain(m *testing.M) {
 }
 
 func requestToServer(url string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
+	headers := make(map[string]string)
+	headers["User-Agent"] = ua
+	headers["Accept"] = accept
+	return requestToServerHeaders(url, app, headers)
+}
+
+func requestToServerHeaders(url string, app *fiber.App, headers map[string]string) (*http.Response, []byte) {
 	req := httptest.NewRequest("GET", url, nil)
-	req.Header.Set("User-Agent", ua)
-	req.Header.Set("Accept", accept)
+	for header, value := range headers {
+		req.Header.Set(header, value)
+	}
 	resp, err := app.Test(req, 120000)
 	if err != nil {
 		return nil, nil
@@ -45,8 +54,12 @@ func requestToServer(url string, app *fiber.App, ua, accept string) (*http.Respo
 	return resp, data
 }
 
+
 func TestServerHeaders(t *testing.T) {
 	var app = fiber.New()
+	app.Use(etag.New(etag.Config{
+		Weak: true,
+	}))
 	app.Get("/*", convert)
 	url := "http://127.0.0.1:3333/webp_server.bmp"
 
@@ -55,17 +68,42 @@ func TestServerHeaders(t *testing.T) {
 	defer response.Body.Close()
 	ratio := response.Header.Get("X-Compression-Rate")
 	etag := response.Header.Get("Etag")
+	lastModified := response.Header.Get("Last-Modified")
 
 	assert.NotEqual(t, "", ratio)
 	assert.NotEqual(t, "", etag)
+	assert.NotEqual(t, "", lastModified)
+
+	// TestServerHeadersNotModified
+	var headers = map[string]string{
+		"User-Agent": chromeUA,
+		"Accept": acceptWebP,
+		"If-None-Match": etag,
+	}
+	response, _ = requestToServerHeaders(url, app, headers)
+	defer response.Body.Close()
+	assert.Equal(t, 304, response.StatusCode)
+
+	headers["If-Modified-Since"] = lastModified
+	response, _ = requestToServerHeaders(url, app, headers)
+	defer response.Body.Close()
+	assert.Equal(t, 304, response.StatusCode)
+
+	headers["If-None-Match"] = ""
+	headers["If-Modified-Since"] = lastModified
+	response, _ = requestToServerHeaders(url, app, headers)
+	defer response.Body.Close()
+	assert.Equal(t, 304, response.StatusCode)
 
 	// test for safari
 	response, _ = requestToServer(url, app, safariUA, acceptLegacy)
 	defer response.Body.Close()
 	// ratio = response.Header.Get("X-Compression-Rate")
 	etag = response.Header.Get("Etag")
+	lastModified = response.Header.Get("Last-Modified")
 
 	assert.NotEqual(t, "", etag)
+	assert.NotEqual(t, "", lastModified)
 }
 
 func TestConvert(t *testing.T) {

@@ -106,8 +106,6 @@ func convert(c *fiber.Ctx) error {
 		c.Set("Content-Type", "image/avif")
 	}
 
-	etag := genEtag(finalFileName)
-	c.Set("ETag", etag)
 	c.Set("X-Compression-Rate", getCompressionRate(rawImageAbs, finalFileName))
 	return c.SendFile(finalFileName)
 }
