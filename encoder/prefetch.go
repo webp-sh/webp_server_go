@@ -1,4 +1,4 @@
-package main
+package encoder
 
 import (
 	"fmt"
@@ -7,24 +7,27 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"webp_server_go/config"
+	"webp_server_go/helper"
 
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 )
 
-func prefetchImages(confImgPath string, ExhaustPath string) {
+func PrefetchImages() {
+	// confImgPath string, ExhaustPath string
 	// maximum ongoing prefetch is depending on your core of CPU
 	var sTime = time.Now()
-	log.Infof("Prefetching using %d cores", jobs)
-	var finishChan = make(chan int, jobs)
-	for i := 0; i < jobs; i++ {
+	log.Infof("Prefetching using %d cores", config.Jobs)
+	var finishChan = make(chan int, config.Jobs)
+	for i := 0; i < config.Jobs; i++ {
 		finishChan <- 1
 	}
 
 	//prefetch, recursive through the dir
-	all := fileCount(confImgPath)
+	all := helper.FileCount(config.Config.ImgPath)
 	var bar = progressbar.Default(all, "Prefetching...")
-	err := filepath.Walk(confImgPath,
+	err := filepath.Walk(config.Config.ImgPath,
 		func(picAbsPath string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
@@ -33,11 +36,11 @@ func prefetchImages(confImgPath string, ExhaustPath string) {
 				return nil
 			}
 			// RawImagePath string, ImgFilename string, reqURI string
-			proposedURI := strings.Replace(picAbsPath, confImgPath, "", 1)
-			avif, webp := genOptimizedAbsPath(picAbsPath, ExhaustPath, info.Name(), proposedURI, ExtraParams{Width: 0, Height: 0})
+			proposedURI := strings.Replace(picAbsPath, config.Config.ImgPath, "", 1)
+			avif, webp := helper.GenOptimizedAbsPath(picAbsPath, config.Config.ExhaustPath, info.Name(), proposedURI, config.ExtraParams{Width: 0, Height: 0})
 			_ = os.MkdirAll(path.Dir(avif), 0755)
 			log.Infof("Prefetching %s", picAbsPath)
-			go convertFilter(picAbsPath, avif, webp, ExtraParams{Width: 0, Height: 0}, finishChan)
+			go ConvertFilter(picAbsPath, avif, webp, config.ExtraParams{Width: 0, Height: 0}, finishChan)
 			_ = bar.Add(<-finishChan)
 			return nil
 		})

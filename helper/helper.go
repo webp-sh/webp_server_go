@@ -1,4 +1,4 @@
-package main
+package helper
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"time"
+	"webp_server_go/config"
 
 	"github.com/h2non/filetype"
 
@@ -40,7 +41,7 @@ func getFileContentType(buffer []byte) string {
 	return kind.MIME.Value
 }
 
-func fileCount(dir string) int64 {
+func FileCount(dir string) int64 {
 	var count int64 = 0
 	_ = filepath.Walk(dir,
 		func(path string, info os.FileInfo, err error) error {
@@ -55,7 +56,7 @@ func fileCount(dir string) int64 {
 	return count
 }
 
-func imageExists(filename string) bool {
+func ImageExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false
@@ -70,7 +71,7 @@ func imageExists(filename string) bool {
 	retryDelay := 100 * time.Millisecond // Initial retry delay
 
 	for retry := 0; retry < maxRetries; retry++ {
-		if _, found := WriteLock.Get(filename); found {
+		if _, found := config.WriteLock.Get(filename); found {
 			log.Infof("file %s is locked, retrying in %s", filename, retryDelay)
 			time.Sleep(retryDelay)
 			retryDelay *= 2 // Exponential backoff
@@ -83,9 +84,9 @@ func imageExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func checkAllowedType(imgFilename string) bool {
+func CheckAllowedType(imgFilename string) bool {
 	imgFilename = strings.ToLower(imgFilename)
-	for _, allowedType := range config.AllowedTypes {
+	for _, allowedType := range config.Config.AllowedTypes {
 		if allowedType == "*" {
 			return true
 		}
@@ -99,7 +100,7 @@ func checkAllowedType(imgFilename string) bool {
 
 // Check for remote filepath, e.g: https://test.webp.sh/node.png
 // return StatusCode, etagValue and length
-func getRemoteImageInfo(fileURL string) (int, string, string) {
+func GetRemoteImageInfo(fileURL string) (int, string, string) {
 	resp, err := http.Head(fileURL)
 	if err != nil {
 		log.Errorln("Connection to remote error when getRemoteImageInfo!")
@@ -118,7 +119,7 @@ func getRemoteImageInfo(fileURL string) (int, string, string) {
 	return resp.StatusCode, "", resp.Header.Get("content-length")
 }
 
-func fetchRemoteImage(filepath string, url string) error {
+func FetchRemoteImage(filepath string, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Errorln("Connection to remote error when fetchRemoteImage!")
@@ -147,7 +148,7 @@ func fetchRemoteImage(filepath string, url string) error {
 
 	// Create Cache here as a lock
 	// Key: filepath, Value: true
-	WriteLock.Set(filepath, true, -1)
+	config.WriteLock.Set(filepath, true, -1)
 
 	err = os.WriteFile(filepath, bodyBytes.Bytes(), 0600)
 	if err != nil {
@@ -155,14 +156,14 @@ func fetchRemoteImage(filepath string, url string) error {
 	}
 
 	// Delete lock here
-	WriteLock.Delete(filepath)
+	config.WriteLock.Delete(filepath)
 
 	return nil
 }
 
 // Given /path/to/node.png
 // Delete /path/to/node.png*
-func cleanProxyCache(cacheImagePath string) {
+func CleanProxyCache(cacheImagePath string) {
 	// Delete /node.png*
 	files, err := filepath.Glob(cacheImagePath + "*")
 	if err != nil {
@@ -175,7 +176,7 @@ func cleanProxyCache(cacheImagePath string) {
 	}
 }
 
-func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string, extraParams ExtraParams) (string, string) {
+func GenOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName string, reqURI string, extraParams config.ExtraParams) (string, string) {
 	// get file mod time
 	STAT, err := os.Stat(rawImagePath)
 	if err != nil {
@@ -191,7 +192,7 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
 	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
 	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
-	if config.EnableExtraParams {
+	if config.Config.EnableExtraParams {
 		webpFilename = webpFilename + extraParams.String()
 		avifFilename = avifFilename + extraParams.String()
 	}
@@ -203,7 +204,7 @@ func genOptimizedAbsPath(rawImagePath string, exhaustPath string, imageName stri
 	return avifAbsolutePath, webpAbsolutePath
 }
 
-func getCompressionRate(RawImagePath string, optimizedImg string) string {
+func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 	originFileInfo, err := os.Stat(RawImagePath)
 	if err != nil {
 		log.Warnf("Failed to get raw image %v", err)
@@ -219,7 +220,7 @@ func getCompressionRate(RawImagePath string, optimizedImg string) string {
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
-func guessSupportedFormat(header *fasthttp.RequestHeader) []string {
+func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 	var supported = map[string]bool{
 		"raw":  true,
 		"webp": false,
@@ -253,7 +254,7 @@ func guessSupportedFormat(header *fasthttp.RequestHeader) []string {
 	return accepted
 }
 
-func findSmallestFiles(files []string) string {
+func FindSmallestFiles(files []string) string {
 	// walk files
 	var small int64
 	var final string

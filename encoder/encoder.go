@@ -1,18 +1,28 @@
-package main
+package encoder
 
 import (
 	"errors"
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
+	"webp_server_go/config"
+	"webp_server_go/helper"
 
 	"github.com/davidbyttow/govips/v2/vips"
 	log "github.com/sirupsen/logrus"
 )
 
-func resizeImage(img *vips.ImageRef, extraParams ExtraParams) error {
+func init() {
+	vips.Startup(&vips.Config{
+		ConcurrencyLevel: runtime.NumCPU(),
+	})
+	defer vips.Shutdown()
+}
+
+func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 	imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
 	if extraParams.Width > 0 && extraParams.Height > 0 {
 		err := img.Thumbnail(extraParams.Width, extraParams.Height, 0)
@@ -33,12 +43,12 @@ func resizeImage(img *vips.ImageRef, extraParams ExtraParams) error {
 	return nil
 }
 
-func convertFilter(raw, avifPath string, webpPath string, extraParams ExtraParams, c chan int) {
+func ConvertFilter(raw, avifPath string, webpPath string, extraParams config.ExtraParams, c chan int) {
 	// all absolute paths
 
 	var wg sync.WaitGroup
 	wg.Add(2)
-	if !imageExists(avifPath) && config.EnableAVIF {
+	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF {
 		go func() {
 			err := convertImage(raw, avifPath, "avif", extraParams)
 			if err != nil {
@@ -50,7 +60,7 @@ func convertFilter(raw, avifPath string, webpPath string, extraParams ExtraParam
 		wg.Done()
 	}
 
-	if !imageExists(webpPath) {
+	if !helper.ImageExists(webpPath) {
 		go func() {
 			err := convertImage(raw, webpPath, "webp", extraParams)
 			if err != nil {
@@ -68,7 +78,7 @@ func convertFilter(raw, avifPath string, webpPath string, extraParams ExtraParam
 	}
 }
 
-func convertImage(raw, optimized, itype string, extraParams ExtraParams) error {
+func convertImage(raw, optimized, itype string, extraParams config.ExtraParams) error {
 	// we don't have /path/to/tsuki.jpg.1582558990.webp, maybe we have /path/to/tsuki.jpg.1082008000.webp
 	// delete the old converted pic and convert a new one.
 	// optimized: /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
@@ -95,14 +105,14 @@ func convertImage(raw, optimized, itype string, extraParams ExtraParams) error {
 
 	switch itype {
 	case "webp":
-		err = webpEncoder(raw, optimized, config.Quality, extraParams)
+		err = webpEncoder(raw, optimized, config.Config.Quality, extraParams)
 	case "avif":
-		err = avifEncoder(raw, optimized, config.Quality, extraParams)
+		err = avifEncoder(raw, optimized, config.Config.Quality, extraParams)
 	}
 	return err
 }
 
-func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
+func avifEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) error {
 	// if convert fails, return error; success nil
 	var buf []byte
 	var boolFalse vips.BoolParameter
@@ -113,7 +123,6 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	if err != nil {
 		return err
 	}
-
 	// Ignore Unknown, WebP, AVIF
 	ignoreList := []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeWEBP, vips.ImageTypeAVIF}
 
@@ -124,8 +133,7 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 			return errors.New("encoder: ignore image type")
 		}
 	}
-
-	if config.EnableExtraParams {
+	if config.Config.EnableExtraParams {
 		err = resizeImage(img, extraParams)
 		if err != nil {
 			return err
@@ -133,7 +141,7 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	}
 
 	// AVIF has a maximum resolution of 65536 x 65536 pixels.
-	if img.Metadata().Width > avifMax || img.Metadata().Height > avifMax {
+	if img.Metadata().Width > config.AvifMax || img.Metadata().Height > config.AvifMax {
 		return errors.New("AVIF: image too large")
 	}
 
@@ -171,7 +179,7 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	return nil
 }
 
-func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
+func webpEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) error {
 	// if convert fails, return error; success nil
 	var buf []byte
 	var boolFalse vips.BoolParameter
@@ -185,7 +193,6 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	if err != nil {
 		return err
 	}
-
 	// Ignore Unknown, WebP, AVIF
 	ignoreList := []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeWEBP, vips.ImageTypeAVIF}
 
@@ -196,8 +203,7 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 			return errors.New("encoder: ignore image type")
 		}
 	}
-
-	if config.EnableExtraParams {
+	if config.Config.EnableExtraParams {
 		err = resizeImage(img, extraParams)
 		if err != nil {
 			return err
@@ -205,8 +211,7 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	}
 
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
-	// But GIF is exception, it can be larger than 16383
-	if (img.Metadata().Width > webpMax || img.Metadata().Height > webpMax) && imageFormat != vips.ImageTypeGIF {
+	if (img.Metadata().Width > config.WebpMax || img.Metadata().Height > config.WebpMax) && imageFormat != vips.ImageTypeGIF {
 		return errors.New("WebP: image too large")
 	}
 
