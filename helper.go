@@ -74,10 +74,6 @@ func imageExists(filename string) bool {
 			log.Infof("file %s is locked, retrying in %s", filename, retryDelay)
 			time.Sleep(retryDelay)
 			retryDelay *= 2 // Exponential backoff
-
-			if _, found := WriteLock.Get(filename); !found {
-				return true
-			}
 		} else {
 			return !info.IsDir()
 		}
