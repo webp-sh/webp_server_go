@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  webp:
+    image: webpsh/webp-server-go
+    restart: always
+    environment:
+      - MALLOC_ARENA_MAX=1
+      - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+    volumes:
+      - ./pics:/opt/pics
+      - ./exhaust:/opt/exhaust
+    ports:
+      -  127.0.0.1:3333:3333
