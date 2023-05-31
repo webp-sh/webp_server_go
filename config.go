@@ -31,7 +31,7 @@ var (
 	prefetch, proxyMode      bool
 	remoteRaw                = "remote-raw"
 	config                   Config
-	version                  = "0.8.3"
+	version                  = "0.8.4"
 )
 
 const (
