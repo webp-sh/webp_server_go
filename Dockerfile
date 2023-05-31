@@ -14,7 +14,7 @@ RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
 
 FROM debian:bullseye-slim
 
-RUN apt update && apt install --no-install-recommends libvips ca-certificates -y && rm -rf /var/lib/apt/lists/* &&  rm -rf /var/cache/apt/archives/*
+RUN apt update && apt install --no-install-recommends libvips ca-certificates libjemalloc2 libtcmalloc-minimal4 -y && rm -rf /var/lib/apt/lists/* &&  rm -rf /var/cache/apt/archives/*
 
 COPY --from=builder /build/webp-server  /usr/bin/webp-server
 COPY --from=builder /build/config.json /etc/config.json
