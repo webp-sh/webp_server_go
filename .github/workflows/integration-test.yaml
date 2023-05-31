@@ -1,0 +1,68 @@
+name: Integration Tests
+on:
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+    - '**.md'
+    - 'Makefile'
+    - 'config.json'
+
+jobs:
+  glib_malloc:
+    name: Glib malloc RAM usage test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          tags: ghcr.io/webp-sh/webp_server_go
+
+      - name: Start the container
+        run: |
+          cp tests/glib_malloc/docker-compose.yml ./
+          docker-compose up -d
+    
+      - name: Send Requests to Server
+        run: |
+          cd pics
+          find * -type f -print | xargs -I {} curl -H "User-Agent: Mozilla/5.0 Gecko/20100101 Firefox/98.0" http://localhost:3333/{}
+
+      - name: Get container RAM stats
+        run: |
+          docker stats --no-stream
+
+  jemalloc:
+    name: jemalloc RAM usage test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          tags: ghcr.io/webp-sh/webp_server_go
+
+      - name: Start the container
+        run: |
+          cp tests/jemalloc/docker-compose.yml ./
+          docker-compose up -d
+    
+      - name: Send Requests to Server
+        run: |
+          cd pics
+          find * -type f -print | xargs -I {} curl -H "User-Agent: Mozilla/5.0 Gecko/20100101 Firefox/98.0" http://localhost:3333/{}
+
+      - name: Get container RAM stats
+        run: |
+          docker stats --no-stream
