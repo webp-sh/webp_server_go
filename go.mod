@@ -3,6 +3,7 @@ module webp_server_go
 go 1.20
 
 require (
+	github.com/cespare/xxhash v1.1.0
 	github.com/davidbyttow/govips/v2 v2.13.0
 	github.com/gofiber/fiber/v2 v2.4.0
 	github.com/h2non/filetype v1.1.3

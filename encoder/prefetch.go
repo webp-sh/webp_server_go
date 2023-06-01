@@ -15,7 +15,6 @@ import (
 )
 
 func PrefetchImages() {
-	// confImgPath string, ExhaustPath string
 	// maximum ongoing prefetch is depending on your core of CPU
 	var sTime = time.Now()
 	log.Infof("Prefetching using %d cores", config.Jobs)
@@ -37,7 +36,7 @@ func PrefetchImages() {
 			}
 			// RawImagePath string, ImgFilename string, reqURI string
 			proposedURI := strings.Replace(picAbsPath, config.Config.ImgPath, "", 1)
-			avif, webp := helper.GenOptimizedAbsPath(picAbsPath, config.Config.ExhaustPath, info.Name(), proposedURI, config.ExtraParams{Width: 0, Height: 0})
+			avif, webp := helper.GenOptimizedAbsPath(picAbsPath, proposedURI, config.ExtraParams{Width: 0, Height: 0})
 			_ = os.MkdirAll(path.Dir(avif), 0755)
 			log.Infof("Prefetching %s", picAbsPath)
 			go ConvertFilter(picAbsPath, avif, webp, config.ExtraParams{Width: 0, Height: 0}, finishChan)

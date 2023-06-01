@@ -24,7 +24,7 @@ func Convert(c *fiber.Ctx) error {
 	var (
 		reqURI, _          = url.QueryUnescape(c.Path())        // /mypic/123.jpg
 		reqURIwithQuery, _ = url.QueryUnescape(c.OriginalURL()) // /mypic/123.jpg?someother=200&somebugs=200
-		filename           = path.Base(reqURI)                  // TODO: could be const? pure filename, 123.jpg
+		filename           = path.Base(reqURI)
 	)
 
 	if !helper.CheckAllowedType(filename) {
@@ -79,7 +79,7 @@ func Convert(c *fiber.Ctx) error {
 	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
 	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
 	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
-	avifAbs, webpAbs := helper.GenOptimizedAbsPath(rawImageAbs, config.Config.ExhaustPath, filename, reqURI, extraParams)
+	avifAbs, webpAbs := helper.GenOptimizedAbsPath(rawImageAbs, reqURI, extraParams)
 	encoder.ConvertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
 
 	var availableFiles = []string{rawImageAbs}

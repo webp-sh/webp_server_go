@@ -1,48 +1,20 @@
 package helper
 
 import (
-	"bytes"
-	"crypto/sha1" //#nosec
-	"encoding/hex"
 	"fmt"
+	"github.com/cespare/xxhash"
+	"github.com/valyala/fasthttp"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 	"webp_server_go/config"
-
-	"github.com/h2non/filetype"
-
-	"github.com/valyala/fasthttp"
-
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
-func avifMatcher(buf []byte) bool {
-	// TODO: is this even used? getFileContentType is deprecated.
-	// 0000001c 66747970 61766966 00000000 61766966 6d696631 6d696166
-	return len(buf) > 1 && bytes.Equal(buf[:28], []byte{
-		0x0, 0x0, 0x0, 0x1c,
-		0x66, 0x74, 0x79, 0x70,
-		0x61, 0x76, 0x69, 0x66,
-		0x0, 0x0, 0x0, 0x0,
-		0x61, 0x76, 0x69, 0x66,
-		0x6d, 0x69, 0x66, 0x31,
-		0x6d, 0x69, 0x61, 0x66,
-	})
-}
-func getFileContentType(buffer []byte) string {
-	// TODO deprecated.
-	var avifType = filetype.NewType("avif", "image/avif")
-	filetype.AddMatcher(avifType, avifMatcher)
-	kind, _ := filetype.Match(buffer)
-	return kind.MIME.Value
-}
-
 func FileCount(dir string) int64 {
-	// TODO: why int64? Think you can have 2^32 files in a directory?
 	var count int64 = 0
 	_ = filepath.Walk(dir,
 		func(path string, info os.FileInfo, err error) error {
@@ -71,7 +43,6 @@ func ImageExists(filename string) bool {
 		return false
 	}
 
-	// TODO: reason for lock?
 	// Check if there is lock in cache, retry after 1 second
 	maxRetries := 3
 	retryDelay := 100 * time.Millisecond // Initial retry delay
@@ -102,11 +73,13 @@ func CheckAllowedType(imgFilename string) bool {
 	return false
 }
 
-func GenOptimizedAbsPath(rawImagePath, exhaustPath, imageName, reqURI string, extraParams config.ExtraParams) (string, string) {
-	// TODO: only need rawImagePath reqURI and perhaps extraParams
-	// TODO: exhaustPath is not needed, we can use config.Config.ExhaustPath
+func GenOptimizedAbsPath(rawImagePath, reqURI string, extraParams config.ExtraParams) (string, string) {
 	// imageName is not needed, we can use reqURI
 	// get file mod time
+	var (
+		imageName   = path.Base(reqURI)
+		exhaustPath = config.Config.ExhaustPath
+	)
 	STAT, err := os.Stat(rawImagePath)
 	if err != nil {
 		log.Error(err.Error())
@@ -150,18 +123,16 @@ func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 }
 
 func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
-	// TODO: raw? use enum is better
-	var supported = map[string]bool{
-		"raw":  true,
-		"webp": false,
-		"avif": false}
+	var (
+		supported = map[string]bool{
+			"raw":  true,
+			"webp": false,
+			"avif": false,
+		}
 
-	// TODO: do we need to consider following warning from header.peak
-	// The returned value is valid until the request is released,
-	// either though ReleaseRequest or your request handler returning.
-	// Do not store references to returned value. Make copies instead.
-	var ua = string(header.Peek("user-agent"))
-	var accept = strings.ToLower(string(header.Peek("accept")))
+		ua     = string(header.Peek("user-agent"))
+		accept = strings.ToLower(string(header.Peek("accept")))
+	)
 
 	if strings.Contains(accept, "image/webp") {
 		supported["webp"] = true
@@ -172,13 +143,12 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 
 	// chrome on iOS will not send valid image accept header
 	if strings.Contains(ua, "iPhone OS 14") || strings.Contains(ua, "CPU OS 14") ||
-		strings.Contains(ua, "iPhone OS 15") || strings.Contains(ua, "CPU OS 15") {
-		supported["webp"] = true
-	} else if strings.Contains(ua, "Android") || strings.Contains(ua, "Linux") {
+		strings.Contains(ua, "iPhone OS 15") || strings.Contains(ua, "CPU OS 15") ||
+		strings.Contains(ua, "Android") || strings.Contains(ua, "Linux") {
 		supported["webp"] = true
 	}
 
-	// TODO: WTF is this???
+	// save true value's key to slice
 	var accepted []string
 	for k, v := range supported {
 		if v {
@@ -206,10 +176,7 @@ func FindSmallestFiles(files []string) string {
 	return final
 }
 
-func Sha1Path(uri string) string {
-	// TODO: use xxHash https://github.com/Cyan4973/xxHash
-	/* #nosec */
-	h := sha1.New()
-	h.Write([]byte(uri))
-	return hex.EncodeToString(h.Sum(nil))
+func HashString(uri string) string {
+	// xxhash supports cross compile
+	return fmt.Sprintf("%x", xxhash.Sum64String(uri))
 }

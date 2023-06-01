@@ -51,18 +51,15 @@ func downloadFile(filepath string, url string) {
 
 	// Check if remote content-type is image using check by filetype instead of content-type returned by origin
 	kind, _ := filetype.Match(bodyBytes.Bytes())
-	// TODO if type is unknown, strings.Contains should be false. Can remove this first check?
-	// var Unknown = NewType("unknown", "")
 	mime := kind.MIME.Value
-	if kind == filetype.Unknown || !strings.Contains(mime, "image") {
+	if !strings.Contains(mime, "image") {
 		log.Errorf("remote file %s is not image, remote content has MIME type of %s", url, mime)
 		return
 	}
 
 	_ = os.MkdirAll(path.Dir(filepath), 0755)
 
-	// TODO: what is the purpose of lock?
-	// Create Cache here as a lock
+	// Create Cache here as a lock, so we can prevent incomplete file from being read
 	// Key: filepath, Value: true
 	config.WriteLock.Set(filepath, true, -1)
 
@@ -85,7 +82,7 @@ func fetchRemoteImg(url string) string {
 	log.Infof("Remote Addr is %s, pinging for info...", url)
 	identifiable := pingUrl(url)
 	// For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a-etag-123e740ca56333b7587f3af9debeee5448428123
-	localRawImagePath := path.Join(config.RemoteRaw, helper.Sha1Path(url+identifiable))
+	localRawImagePath := path.Join(config.RemoteRaw, helper.HashString(url+identifiable))
 
 	if helper.ImageExists(localRawImagePath) {
 		return localRawImagePath
