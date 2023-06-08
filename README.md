@@ -113,10 +113,10 @@ For supervisor, Docker sections or detailed Nginx configuration, please read our
 If you find this project useful, please consider supporting
 us by [becoming a sponsor](https://github.com/sponsors/webp-sh) or Stripe
 
-| USD(Card, Apple Pay and Google Pay)              | SEK(Card, Apple Pay and Google Pay)              | CNY(Card, Apple Pay, Google Pay and Alipay)      |
+| USD(Card, Apple Pay and Google Pay)              | EUR(Card, Apple Pay and Google Pay)              | CNY(Card, Apple Pay, Google Pay and Alipay)      |
 |--------------------------------------------------|--------------------------------------------------|--------------------------------------------------|
-| [USD](https://buy.stripe.com/cN203sdZB98RevC3cd) | [SEK](https://buy.stripe.com/bIYbMa9JletbevCaEE) | [CNY](https://buy.stripe.com/dR67vU4p13Ox73a6oq) |
-| ![](pics/USD.png)                                | ![](pics/SEK.png)                                | ![](pics/CNY.png)                                |
+| [USD](https://donate.stripe.com/4gwfZn2RDgag0bScMN) | [EUR](https://donate.stripe.com/28odRfgItgage2IfZ0) | [CNY](https://donate.stripe.com/00geVj8bX3nuf6MeUU) |
+| ![](pics/USD.png)                                | ![](pics/EUR.png)                                | ![](pics/CNY.png)                                |
 
 ## License
 
