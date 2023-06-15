@@ -121,7 +121,7 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	for _, ignore := range ignoreList {
 		if imageFormat == ignore {
 			// Return err to render original image
-			return errors.New("Encoder: ignore image type")
+			return errors.New("encoder: ignore image type")
 		}
 	}
 
@@ -193,7 +193,7 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	for _, ignore := range ignoreList {
 		if imageFormat == ignore {
 			// Return err to render original image
-			return errors.New("Encoder: ignore image type")
+			return errors.New("encoder: ignore image type")
 		}
 	}
 
