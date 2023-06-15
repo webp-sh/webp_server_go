@@ -31,7 +31,7 @@ var (
 	prefetch, proxyMode      bool
 	remoteRaw                = "remote-raw"
 	config                   Config
-	version                  = "0.8.4"
+	version                  = "0.9.0"
 )
 
 const (
@@ -42,7 +42,7 @@ const (
   "QUALITY": "80",
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","gif"],
   "ENABLE_AVIF": false,
   "ENABLE_EXTRA_PARAMS": false
 }`
