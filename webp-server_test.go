@@ -20,7 +20,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "3333", c.Port)
 	assert.Equal(t, 80, c.Quality)
 	assert.Equal(t, "./pics", c.ImgPath)
-	assert.Equal(t, []string{"jpg", "png", "jpeg", "bmp"}, c.AllowedTypes)
+	assert.Equal(t, []string{"jpg", "png", "jpeg", "bmp", "gif"}, c.AllowedTypes)
 }
 
 func TestDeferInit(t *testing.T) {

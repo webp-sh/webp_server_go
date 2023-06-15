@@ -1,4 +1,4 @@
-FROM golang:1.20 as builder
+FROM golang:1.20-bookworm as builder
 
 ARG IMG_PATH=/opt/pics
 ARG EXHAUST_PATH=/opt/exhaust
@@ -12,7 +12,7 @@ RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
     && sed -i 's/127.0.0.1/0.0.0.0/g' config.json  \
     && go build -ldflags="-s -w" -o webp-server .
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 RUN apt update && apt install --no-install-recommends libvips ca-certificates libjemalloc2 libtcmalloc-minimal4 -y && rm -rf /var/lib/apt/lists/* &&  rm -rf /var/cache/apt/archives/*
 
