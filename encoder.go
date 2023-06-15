@@ -163,11 +163,12 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	// if convert fails, return error; success nil
 	var buf []byte
-	var boolFalse vips.BoolParameter
-	boolFalse.Set(false)
-	img, err := vips.LoadImageFromFile(p1, &vips.ImportParams{
-		FailOnError: boolFalse,
-	})
+
+	importParams := vips.NewImportParams()
+	importParams.FailOnError.Set(false)
+	importParams.NumPages.Set(-1)
+
+	img, err := vips.LoadImageFromFile(p1, importParams)
 	if err != nil {
 		return err
 	}

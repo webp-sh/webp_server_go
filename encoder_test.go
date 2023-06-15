@@ -96,6 +96,10 @@ func TestWebPEncoder(t *testing.T) {
 	_ = os.Remove(dest)
 }
 
+func TestAnimatedGIFWithWebPEncoder(t *testing.T) {
+	runEncoder(t, "./pics/gif-animated.gif", dest)
+}
+
 func TestAvifEncoder(t *testing.T) {
 	// Only one file: img_over_16383px.jpg might cause memory issues on CI environment
 	assert.Nil(t, avifEncoder("./pics/big.jpg", dest, 80, ExtraParams{Width: 0, Height: 0}))
