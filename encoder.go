@@ -114,6 +114,17 @@ func avifEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 		return err
 	}
 
+	// Ignore Unknown, WebP, AVIF
+	ignoreList := []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeWEBP, vips.ImageTypeAVIF}
+
+	imageFormat := img.Format()
+	for _, ignore := range ignoreList {
+		if imageFormat == ignore {
+			// Return err to render original image
+			return errors.New("encoder: ignore image type")
+		}
+	}
+
 	if config.EnableExtraParams {
 		err = resizeImage(img, extraParams)
 		if err != nil {
@@ -175,6 +186,17 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 		return err
 	}
 
+	// Ignore Unknown, WebP, AVIF
+	ignoreList := []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeWEBP, vips.ImageTypeAVIF}
+
+	imageFormat := img.Format()
+	for _, ignore := range ignoreList {
+		if imageFormat == ignore {
+			// Return err to render original image
+			return errors.New("encoder: ignore image type")
+		}
+	}
+
 	if config.EnableExtraParams {
 		err = resizeImage(img, extraParams)
 		if err != nil {
@@ -183,7 +205,8 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	}
 
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
-	if img.Metadata().Width > webpMax || img.Metadata().Height > webpMax {
+	// But GIF is exception, it can be larger than 16383
+	if (img.Metadata().Width > webpMax || img.Metadata().Height > webpMax) && imageFormat != vips.ImageTypeGIF {
 		return errors.New("WebP: image too large")
 	}
 
