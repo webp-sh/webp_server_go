@@ -165,8 +165,11 @@ func webpEncoder(p1, p2 string, quality int, extraParams ExtraParams) error {
 	var buf []byte
 	var boolFalse vips.BoolParameter
 	boolFalse.Set(false)
+	var intMinusOne vips.IntParameter
+	intMinusOne.Set(-1)
 	img, err := vips.LoadImageFromFile(p1, &vips.ImportParams{
 		FailOnError: boolFalse,
+		NumPages:    intMinusOne,
 	})
 	if err != nil {
 		return err
