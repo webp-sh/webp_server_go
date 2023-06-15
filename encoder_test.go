@@ -98,6 +98,7 @@ func TestWebPEncoder(t *testing.T) {
 
 func TestAnimatedGIFWithWebPEncoder(t *testing.T) {
 	runEncoder(t, "./pics/gif-animated.gif", dest)
+	_ = os.Remove(dest)
 }
 
 func TestAvifEncoder(t *testing.T) {
