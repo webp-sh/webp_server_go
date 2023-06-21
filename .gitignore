@@ -24,3 +24,4 @@ builds/
 remote-raw/
 coverage.txt
 .DS_Store
+/webp_server_go

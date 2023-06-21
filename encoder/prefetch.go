@@ -48,6 +48,6 @@ func PrefetchImages() {
 		log.Errorln(err)
 	}
 	elapsed := time.Since(sTime)
-	_, _ = fmt.Fprintf(os.Stdout, "Prefetch completeY(^_^)Y in %s\n\n", elapsed)
+	_, _ = fmt.Fprintf(os.Stdout, "Prefetch complete in %s\n\n", elapsed)
 
 }

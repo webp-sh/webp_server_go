@@ -34,7 +34,7 @@ func ImageExists(filename string) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
-	// TODO: WTF is this? Why 100?
+	//  if file size is less than 100 bytes, we assume it's invalid file
 	// png starts with an 8-byte signature, follow by 4 chunks 58 bytes.
 	// JPG is 134 bytes.
 	// webp is 33 bytes.

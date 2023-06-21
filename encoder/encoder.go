@@ -15,10 +15,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	boolFalse   vips.BoolParameter
+	intMinusOne vips.IntParameter
+)
+
 func init() {
 	vips.Startup(&vips.Config{
 		ConcurrencyLevel: runtime.NumCPU(),
 	})
+	boolFalse.Set(false)
+	intMinusOne.Set(-1)
+
 	// TODO can't shutdown vips in init
 	//defer vips.Shutdown()
 }
@@ -79,11 +87,11 @@ func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParam
 	}
 }
 
-func convertImage(raw, optimized, itype string, extraParams config.ExtraParams) error {
+func convertImage(raw, optimized, imageType string, extraParams config.ExtraParams) error {
 	// we don't have /path/to/tsuki.jpg.1582558990.webp, maybe we have /path/to/tsuki.jpg.1082008000.webp
 	// delete the old converted pic and convert a new one.
 	// optimized: /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-	// we'll delete file starts with /home/webp_server/exhaust/path/to/tsuki.jpg.ts.itype
+	// we'll delete file starts with /home/webp_server/exhaust/path/to/tsuki.jpg.ts.imageType
 	// If contain extraParams like tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200
 
 	s := strings.Split(path.Base(optimized), ".")
@@ -104,36 +112,44 @@ func convertImage(raw, optimized, itype string, extraParams config.ExtraParams) 
 		log.Error(err.Error())
 	}
 
-	switch itype {
+	switch imageType {
 	case "webp":
-		err = webpEncoder(raw, optimized, config.Config.Quality, extraParams)
+		err = webpEncoder(raw, optimized, extraParams)
 	case "avif":
-		err = avifEncoder(raw, optimized, config.Config.Quality, extraParams)
+		err = avifEncoder(raw, optimized, extraParams)
 	}
 	return err
 }
 
-func avifEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) error {
+func imageIgnore(imageFormat vips.ImageType) bool {
+	// Ignore Unknown, WebP, AVIF
+	ignoreList := []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeWEBP, vips.ImageTypeAVIF}
+	for _, ignore := range ignoreList {
+		if imageFormat == ignore {
+			// Return err to render original image
+			return true
+		}
+	}
+	return false
+}
+
+func avifEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 	// if convert fails, return error; success nil
-	var buf []byte
-	var boolFalse vips.BoolParameter
-	boolFalse.Set(false)
+	var (
+		buf     []byte
+		quality = config.Config.Quality
+	)
 	img, err := vips.LoadImageFromFile(p1, &vips.ImportParams{
 		FailOnError: boolFalse,
 	})
 	if err != nil {
 		return err
 	}
-	// Ignore Unknown, WebP, AVIF
-	ignoreList := []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeWEBP, vips.ImageTypeAVIF}
 
-	imageFormat := img.Format()
-	for _, ignore := range ignoreList {
-		if imageFormat == ignore {
-			// Return err to render original image
-			return errors.New("encoder: ignore image type")
-		}
+	if imageIgnore(img.Format()) {
+		return errors.New("encoder: ignore image type")
 	}
+
 	if config.Config.EnableExtraParams {
 		err = resizeImage(img, extraParams)
 		if err != nil {
@@ -180,14 +196,13 @@ func avifEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) err
 	return nil
 }
 
-func webpEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) error {
-
+func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 	// if convert fails, return error; success nil
-	var buf []byte
-	var boolFalse vips.BoolParameter
-	boolFalse.Set(false)
-	var intMinusOne vips.IntParameter
-	intMinusOne.Set(-1)
+	var (
+		buf     []byte
+		quality = config.Config.Quality
+	)
+
 	img, err := vips.LoadImageFromFile(p1, &vips.ImportParams{
 		FailOnError: boolFalse,
 		NumPages:    intMinusOne,
@@ -195,16 +210,11 @@ func webpEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) err
 	if err != nil {
 		return err
 	}
-	// Ignore Unknown, WebP, AVIF
-	ignoreList := []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeWEBP, vips.ImageTypeAVIF}
 
-	imageFormat := img.Format()
-	for _, ignore := range ignoreList {
-		if imageFormat == ignore {
-			// Return err to render original image
-			return errors.New("encoder: ignore image type")
-		}
+	if imageIgnore(img.Format()) {
+		return errors.New("encoder: ignore image type")
 	}
+
 	if config.Config.EnableExtraParams {
 		err = resizeImage(img, extraParams)
 		if err != nil {
@@ -213,7 +223,7 @@ func webpEncoder(p1, p2 string, quality int, extraParams config.ExtraParams) err
 	}
 
 	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
-	if (img.Metadata().Width > config.WebpMax || img.Metadata().Height > config.WebpMax) && imageFormat != vips.ImageTypeGIF {
+	if (img.Metadata().Width > config.WebpMax || img.Metadata().Height > config.WebpMax) && img.Format() != vips.ImageTypeGIF {
 		return errors.New("WebP: image too large")
 	}
 
