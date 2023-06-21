@@ -235,14 +235,16 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
-			Lossless:      true,
-			StripMetadata: true,
+			Lossless:        true,
+			StripMetadata:   true,
+			ReductionEffort: 2,
 		})
 	} else {
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
-			Quality:       quality,
-			Lossless:      false,
-			StripMetadata: true,
+			Quality:         quality,
+			Lossless:        false,
+			StripMetadata:   true,
+			ReductionEffort: 2,
 		})
 	}
 
