@@ -55,7 +55,7 @@ jobs:
 
       - name: Start the container
         run: |
-          cp tests/jemalloc/docker-compose.yml ./
+          cp malloc_tests/jemalloc/docker-compose.yml ./
           docker-compose up -d
     
       - name: Send Requests to Server
