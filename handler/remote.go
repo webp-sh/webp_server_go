@@ -82,15 +82,14 @@ func fetchRemoteImg(url string) string {
 	log.Infof("Remote Addr is %s, pinging for info...", url)
 	identifiable := pingUrl(url)
 	// For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a-etag-123e740ca56333b7587f3af9debeee5448428123
-	// TODO: hash(url+identifiable) or hash(url)+identifiable?
-	localRawImagePath := path.Join(config.RemoteRaw, helper.HashString(url+identifiable))
+	// hash(url)+identifiable?
+	localRawImagePath := path.Join(config.RemoteRaw, helper.HashString(url)+identifiable)
 
 	if helper.ImageExists(localRawImagePath) {
 		return localRawImagePath
 	} else {
 		// Temporary store of remote file.
-		// TODO: only clean exhaust?
-		cleanProxyCache(config.Config.ExhaustPath + url + "*")
+		cleanProxyCache(config.RemoteRaw + helper.HashString(url) + "*")
 		log.Info("Remote file not found in remote-raw, re-fetching...")
 		downloadFile(localRawImagePath, url)
 		return localRawImagePath
