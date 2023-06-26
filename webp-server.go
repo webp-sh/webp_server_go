@@ -18,6 +18,7 @@ var app = fiber.New(fiber.Config{
 	ServerHeader:          "Webp Server Go",
 	AppName:               "Webp Server Go",
 	DisableStartupMessage: true,
+	ProxyHeader:           "X-Real-IP",
 })
 
 func setupLogger() {
