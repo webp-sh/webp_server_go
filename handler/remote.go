@@ -2,9 +2,6 @@ package handler
 
 import (
 	"bytes"
-	"github.com/gofiber/fiber/v2"
-	"github.com/h2non/filetype"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"path"
@@ -12,6 +9,10 @@ import (
 	"strings"
 	"webp_server_go/config"
 	"webp_server_go/helper"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/h2non/filetype"
+	log "github.com/sirupsen/logrus"
 )
 
 // Given /path/to/node.png
@@ -80,10 +81,12 @@ func fetchRemoteImg(url string) string {
 	// if this exists in local system, means the remote img is not changed, we can use it directly.
 	// otherwise, we need to fetch it from remote and store it in local system.
 	log.Infof("Remote Addr is %s, pinging for info...", url)
-	identifiable := pingUrl(url)
+	// identifiable is etag + length
+	identifiable := pingURL(url)
 	// For store the remote raw image, /home/webp_server/remote-raw/378e740ca56144b7587f3af9debeee544842879a-etag-123e740ca56333b7587f3af9debeee5448428123
-	// hash(url)+identifiable?
-	localRawImagePath := path.Join(config.RemoteRaw, helper.HashString(url)+identifiable)
+	// For store the remote raw image, /home/webp_server/remote-raw/3a42ab801f669d64-b8f999ab5acd69d03f5e904b1b84eb79210536
+	// Which 3a42ab801f669d64 is hash(url), b8f999ab5acd69d03f5e904b1b84eb79 is etag and 210536 is length
+	localRawImagePath := path.Join(config.RemoteRaw, helper.HashString(url)+"-"+identifiable)
 
 	if helper.ImageExists(localRawImagePath) {
 		return localRawImagePath
@@ -97,7 +100,7 @@ func fetchRemoteImg(url string) string {
 
 }
 
-func pingUrl(url string) string {
+func pingURL(url string) string {
 	// this function will try to return identifiable info, currently include  etag, content-length as string
 	// anything goes wrong, will return ""
 	var etag, length string
@@ -115,5 +118,7 @@ func pingUrl(url string) string {
 	if etag == "" {
 		log.Info("Remote didn't return etag in header when getRemoteImageInfo, please check.")
 	}
+	// Remove " from etag
+	etag = strings.ReplaceAll(etag, "\"", "")
 	return etag + length
 }
