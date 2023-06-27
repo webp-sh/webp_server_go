@@ -27,8 +27,6 @@ func init() {
 	boolFalse.Set(false)
 	intMinusOne.Set(-1)
 
-	// TODO can't shutdown vips in init
-	//defer vips.Shutdown()
 }
 
 func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
