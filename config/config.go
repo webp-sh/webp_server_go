@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/patrickmn/go-cache"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"regexp"
 	"runtime"
 	"time"
+
+	"github.com/patrickmn/go-cache"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -58,7 +59,7 @@ var (
 	ProxyMode   bool
 	Prefetch    bool
 	Config      jsonFile
-	Version     = "0.8.4"
+	Version     = "0.9.0"
 	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
 )
 
