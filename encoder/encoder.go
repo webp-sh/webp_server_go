@@ -235,14 +235,14 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
 			Lossless:        true,
 			StripMetadata:   true,
-			ReductionEffort: 2,
+			ReductionEffort: 4,
 		})
 	} else {
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
 			Quality:         quality,
 			Lossless:        false,
 			StripMetadata:   true,
-			ReductionEffort: 2,
+			ReductionEffort: 4,
 		})
 	}
 
