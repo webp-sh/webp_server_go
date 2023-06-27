@@ -35,8 +35,8 @@ test: static-check
 	go test -v -coverprofile=coverage.txt -covermode=atomic
 
 clean:
-	rm -rf builds
-	rm -rf prefetch
+	rm -rf builds prefetch remote-raw exhaust tools coverage.txt
+
 
 docker:
 	DOCKER_BUILDKIT=1 docker build -t webpsh/webps .

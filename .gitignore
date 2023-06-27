@@ -23,3 +23,5 @@ builds/
 /.idea/webp_server_go.iml
 remote-raw/
 coverage.txt
+.DS_Store
+/webp_server_go
