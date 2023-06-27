@@ -10,27 +10,38 @@
 
 [Documentation](https://docs.webp.sh/) | [Website](https://webp.sh/)
 
-This is a Server based on Golang, which allows you to serve WebP images on the fly. 
-It will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.json`.. 
+This is a Server based on Golang, which allows you to serve WebP images on the fly.
+It will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.json`..
+
 * currently supported image format: JPEG, PNG, BMP, GIF
 
-> e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp` format without changing the URL.
+> e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp` format without changing the
+> URL.
 >
 > ~~For Safari and Opera users, the original image will be used.~~
 > We've now supported Safari/Chrome/Firefox on iOS 14/iPadOS 14
 
+## Docker Usage steps
+
+Please refer to [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/) for more info.
+
 ## Simple Usage Steps(with Binary)
 
-> Note: There is a potential memory leak problem with this server and remains unsolved, we recommend using Docker to mitigate this problem.
+> Note: There is a potential memory leak problem with this server and remains unsolved, we recommend using Docker to
+> mitigate this problem.
 > Related discussion: https://github.com/webp-sh/webp_server_go/issues/75
 
 ### 1. Prepare the environment
 
 #### If you are using version after 0.6.0
 
-> Install `libvips` on your machine, more info [here](https://github.com/davidbyttow/govips)
+> Install `libvips` on your machine, minimum version 8.10.
+> If your distro doesn't have a recent enough version, you can install it from source.
+> We have an example for [CentOS 7](https://github.com/webp-sh/libvips/blob/master/build-full.sh)
 >
-> * Ubuntu `apt install libvips-dev`
+> More info about [libvips](https://github.com/davidbyttow/govips)
+>
+> * Ubuntu `apt install --no-install-recommends libvips-dev`
 > * macOS `brew install vips pkg-config`
 
 #### If you are using version before 0.6.0
