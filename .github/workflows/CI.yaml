@@ -1,16 +1,24 @@
 name: CI check on every PR
 on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'Makefile'
+      - 'config.json'
+    branches:
+      - 'master'
+
   pull_request:
     branches:
       - master
     paths-ignore:
-    - '**.md'
-    - 'Makefile'
-    - 'config.json'
+      - '**.md'
+      - 'Makefile'
+      - 'config.json'
 
 jobs:
   ci:
-    name: CI check on every push
+    name: CI check on every push and PR
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

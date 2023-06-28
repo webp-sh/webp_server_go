@@ -51,7 +51,7 @@ WantedBy=multi-user.target`
 )
 
 var (
-	configPath  string
+	ConfigPath  string
 	Jobs        int
 	DumpSystemd bool
 	DumpConfig  bool
@@ -75,26 +75,24 @@ type jsonFile struct {
 }
 
 func init() {
-	flag.StringVar(&configPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
+	flag.StringVar(&ConfigPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
 	flag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert image to webp")
 	flag.IntVar(&Jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
 	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json")
 	flag.BoolVar(&DumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
-	flag.Parse()
-	Config = loadConfig()
-	switchProxyMode()
+
 }
 
-func loadConfig() (config jsonFile) {
-	jsonObject, err := os.Open(configPath)
+func LoadConfig() {
+	jsonObject, err := os.Open(ConfigPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	decoder := json.NewDecoder(jsonObject)
-	_ = decoder.Decode(&config)
+	_ = decoder.Decode(&Config)
 	_ = jsonObject.Close()
-	return config
+	switchProxyMode()
 }
 
 type ExtraParams struct {
