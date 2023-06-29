@@ -24,7 +24,7 @@ This is a Server based on Golang, which allows you to serve WebP images on the f
 
 We strongly recommend using Docker to run WebP Server Go because running it directly with the binary may encounter issues with `glibc` and some dependency libraries, which can be quite tricky to resolve.
 
-Make sure you've Docker and `docker-compose` installed, create a directory and create `docker-compose.yml` file inside it like this:
+Make sure you've got Docker and `docker-compose` installed, create a directory and create `docker-compose.yml` file inside it like this:
 
 ```yml
 version: '3'
