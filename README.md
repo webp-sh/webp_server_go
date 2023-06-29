@@ -11,7 +11,6 @@
 [Documentation](https://docs.webp.sh/) | [Website](https://webp.sh/)
 
 This is a Server based on Golang, which allows you to serve WebP images on the fly.
-It will convert `jpg,jpeg,png` files by default, this can be customized by editing the `config.json`..
 
 * currently supported image format: JPEG, PNG, BMP, GIF
 
@@ -21,108 +20,74 @@ It will convert `jpg,jpeg,png` files by default, this can be customized by editi
 > ~~For Safari and Opera users, the original image will be used.~~
 > We've now supported Safari/Chrome/Firefox on iOS 14/iPadOS 14
 
-## Docker Usage steps
+## Usage with Docker(recommended)
 
-Please refer to [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/) for more info.
+We strongly recommend using Docker to run WebP Server Go because running it directly with the binary may encounter issues with `glibc` and some dependency libraries, which can be quite tricky to resolve.
 
-## Simple Usage Steps(with Binary)
+Make sure you've Docker and `docker-compose` installed, create a directory and create `docker-compose.yml` file inside it like this:
 
-> Note: There is a potential memory leak problem with this server and remains unsolved, we recommend using Docker to
-> mitigate this problem.
-> Related discussion: https://github.com/webp-sh/webp_server_go/issues/75
+```yml
+version: '3'
 
-### 1. Prepare the environment
-
-#### If you are using version after 0.6.0
-
-> Install `libvips` on your machine, minimum version 8.10.
-> If your distro doesn't have a recent enough version, you can install it from source.
-> We have an example for [CentOS 7](https://github.com/webp-sh/libvips/blob/master/build-full.sh)
->
-> More info about [libvips](https://github.com/davidbyttow/govips)
->
-> * Ubuntu `apt install --no-install-recommends libvips-dev`
-> * macOS `brew install vips pkg-config`
-
-#### If you are using version before 0.6.0
-
-> If you'd like to run binary directly on your machine, you need to install `libaom`:
->
-> `libaom` is for AVIF support, you can install it by `apt install libaom-dev` on Ubuntu, `yum install libaom-devel` on CentOS.
->
-> Without this library, you may encounter error like this: `libaom.so.3: cannot open shared object file: No such file or directory`
->
-> If you are using Intel Mac, you can install it by `brew install aom`
->
-> If you are using Apple Silicon, you need to `brew install aom && export CPATH=/opt/homebrew/opt/aom/include/;LIBRARY_PATH=/opt/homebrew/opt/aom/lib/`, more references can be found at [在M1 Mac下开发WebP Server Go | 土豆不好吃](https://dmesg.app/m1-aom.html).
->
-> If you don't like to hassle around with your system, so do us, why not have a try using Docker? >> [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/)
-
-### 2. Download the binary
-
-Download the `webp-server-linux-amd64` from [Releases](https://github.com/webp-sh/webp_server_go/releases) page.
-
-### 3. Dump config file
-
-```
-./webp-server-linux-amd64 -dump-config > config.json
+services:
+  webp:
+    image: webpsh/webp-server-go
+    # image: ghcr.io/webp-sh/webp_server_go
+    restart: always
+    environment:
+      - MALLOC_ARENA_MAX=1
+    volumes:
+      - ./path/to/pics:/opt/pics
+      - ./exhaust:/opt/exhaust
+    ports:
+      -  127.0.0.1:3333:3333
 ```
 
-The default `config.json` may look like this.
-```json
-{
-  "HOST": "127.0.0.1",
-  "PORT": "3333",
-  "QUALITY": "80",
-  "IMG_PATH": "/path/to/pics",
-  "EXHAUST_PATH": "/path/to/exhaust",
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","gif"],
-  "ENABLE_AVIF": false,
-  "ENABLE_EXTRA_PARAMS": false
-}
-```
-
-> `ENABLE_AVIF` means AVIF support, it's disabled by default as converting images to AVIF is CPU consuming.
->
-> `ENABLE_EXTRA_PARAMS` means whether to enable Extra Parameters, basically it allows you to do some transform on images like `https://img.webp.sh/path/tsuki.jpg?width=20`, you can find more info on [Extra Parameters](https://docs.webp.sh/usage/extra-params/) page.
-
-
-#### Config Example
-
-In the following example, the image path and website URL.
+Suppose your website and image has the following pattern.
 
 | Image Path                            | Website Path                         |
 | ------------------------------------- | ------------------------------------ |
 | `/var/www/img.webp.sh/path/tsuki.jpg` | `https://img.webp.sh/path/tsuki.jpg` |
 
-The `IMG_PATH` inside `config.json` should be like:
+Then
 
-| IMG_PATH               |
-| ---------------------- |
-| `/var/www/img.webp.sh` |
+* `./path/to/pics` should be changed to `/var/www/img.webp.sh`
+* `./exhaust` is cache folder for output images, by default it will be in `exhaust` directory alongside with `docker-compose.yml` file, if you'd like to keep cached images in another folder as , you can change  `./exhaust` to `/some/other/path/to/exhaust`
 
-
-`EXHAUST_PATH` is cache folder for output `webp` images, with `EXHAUST_PATH` set to `/var/cache/webp` 
-in the example above, your `webp` image will be saved at `/var/cache/webp/pics/tsuki.jpg.1582558990.webp`.
-
-### 3. Run
+Start the container using:
 
 ```
-./webp-server-linux-amd64 --config=/path/to/config.json
+docker-compose up -d
 ```
 
-### 4. Nginx proxy_pass
+Now the server should be running on `127.0.0.1:3333`, visiting `http://127.0.0.1:3333/path/tsuki.jpg` will see the optimized version of `/var/www/img.webp.sh/path/tsuki.jpg`, you can now add reverse proxy to make it public, for example, let Nginx to `proxy_pass http://127.0.0.1:3333/;`, and your WebP Server is on-the-fly!
 
-Let Nginx to `proxy_pass http://localhost:3333/;`, and your WebP Server is on-the-fly.
+You can refer to [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/) for more info, such as custom config, AVIF support etc.
 
 ## Advanced Usage
 
-For supervisor, Docker sections or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
+If you'd like to use with binary, please consult to [Basic Usage | WebP Server Documentation](https://docs.webp.sh/usage/basic-usage/), spoiler alert: you may encounter issues with `glibc` and some dependency libraries.
+
+For supervisor or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
+
+## WebP Cloud Services
+
+We are currently building a service called [WebP Cloud Services](https://webp.se/), it now has two services:
+
+* [Public Service](https://public.webp.se)
+  * GitHub Avatar/Gravater reverse proxy with WebP optimization, for example, change `https://www.gravatar.com/avatar/09eba3a443a7ea91cf818f6b27607d66` to `https://gravatar.webp.se/avatar/09eba3a443a7ea91cf818f6b27607d66` for rendering will get a smaller version of gravater, making your website faster 
+  * Totally free service and currently has a large number of users, this includes, but is not limited to [CNX Software](https://medium.com/amarao/scaleway-arm-servers-50f85c4cefbe),[Indienova](https://indienova.com/en) 
+* [WebP Cloud](https://docs.webp.se/webp-cloud/)
+  * No need to install WebP Server Go, especially suitable for static websites.
+  * Image Conversion: WebP Cloud converts images to WebP format, reducing size while maintaining quality for faster website loading.
+    * Example: Original image URL (https://yyets.dmesg.app/api/user/avatar/Benny) becomes compressed URL (https://vz4w427.webp.ee).
+  * Caching: WebP Cloud automatically caches served images, reducing traffic and bandwidth load on the source server.
+
 
 ## Support us
 
 If you find this project useful, please consider supporting
-us by [becoming a sponsor](https://github.com/sponsors/webp-sh) or Stripe
+us by [becoming a sponsor](https://github.com/sponsors/webp-sh), pay via Stripe, or [try out our WebP Cloud](https://docs.webp.se/webp-cloud/basic/)!
 
 | USD(Card, Apple Pay and Google Pay)              | EUR(Card, Apple Pay and Google Pay)              | CNY(Card, Apple Pay, Google Pay and Alipay)      |
 |--------------------------------------------------|--------------------------------------------------|--------------------------------------------------|
