@@ -72,7 +72,7 @@ For supervisor or detailed Nginx configuration, please read our documentation at
 
 ## WebP Cloud Services
 
-We are currently building a service called [WebP Cloud Services](https://webp.se/), it now has two services:
+We are currently building a new service called [WebP Cloud Services](https://webp.se/), it now has two services:
 
 * [Public Service](https://public.webp.se)
   * GitHub Avatar/Gravater reverse proxy with WebP optimization, for example, change `https://www.gravatar.com/avatar/09eba3a443a7ea91cf818f6b27607d66` to `https://gravatar.webp.se/avatar/09eba3a443a7ea91cf818f6b27607d66` for rendering will get a smaller version of gravater, making your website faster 
@@ -80,9 +80,10 @@ We are currently building a service called [WebP Cloud Services](https://webp.se
 * [WebP Cloud](https://docs.webp.se/webp-cloud/)
   * No need to install WebP Server Go, especially suitable for static websites.
   * Image Conversion: WebP Cloud converts images to WebP format, reducing size while maintaining quality for faster website loading.
-    * Example: Original image URL (https://yyets.dmesg.app/api/user/avatar/Benny) becomes compressed URL (https://vz4w427.webp.ee).
-  * Caching: WebP Cloud automatically caches served images, reducing traffic and bandwidth load on the source server.
+    * Example: Original image URL (https://yyets.dmesg.app/api/user/avatar/Benny) becomes compressed URL (https://vz4w427.webp.ee/api/user/avatar/Benny).
+  * Caching: WebP Cloud automatically caches served images, reducing traffic and bandwidth load on the origin server.
 
+For detailed information, please visit [WebP Cloud Services Website](https://webp.se/) or [WebP Cloud Services Docs](https://docs.webp.se/).
 
 ## Support us
 
