@@ -1,13 +1,10 @@
-// webp_server_go - helper_test.go
-// 2023-06-28 19:22
-// Benny <benny.think@gmail.com>
-
 package helper
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"webp_server_go/config"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
