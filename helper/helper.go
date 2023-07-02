@@ -2,14 +2,15 @@ package helper
 
 import (
 	"fmt"
-	"github.com/cespare/xxhash"
-	"github.com/valyala/fasthttp"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 	"webp_server_go/config"
+
+	"github.com/cespare/xxhash"
+	"github.com/valyala/fasthttp"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -144,8 +145,14 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 	// chrome on iOS will not send valid image accept header
 	if strings.Contains(ua, "iPhone OS 14") || strings.Contains(ua, "CPU OS 14") ||
 		strings.Contains(ua, "iPhone OS 15") || strings.Contains(ua, "CPU OS 15") ||
+		strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") ||
 		strings.Contains(ua, "Android") || strings.Contains(ua, "Linux") {
 		supported["webp"] = true
+	}
+
+	// iOS 16 supports AVIF
+	if strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") {
+		supported["avif"] = true
 	}
 
 	// save true value's key to slice
