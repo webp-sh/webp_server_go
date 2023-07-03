@@ -31,8 +31,8 @@ static-check: install-staticcheck
 	tools/bin/staticcheck -checks all,-ST1000 ./...
 	GO111MODULE=on tools/bin/golangci-lint run -v $$($(PACKAGE_DIRECTORIES)) --config .golangci.yml
 
-test: static-check
-	go test -v -coverprofile=coverage.txt -covermode=atomic
+test:
+	go test -v -coverprofile=coverage.txt -covermode=atomic ./...
 
 clean:
 	rm -rf builds prefetch remote-raw exhaust tools coverage.txt

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"runtime"
@@ -44,6 +45,9 @@ func setupLogger() {
 }
 
 func init() {
+	// main init is the last one to be called
+	flag.Parse()
+	config.LoadConfig()
 	setupLogger()
 }
 
