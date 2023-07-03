@@ -1,9 +1,8 @@
 package helper
 
 import (
+	"bytes"
 	"fmt"
-	"github.com/cespare/xxhash"
-	"github.com/valyala/fasthttp"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,8 +10,34 @@ import (
 	"time"
 	"webp_server_go/config"
 
+	"github.com/cespare/xxhash"
+	"github.com/h2non/filetype"
+	"github.com/valyala/fasthttp"
+
 	log "github.com/sirupsen/logrus"
 )
+
+func avifMatcher(buf []byte) bool {
+	// use hexdump on macOS to see the magic number
+	// 0000001c 66747970 61766966 00000000 61766966 6d696631 6d696166
+	magicHeader := []byte{
+		0x0, 0x0, 0x0, 0x1c,
+		0x66, 0x74, 0x79, 0x70,
+		0x61, 0x76, 0x69, 0x66,
+		0x0, 0x0, 0x0, 0x0,
+		0x61, 0x76, 0x69, 0x66,
+		0x6d, 0x69, 0x66, 0x31,
+		0x6d, 0x69, 0x61, 0x66,
+	}
+
+	return len(buf) > 1 && bytes.Equal(buf[:28], magicHeader) || strings.Contains(string(buf), "ftypavif")
+}
+
+func GetFileContentType(buffer []byte) string {
+	filetype.AddMatcher(filetype.NewType("avif", "image/avif"), avifMatcher)
+	kind, _ := filetype.Match(buffer)
+	return kind.MIME.Value
+}
 
 func FileCount(dir string) int64 {
 	var count int64 = 0
@@ -144,8 +169,16 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 	// chrome on iOS will not send valid image accept header
 	if strings.Contains(ua, "iPhone OS 14") || strings.Contains(ua, "CPU OS 14") ||
 		strings.Contains(ua, "iPhone OS 15") || strings.Contains(ua, "CPU OS 15") ||
+		strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") ||
+		strings.Contains(ua, "iPhone OS 17") || strings.Contains(ua, "CPU OS 17") ||
 		strings.Contains(ua, "Android") || strings.Contains(ua, "Linux") {
 		supported["webp"] = true
+	}
+
+	// iOS 16 supports AVIF
+	if strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") ||
+		strings.Contains(ua, "iPhone OS 17") || strings.Contains(ua, "CPU OS 17") {
+		supported["avif"] = true
 	}
 
 	// save true value's key to slice
