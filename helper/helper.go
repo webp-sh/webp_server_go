@@ -146,12 +146,14 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 	if strings.Contains(ua, "iPhone OS 14") || strings.Contains(ua, "CPU OS 14") ||
 		strings.Contains(ua, "iPhone OS 15") || strings.Contains(ua, "CPU OS 15") ||
 		strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") ||
+		strings.Contains(ua, "iPhone OS 17") || strings.Contains(ua, "CPU OS 17") ||
 		strings.Contains(ua, "Android") || strings.Contains(ua, "Linux") {
 		supported["webp"] = true
 	}
 
 	// iOS 16 supports AVIF
-	if strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") {
+	if strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") ||
+		strings.Contains(ua, "iPhone OS 17") || strings.Contains(ua, "CPU OS 17") {
 		supported["avif"] = true
 	}
 
