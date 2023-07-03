@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 	"net/url"
-	"strings"
+	"os"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
 	"webp_server_go/helper"
@@ -93,11 +93,10 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)
-	if strings.HasSuffix(finalFilename, ".webp ") {
-		c.Set("Content-Type", "image/webp")
-	} else if strings.HasSuffix(finalFilename, ".avif") {
-		c.Set("Content-Type", "image/avif")
-	}
+
+	buf, _ := os.ReadFile(finalFilename)
+	contentType := helper.GetFileContentType(buf)
+	c.Set("Content-Type", contentType)
 
 	c.Set("X-Compression-Rate", helper.GetCompressionRate(rawImageAbs, finalFilename))
 	return c.SendFile(finalFilename)
