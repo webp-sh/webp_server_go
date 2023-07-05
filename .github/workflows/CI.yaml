@@ -34,7 +34,7 @@ jobs:
           sudo apt install libvips-dev -y
 
       - name: run test cases
-        run: make test && make
+        run: make && make test
 
       - name: Codecov
         uses: codecov/codecov-action@v2
