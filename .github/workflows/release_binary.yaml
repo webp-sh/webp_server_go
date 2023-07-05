@@ -17,19 +17,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Make WebP Server Go
+      - name: Make WebP Server Go (amd64)
         run: |
-          docker run --rm -w /app -v "$(pwd)":/app webpsh/libvips make 
+          docker run --rm -w /app -v "$(pwd)":/app webpsh/libvips make
           sudo chown -R $USER:$USER builds/
           sha256sum builds/webp-server-linux-amd64 > builds/webp-server-linux-amd64.sha256
 
-      - name: Check for ldd version
+      - name: Make WebP Server Go (arm64)
+        run: |
+          docker run --rm -w /app -v "$(pwd)":/app --platform linux/arm64 webpsh/libvips make
+          sudo chown -R $USER:$USER builds/
+          sha256sum builds/webp-server-linux-arm64 > builds/webp-server-linux-arm64.sha256
+
+      - name: Check for ldd version(AMD64 only)
         run: |
           ldd builds/webp-server-linux-amd64
-      
+
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -38,3 +47,5 @@ jobs:
           files: |
             builds/webp-server-linux-amd64
             builds/webp-server-linux-amd64.sha256
+            builds/webp-server-linux-arm64
+            builds/webp-server-linux-arm64.sha256

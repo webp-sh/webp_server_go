@@ -35,7 +35,7 @@ test:
 	go test -v -coverprofile=coverage.txt -covermode=atomic ./...
 
 clean:
-	rm -rf builds prefetch remote-raw exhaust tools coverage.txt
+	rm -rf prefetch remote-raw exhaust tools coverage.txt
 
 
 docker:
