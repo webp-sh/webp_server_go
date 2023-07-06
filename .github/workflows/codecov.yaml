@@ -1,0 +1,35 @@
+name: CI check on every push
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'Makefile'
+      - 'config.json'
+    branches:
+      - 'master'
+
+jobs:
+  ci:
+    name: CI check and codecov on every push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.20'
+
+      - name: Setup necessary packages
+        run: |
+          sudo apt install libvips-dev -y
+
+      - name: run test cases
+        run: make && make test
+
+      - name: Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          files: ./coverage.txt
+          verbose: true
