@@ -59,7 +59,7 @@ var (
 	ProxyMode   bool
 	Prefetch    bool
 	Config      jsonFile
-	Version     = "0.9.2"
+	Version     = "0.9.3"
 	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
 )
 
