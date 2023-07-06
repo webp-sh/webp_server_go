@@ -1,13 +1,5 @@
 name: CI check on every PR
 on:
-  push:
-    paths-ignore:
-      - '**.md'
-      - 'Makefile'
-      - 'config.json'
-    branches:
-      - 'master'
-
   pull_request:
     branches:
       - master
@@ -35,13 +27,7 @@ jobs:
 
       - name: run test cases
         run: make && make test
-
-      - name: Codecov
-        uses: codecov/codecov-action@v2
-        with:
-          files: ./coverage.txt
-          verbose: true
-
+        
   image-test:
     name: Check for image build and CVE
     runs-on: ubuntu-latest
