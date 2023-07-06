@@ -17,6 +17,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ = filetype.AddMatcher(filetype.NewType("avif", "image/avif"), avifMatcher)
+
 func avifMatcher(buf []byte) bool {
 	// use hexdump on macOS to see the magic number
 	// 0000001c 66747970 61766966 00000000 61766966 6d696631 6d696166
@@ -34,7 +36,6 @@ func avifMatcher(buf []byte) bool {
 }
 
 func GetFileContentType(buffer []byte) string {
-	filetype.AddMatcher(filetype.NewType("avif", "image/avif"), avifMatcher)
 	kind, _ := filetype.Match(buffer)
 	return kind.MIME.Value
 }
