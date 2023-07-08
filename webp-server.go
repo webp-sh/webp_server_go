@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -41,7 +42,8 @@ func setupLogger() {
 		Format:     config.FiberLogFormat,
 		TimeFormat: config.TimeDateFormat,
 	}))
-	log.Infoln("Logger ready.")
+	app.Use(recover.New(recover.Config{}))
+	log.Infoln("fiber ready.")
 }
 
 func init() {
