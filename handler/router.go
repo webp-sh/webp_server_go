@@ -40,17 +40,12 @@ func Convert(c *fiber.Ctx) error {
 	reqURI = path.Clean(reqURI)
 	reqURIwithQuery = path.Clean(reqURIwithQuery)
 
-	WidthInt, err := strconv.Atoi(c.Query("width"))
-	if err != nil {
-		WidthInt = 0
-	}
-	HeightInt, err := strconv.Atoi(c.Query("height"))
-	if err != nil {
-		HeightInt = 0
-	}
+	width, _ := strconv.Atoi(c.Query("width"))
+	height, _ := strconv.Atoi(c.Query("height"))
+
 	var extraParams = config.ExtraParams{
-		Width:  WidthInt,
-		Height: HeightInt,
+		Width:  width,
+		Height: height,
 	}
 
 	var rawImageAbs string
