@@ -75,28 +75,21 @@ func downloadFile(filepath string, url string) {
 
 }
 
-func fetchRemoteImg(url string) string {
+func fetchRemoteImg(url string) config.MetaFile {
 	// url is https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
-	// How do we know if the remote img is changed? we're using hash(url+etag) as key.
-	// if this exists in local system, means the remote img is not changed, we can use it directly.
-	// otherwise, we need to fetch it from remote and store it in local system.
+	// How do we know if the remote img is changed? we're using hash(etag+length)
 	log.Infof("Remote Addr is %s, pinging for info...", url)
-	// identifiable is etag + length
-	identifiable := pingURL(url)
-	// For store the remote raw image, /home/webp_server/remote-raw/3a42ab801f669d64-b8f999ab5acd69d03f5e904b1b84eb79210536
-	// Which 3a42ab801f669d64 is hash(url), b8f999ab5acd69d03f5e904b1b84eb79 is etag and 210536 is length
-	localRawImagePath := path.Join(config.RemoteRaw, helper.HashString(url)+"-"+identifiable)
+	etag := pingURL(url)
+	metadata := helper.ReadMetadata(url, etag)
+	localRawImagePath := path.Join(config.RemoteRaw, metadata.Id)
 
-	if helper.ImageExists(localRawImagePath) {
-		return localRawImagePath
-	} else {
-		// Temporary store of remote file.
-		cleanProxyCache(config.RemoteRaw + helper.HashString(url) + "*")
+	if !helper.ImageExists(localRawImagePath) || metadata.Checksum != helper.HashString(etag) {
+		// remote file has changed or local file not exists
 		log.Info("Remote file not found in remote-raw, re-fetching...")
+		cleanProxyCache(path.Join(config.Config.ExhaustPath, metadata.Id+"*"))
 		downloadFile(localRawImagePath, url)
-		return localRawImagePath
 	}
-
+	return metadata
 }
 
 func pingURL(url string) string {
@@ -117,7 +110,5 @@ func pingURL(url string) string {
 	if etag == "" {
 		log.Info("Remote didn't return etag in header when getRemoteImageInfo, please check.")
 	}
-	// Remove " from etag
-	etag = strings.ReplaceAll(etag, "\"", "")
 	return etag + length
 }

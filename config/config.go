@@ -63,6 +63,14 @@ var (
 	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
 )
 
+const Metadata = "metadata"
+
+type MetaFile struct {
+	Id       string `json:"id"`       // hash of below path️, also json file name id.webp
+	Path     string `json:"path"`     // local: path with width and height, proxy: full url
+	Checksum string `json:"checksum"` // hash of original file or hash(etag). Use this to identify changes
+}
+
 type jsonFile struct {
 	Host              string   `json:"HOST"`
 	Port              string   `json:"PORT"`
@@ -81,7 +89,6 @@ func init() {
 	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json")
 	flag.BoolVar(&DumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
-
 }
 
 func LoadConfig() {

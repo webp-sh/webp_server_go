@@ -4,9 +4,7 @@ import (
 	"errors"
 	"os"
 	"path"
-	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 	"webp_server_go/config"
 	"webp_server_go/helper"
@@ -86,26 +84,8 @@ func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParam
 }
 
 func convertImage(raw, optimized, imageType string, extraParams config.ExtraParams) error {
-	// we don't have /path/to/tsuki.jpg.1582558990.webp, maybe we have /path/to/tsuki.jpg.1082008000.webp
-	// delete the old converted pic and convert a new one.
-	// optimized: /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-	// we'll delete file starts with /home/webp_server/exhaust/path/to/tsuki.jpg.ts.imageType
-	// If contain extraParams like tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200
-
-	s := strings.Split(path.Base(optimized), ".")
-	pattern := path.Join(path.Dir(optimized), s[0]+"."+s[1]+".*."+s[len(s)-1])
-
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		log.Error(err.Error())
-	} else {
-		for _, p := range matches {
-			_ = os.Remove(p)
-		}
-	}
-
 	// we need to create dir first
-	err = os.MkdirAll(path.Dir(optimized), 0755)
+	var err = os.MkdirAll(path.Dir(optimized), 0755)
 	if err != nil {
 		log.Error(err.Error())
 	}

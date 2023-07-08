@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 	"net/url"
-	"os"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
 	"webp_server_go/helper"
@@ -49,14 +48,22 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	var rawImageAbs string
+	var metadata = config.MetaFile{}
 	if config.ProxyMode {
 		// this is proxyMode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
 		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
-		rawImageAbs = fetchRemoteImg(config.Config.ImgPath + reqURIwithQuery)
-
+		metadata = fetchRemoteImg(config.Config.ImgPath + reqURIwithQuery)
+		rawImageAbs = path.Join(config.RemoteRaw, metadata.Id)
 	} else {
 		// not proxyMode, we'll use local path
-		rawImageAbs = path.Join(config.Config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
+		metadata = helper.ReadMetadata(reqURIwithQuery, "")
+		rawImageAbs = path.Join(config.Config.ImgPath, reqURI)
+		// detect if source file has changed
+		if metadata.Checksum != helper.HashFile(rawImageAbs) {
+			log.Info("Source file has changed, re-encoding...")
+			helper.WriteMetadata(reqURIwithQuery, "")
+			cleanProxyCache(path.Join(config.Config.ExhaustPath, metadata.Id))
+		}
 	}
 
 	goodFormat := helper.GuessSupportedFormat(&c.Request().Header)
@@ -74,7 +81,7 @@ func Convert(c *fiber.Ctx) error {
 	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
 	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
 	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
-	avifAbs, webpAbs := helper.GenOptimizedAbsPath(rawImageAbs, reqURI, extraParams)
+	avifAbs, webpAbs := helper.GenOptimizedAbsPath(metadata)
 	encoder.ConvertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
 
 	var availableFiles = []string{rawImageAbs}
@@ -89,8 +96,7 @@ func Convert(c *fiber.Ctx) error {
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)
 
-	buf, _ := os.ReadFile(finalFilename)
-	contentType := helper.GetFileContentType(buf)
+	contentType := helper.GetFileContentType(finalFilename)
 	c.Set("Content-Type", contentType)
 
 	c.Set("X-Compression-Rate", helper.GetCompressionRate(rawImageAbs, finalFilename))
