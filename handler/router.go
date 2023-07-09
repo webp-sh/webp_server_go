@@ -67,6 +67,14 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	goodFormat := helper.GuessSupportedFormat(&c.Request().Header)
+	// resize itself
+	if len(goodFormat) == 1 {
+		dest := path.Join(config.Config.ExhaustPath, metadata.Id)
+		if !helper.ImageExists(dest) {
+			encoder.ResizeItself(rawImageAbs, dest, extraParams)
+		}
+		return c.SendFile(dest)
+	}
 
 	// Check the original image for existence,
 	if !helper.ImageExists(rawImageAbs) {
@@ -77,10 +85,6 @@ func Convert(c *fiber.Ctx) error {
 		return nil
 	}
 
-	// generate with timestamp to make sure files are update-to-date
-	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
-	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
 	avifAbs, webpAbs := helper.GenOptimizedAbsPath(metadata)
 	encoder.ConvertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
 
@@ -95,7 +99,6 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)
-
 	contentType := helper.GetFileContentType(finalFilename)
 	c.Set("Content-Type", contentType)
 

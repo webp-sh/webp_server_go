@@ -83,6 +83,17 @@ func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParam
 	}
 }
 
+func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
+	log.Infof("Resize %s itself to %s", raw, dest)
+	img, _ := vips.LoadImageFromFile(raw, &vips.ImportParams{
+		FailOnError: boolFalse,
+	})
+	_ = resizeImage(img, extraParams)
+	buf, _, _ := img.ExportNative()
+	_ = os.WriteFile(dest, buf, 0600)
+	img.Close()
+}
+
 func convertImage(raw, optimized, imageType string, extraParams config.ExtraParams) error {
 	// we need to create dir first
 	var err = os.MkdirAll(path.Dir(optimized), 0755)
