@@ -30,7 +30,7 @@ func init() {
 func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 	imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
 	if extraParams.Width > 0 && extraParams.Height > 0 {
-		err := img.Thumbnail(extraParams.Width, extraParams.Height, 0)
+		err := img.Thumbnail(extraParams.Width, extraParams.Height, vips.InterestingAttention)
 		if err != nil {
 			return err
 		}
