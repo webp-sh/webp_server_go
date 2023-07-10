@@ -40,11 +40,11 @@ func Convert(c *fiber.Ctx) error {
 	reqURI = path.Clean(reqURI)
 	reqURIwithQuery = path.Clean(reqURIwithQuery)
 
-	WidthInt, err := strconv.Atoi(c.Query("width"))
+	WidthInt, err := strconv.Atoi(c.Query("w"))
 	if err != nil {
 		WidthInt = 0
 	}
-	HeightInt, err := strconv.Atoi(c.Query("height"))
+	HeightInt, err := strconv.Atoi(c.Query("h"))
 	if err != nil {
 		HeightInt = 0
 	}
