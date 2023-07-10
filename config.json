@@ -2,9 +2,9 @@
   "HOST": "127.0.0.1",
   "PORT": "3333",
   "QUALITY": "80",
-  "IMG_PATH": "./pics",
+  "IMG_PATH": "https://s3.ap-southeast-1.wasabisys.com/deeptotv-live",
   "EXHAUST_PATH": "./exhaust",
   "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","gif"],
   "ENABLE_AVIF": false,
-  "ENABLE_EXTRA_PARAMS": false
+  "ENABLE_EXTRA_PARAMS": true
 }

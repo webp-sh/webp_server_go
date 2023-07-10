@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  webp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - MALLOC_ARENA_MAX=1
+    volumes:
+      - ./pics:/opt/pics
+      - ./exhaust:/opt/exhaust
+    ports:
+      - 127.0.0.1:3333:3333
