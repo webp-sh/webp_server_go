@@ -2,13 +2,14 @@ package helper
 
 import (
 	"fmt"
-	"github.com/h2non/filetype"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 	"webp_server_go/config"
+
+	"github.com/h2non/filetype"
 
 	"github.com/cespare/xxhash"
 	"github.com/valyala/fasthttp"

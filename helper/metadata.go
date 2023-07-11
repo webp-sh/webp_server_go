@@ -2,11 +2,12 @@ package helper
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"net/url"
 	"os"
 	"path"
 	"webp_server_go/config"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func getId(p string) (string, string, string) {
@@ -17,6 +18,8 @@ func getId(p string) (string, string, string) {
 	parsed, _ := url.Parse(p)
 	width := parsed.Query().Get("width")
 	height := parsed.Query().Get("height")
+	// santizedPath will be /webp_server.jpg?width=200\u0026height= in local mode when requesting /webp_server.jpg?width=200
+	// santizedPath will be https://docs.webp.sh/images/webp_server.jpg?width=400 in proxy mode when requesting /images/webp_server.jpg?width=400 with IMG_PATH = https://docs.webp.sh
 	santizedPath := parsed.Path + "?width=" + width + "&height=" + height
 	id = HashString(santizedPath)
 
@@ -30,14 +33,14 @@ func ReadMetadata(p, etag string) config.MetaFile {
 
 	buf, err := os.ReadFile(path.Join(config.Metadata, id+".json"))
 	if err != nil {
-		log.Errorf("can't read metadata: %s", err)
+		log.Warnf("can't read metadata: %s", err)
 		WriteMetadata(p, etag)
 		return ReadMetadata(p, etag)
 	}
 
 	err = json.Unmarshal(buf, &metadata)
 	if err != nil {
-		log.Errorf("unmarshal metadata error: %s", err)
+		log.Warnf("unmarshal metadata error, possible corrupt file, re-building...: %s", err)
 		WriteMetadata(p, etag)
 		return ReadMetadata(p, etag)
 	}

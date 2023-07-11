@@ -61,7 +61,7 @@ func main() {
 ▙▚▌▛▀ ▌ ▌▌   ▖ ▌▛▀ ▌  ▐▐ ▛▀ ▌   ▌ ▌▌ ▌
 ▘ ▘▝▀▘▀▀ ▘   ▝▀ ▝▀▘▘   ▘ ▝▀▘▘   ▝▀ ▝▀
 
-Webp Server Go - v%s
+WebP Server Go - v%s
 Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
 
 	// process cli params
@@ -90,7 +90,7 @@ Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
 	app.Get("/*", handler.Convert)
 
 	fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner, 0x1B)
-	fmt.Println("Webp Server Go is Running on http://" + listenAddress)
+	fmt.Println("WebP Server Go is Running on http://" + listenAddress)
 
 	_ = app.Listen(listenAddress)
 

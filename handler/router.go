@@ -67,7 +67,7 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	goodFormat := helper.GuessSupportedFormat(&c.Request().Header)
-	// resize itself
+	// resize itself and return if only one format(raw) is supported
 	if len(goodFormat) == 1 {
 		dest := path.Join(config.Config.ExhaustPath, metadata.Id)
 		if !helper.ImageExists(dest) {

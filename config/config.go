@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 	"regexp"
 	"runtime"
@@ -59,7 +58,7 @@ var (
 	ProxyMode   bool
 	Prefetch    bool
 	Config      jsonFile
-	Version     = "0.9.3"
+	Version     = "0.9.4"
 	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
 )
 
@@ -105,11 +104,6 @@ func LoadConfig() {
 type ExtraParams struct {
 	Width  int // in px
 	Height int // in px
-}
-
-// String : convert ExtraParams to string, used to generate cache path
-func (e *ExtraParams) String() string {
-	return fmt.Sprintf("_width=%d&height=%d", e.Width, e.Height)
 }
 
 func switchProxyMode() {
