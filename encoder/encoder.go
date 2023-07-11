@@ -11,20 +11,39 @@ import (
 
 	"github.com/davidbyttow/govips/v2/vips"
 	log "github.com/sirupsen/logrus"
+
+	pq "github.com/emirpasic/gods/queues/priorityqueue"
 )
 
 var (
-	boolFalse   vips.BoolParameter
-	intMinusOne vips.IntParameter
+	boolFalse      vips.BoolParameter
+	intMinusOne    vips.IntParameter
+	FormatPriority = map[string]int{
+		"webp": 10,
+		"avif": 1,
+	}
+	VipsConfig *vips.Config
 )
 
-func init() {
-	vips.Startup(&vips.Config{
+func getFormatPriority(format string) int {
+	if priority, found := FormatPriority[format]; found {
+		return priority
+	}
+	return 0
+}
+
+func VipsStart() {
+	VipsConfig = &vips.Config{
 		ConcurrencyLevel: runtime.NumCPU(),
-	})
+		MaxCacheFiles:    1,
+	}
+	vips.Startup(VipsConfig)
 	boolFalse.Set(false)
 	intMinusOne.Set(-1)
+}
 
+func VipsShutdown() {
+	vips.Shutdown()
 }
 
 func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
@@ -101,13 +120,77 @@ func convertImage(raw, optimized, imageType string, extraParams config.ExtraPara
 		log.Error(err.Error())
 	}
 
-	switch imageType {
-	case "webp":
-		err = webpEncoder(raw, optimized, extraParams)
-	case "avif":
-		err = avifEncoder(raw, optimized, extraParams)
+	if !config.LazyMode {
+		// Default mode: sync converts
+		switch imageType {
+		case "webp":
+			err = webpEncoder(raw, optimized, extraParams)
+		case "avif":
+			err = avifEncoder(raw, optimized, extraParams)
+		}
+	} else {
+		// Lazy mode: async converts
+		workElement := config.Element{
+			Priority:    getFormatPriority(imageType),
+			ImageType:   imageType,
+			Raw:         raw,
+			Optimized:   optimized,
+			Quality:     config.Config.Quality,
+			ExtraParams: extraParams,
+		}
+
+		var WorkQueue *pq.Queue
+		switch imageType {
+		case "webp":
+			WorkQueue = DefaultWorkQueue
+		case "avif":
+			WorkQueue = HeavyWorkQueue
+		default:
+			WorkQueue = DefaultWorkQueue
+		}
+		
+		it := WorkQueue.Iterator()
+		for it.Next() {
+			if it.Value() == workElement {
+				log.Debugf("Skipping: already in the work queue: %v", workElement)
+				return nil
+			}
+		}
+		if WorkOngoingSet.Contains(workElement) {
+			log.Debugf("Skipping: another conversion already in progress: %v", workElement)
+			return nil
+		}
+		
+		log.Debugf("Queueing workElement: %v", workElement)
+		WorkQueue.Enqueue(workElement)
 	}
 	return err
+}
+
+func convertDefaultWork() {
+	convertWork("default", DefaultWorkQueue)
+}
+
+func convertHeavyWork() {
+	convertWork("heavy", HeavyWorkQueue)
+}
+
+func convertWork(name string, wq *pq.Queue) {
+	log.Debugf("Queue:%s size:%d ongoing:%d", name, wq.Size(), WorkOngoingSet.Size())
+	// TODO: use mutex?
+	ti, ok := wq.Dequeue()
+	if !ok {
+		return
+	}
+	t := ti.(config.Element)
+	WorkOngoingSet.Add(t)
+	switch t.ImageType {
+	case "webp":
+		_ = webpEncoder(t.Raw, t.Optimized, t.ExtraParams)
+	case "avif":
+		_ = avifEncoder(t.Raw, t.Optimized, t.ExtraParams)
+	}
+	WorkOngoingSet.Remove(t)
 }
 
 func imageIgnore(imageFormat vips.ImageType) bool {

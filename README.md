@@ -70,6 +70,28 @@ If you'd like to use with binary, please consult to [Basic Usage | WebP Server D
 
 For supervisor or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
 
+### Lazy mode notes
+
+`-lazy` flag makes the server to process images in the background. It is designed to provide fastest possible responses, but optimized formats might take some seconds to be available. 
+
+You might use this mode when you want to limit CPU and RAM resources consumption. For example, when a AVIF is enabled, the system might use up to #CPU * 1GB for the server to process #CPU concurrent AVIF image conversions.
+
+```
+# For example, with a 4CPU, 4GB RAM system running with the following parameters:
+./webp-server-linux-amd64 -lazy
+```
+
+Can consume up to `1024 * 4` (Heavy/Avif conversions) =~ 4.0GB of RAM
+
+For a minimal footprint, adapt the number of background heavy jobs (`-lazy-heavy-jobs` flag) to the amount of RAM you can dedicate to the process. 
+
+```
+# For example, with a 4CPU, 4GB RAM system running with the following parameters:
+./webp-server-linux-amd64 -lazy -lazy-heavy-jobs 1
+```
+
+Can consume up to `128MB * 3` (Default/Webp parallel conversions) + `1024 * 1` (Heavy/Avif conversions) =~ 1.5GB of RAM
+
 ## WebP Cloud Services
 
 We are currently building a new service called [WebP Cloud Services](https://webp.se/), it now has two services:

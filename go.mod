@@ -15,8 +15,16 @@ require (
 )
 
 require (
+	github.com/robfig/cron/v3 v3.0.1 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+)
+
+require (
+	github.com/alitto/pond v1.8.3
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/emirpasic/gods v1.18.1
+	github.com/go-co-op/gocron v1.30.1
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

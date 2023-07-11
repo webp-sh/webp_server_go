@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"runtime"
 	"time"
+	"fmt"
 
 	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
@@ -18,7 +19,6 @@ const (
 	WebpMax        = 16383
 	AvifMax        = 65536
 	RemoteRaw      = "remote-raw"
-
 	SampleConfig = `
 {
   "HOST": "127.0.0.1",
@@ -28,7 +28,8 @@ const (
   "EXHAUST_PATH": "./exhaust",
   "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
   "ENABLE_AVIF": false,
-  "ENABLE_EXTRA_PARAMS": false
+  "ENABLE_EXTRA_PARAMS": false,
+  "LAZY_MODE": false,
 }`
 
 	SampleSystemd = `
@@ -52,14 +53,20 @@ WantedBy=multi-user.target`
 var (
 	ConfigPath  string
 	Jobs        int
+	MaxDefaultJobs int
+	MaxHeavyJobs int
+	LazyMode    bool
 	DumpSystemd bool
 	DumpConfig  bool
+	VerboseMode bool
 	ShowVersion bool
 	ProxyMode   bool
 	Prefetch    bool
 	Config      jsonFile
 	Version     = "0.9.4"
 	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
+	ConfigFlag *flag.FlagSet
+	LazyTickerPeriod = time.Second * 5
 )
 
 const Metadata = "metadata"
@@ -82,12 +89,18 @@ type jsonFile struct {
 }
 
 func init() {
-	flag.StringVar(&ConfigPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
-	flag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert image to webp")
-	flag.IntVar(&Jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
-	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json")
-	flag.BoolVar(&DumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
-	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
+	// Use a flagSet to avoid issues during TestMain* tests
+	ConfigFlag = flag.NewFlagSet("main", flag.ContinueOnError)
+	ConfigFlag.StringVar(&ConfigPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
+	ConfigFlag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert image to webp")
+	ConfigFlag.IntVar(&Jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
+	ConfigFlag.BoolVar(&LazyMode, "lazy", false, "Convert images in the background, asynchronously")
+	ConfigFlag.IntVar(&MaxDefaultJobs, "lazy-jobs", runtime.NumCPU(), "Max parallel tasks (WebP) in lazy mode, default is all.")
+	ConfigFlag.IntVar(&MaxHeavyJobs, "lazy-heavy-jobs", runtime.NumCPU(), "Max parallel heavy tasks (AVIF) in lazy mode, default is all.")
+	ConfigFlag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json")
+	ConfigFlag.BoolVar(&DumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
+	ConfigFlag.BoolVar(&VerboseMode, "v", false, "Verbose, print out debug info.")
+	ConfigFlag.BoolVar(&ShowVersion, "V", false, "Show version information.")
 }
 
 func LoadConfig() {
@@ -104,6 +117,21 @@ func LoadConfig() {
 type ExtraParams struct {
 	Width  int // in px
 	Height int // in px
+}
+
+// Element is an entry in the priority queue
+type Element struct {
+	ImageType   string
+	Raw         string
+	Optimized   string
+	Quality     int
+	ExtraParams ExtraParams
+	Priority    int
+}
+
+// String : convert ExtraParams to string, used to generate cache path
+func (e *ExtraParams) String() string {
+	return fmt.Sprintf("_width=%d&height=%d", e.Width, e.Height)
 }
 
 func switchProxyMode() {

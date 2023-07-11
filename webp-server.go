@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"runtime"
@@ -37,6 +36,11 @@ func setupLogger() {
 	log.SetFormatter(formatter)
 	log.SetLevel(log.InfoLevel)
 
+	if config.VerboseMode {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("Verbose mode enabled.")
+	}
+
 	// fiber logger format
 	app.Use(logger.New(logger.Config{
 		Format:     config.FiberLogFormat,
@@ -48,7 +52,10 @@ func setupLogger() {
 
 func init() {
 	// main init is the last one to be called
-	flag.Parse()
+	err := config.ConfigFlag.Parse(os.Args[1:])
+	if err != nil {
+		log.Error(err)
+	}
 	config.LoadConfig()
 	setupLogger()
 }
@@ -76,6 +83,13 @@ Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
 	if config.ShowVersion {
 		fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner+"", 0x1B)
 		os.Exit(0)
+	}
+
+	encoder.VipsStart()
+	defer encoder.VipsShutdown()
+
+	if config.LazyMode {
+		go encoder.Lazy()
 	}
 
 	if config.Prefetch {
