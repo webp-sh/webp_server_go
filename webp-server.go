@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -41,7 +42,8 @@ func setupLogger() {
 		Format:     config.FiberLogFormat,
 		TimeFormat: config.TimeDateFormat,
 	}))
-	log.Infoln("Logger ready.")
+	app.Use(recover.New(recover.Config{}))
+	log.Infoln("fiber ready.")
 }
 
 func init() {
@@ -59,7 +61,7 @@ func main() {
 ▙▚▌▛▀ ▌ ▌▌   ▖ ▌▛▀ ▌  ▐▐ ▛▀ ▌   ▌ ▌▌ ▌
 ▘ ▘▝▀▘▀▀ ▘   ▝▀ ▝▀▘▘   ▘ ▝▀▘▘   ▝▀ ▝▀
 
-Webp Server Go - v%s
+WebP Server Go - v%s
 Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
 
 	// process cli params
@@ -88,7 +90,7 @@ Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
 	app.Get("/*", handler.Convert)
 
 	fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner, 0x1B)
-	fmt.Println("Webp Server Go is Running on http://" + listenAddress)
+	fmt.Println("WebP Server Go is Running on http://" + listenAddress)
 
 	_ = app.Listen(listenAddress)
 
