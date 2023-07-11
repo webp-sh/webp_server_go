@@ -14,6 +14,7 @@ import (
 )
 
 func TestPrefetchImages(t *testing.T) {
+	VipsSetupForTests(t)
 	config.LazyMode = false
 	exhaustPath, _ := os.MkdirTemp("", "tests-")
 	config.Config.ExhaustPath = exhaustPath
@@ -21,7 +22,7 @@ func TestPrefetchImages(t *testing.T) {
 
 	config.Config.ImgPath = "../pics/dir1"
 	PrefetchImages()
-
+	time.Sleep(time.Second * 1)
 	count := helper.FileCount(exhaustPath)
 	assert.Equal(t, int64(1), count)
 }

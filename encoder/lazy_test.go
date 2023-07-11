@@ -19,6 +19,7 @@ import (
 
 func LazyModeSetup(t *testing.T) func() {
 	// Setup
+	VipsSetupForTests(t)
 	config.LazyMode = true
 	config.VerboseMode = true
 	DefaultWorkQueue = pq.NewWith(byPriority) // empty
