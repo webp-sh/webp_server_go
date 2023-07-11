@@ -18,7 +18,7 @@ func TestMain(m *testing.M) {
 func TestFileCount(t *testing.T) {
 	// test helper dir
 	count := FileCount("./")
-	assert.Equal(t, int64(4), count)
+	assert.Equal(t, int64(5), count)
 }
 
 func TestImageExists(t *testing.T) {
