@@ -98,6 +98,7 @@ func Convert(c *fiber.Ctx) error {
 			reqURI = c.Path()
 			reqURIwithQuery = c.OriginalURL()
 		}
+
 		log.Tracef("reqURIwithQuery is %s", reqURIwithQuery)
 
 		// Replace host in the URL

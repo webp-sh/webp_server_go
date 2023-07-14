@@ -252,6 +252,7 @@ func TestConvertProxyImgMap(t *testing.T) {
 	var app = fiber.New()
 	app.Get("/*", Convert)
 
+
 	var testUrls = map[string]string{
 		"http://127.0.0.1:3333/webp_server.jpg": "image/webp",
 		"http://127.0.0.1:3333/2/inside.jpg": "image/webp",
