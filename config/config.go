@@ -17,15 +17,15 @@ const (
 	FiberLogFormat = "${ip} - [${time}] ${method} ${url} ${status} ${referer} ${ua}\n"
 	WebpMax        = 16383
 	AvifMax        = 65536
-	RemoteRaw      = "remote-raw"
-
-	SampleConfig = `
+	HttpRegexp     = `^https?://`
+	SampleConfig   = `
 {
   "HOST": "127.0.0.1",
   "PORT": "3333",
   "QUALITY": "80",
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
+  "IMG_MAP": {},
   "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
   "ENABLE_AVIF": false,
   "ENABLE_EXTRA_PARAMS": false
@@ -60,9 +60,10 @@ var (
 	Config      jsonFile
 	Version     = "0.9.4"
 	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
+	RemoteRaw   = "./remote-raw"
+	Metadata    = "./metadata"
+	LocalHostAlias = "local"
 )
-
-const Metadata = "metadata"
 
 type MetaFile struct {
 	Id       string `json:"id"`       // hash of below path️, also json file name id.webp
@@ -71,14 +72,15 @@ type MetaFile struct {
 }
 
 type jsonFile struct {
-	Host              string   `json:"HOST"`
-	Port              string   `json:"PORT"`
-	ImgPath           string   `json:"IMG_PATH"`
-	Quality           int      `json:"QUALITY,string"`
-	AllowedTypes      []string `json:"ALLOWED_TYPES"`
-	ExhaustPath       string   `json:"EXHAUST_PATH"`
-	EnableAVIF        bool     `json:"ENABLE_AVIF"`
-	EnableExtraParams bool     `json:"ENABLE_EXTRA_PARAMS"`
+	Host              string            `json:"HOST"`
+	Port              string            `json:"PORT"`
+	ImgPath           string            `json:"IMG_PATH"`
+	Quality           int               `json:"QUALITY,string"`
+	AllowedTypes      []string          `json:"ALLOWED_TYPES"`
+	ImageMap          map[string]string `json:"IMG_MAP"`
+	ExhaustPath       string            `json:"EXHAUST_PATH"`
+	EnableAVIF        bool              `json:"ENABLE_AVIF"`
+	EnableExtraParams bool              `json:"ENABLE_EXTRA_PARAMS"`
 }
 
 func init() {
@@ -107,8 +109,10 @@ type ExtraParams struct {
 }
 
 func switchProxyMode() {
-	matched, _ := regexp.MatchString(`^https?://`, Config.ImgPath)
+	matched, _ := regexp.MatchString(HttpRegexp, Config.ImgPath)
 	if matched {
+		// Enable proxy based on ImgPath should be deprecated in future versions
+		log.Warn("Enable proxy based on ImgPath will be deprecated in future versions. Use IMG_MAP config options instead")
 		ProxyMode = true
 	}
 }

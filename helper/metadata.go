@@ -26,29 +26,29 @@ func getId(p string) (string, string, string) {
 	return id, path.Join(config.Config.ImgPath, parsed.Path), santizedPath
 }
 
-func ReadMetadata(p, etag string) config.MetaFile {
+func ReadMetadata(p, etag string, subdir string) config.MetaFile {
 	// try to read metadata, if we can't read, create one
 	var metadata config.MetaFile
 	var id, _, _ = getId(p)
 
-	buf, err := os.ReadFile(path.Join(config.Metadata, id+".json"))
+	buf, err := os.ReadFile(path.Join(config.Metadata, subdir, id+".json"))
 	if err != nil {
 		log.Warnf("can't read metadata: %s", err)
-		WriteMetadata(p, etag)
-		return ReadMetadata(p, etag)
+		WriteMetadata(p, etag, subdir)
+		return ReadMetadata(p, etag, subdir)
 	}
 
 	err = json.Unmarshal(buf, &metadata)
 	if err != nil {
 		log.Warnf("unmarshal metadata error, possible corrupt file, re-building...: %s", err)
-		WriteMetadata(p, etag)
-		return ReadMetadata(p, etag)
+		WriteMetadata(p, etag, subdir)
+		return ReadMetadata(p, etag, subdir)
 	}
 	return metadata
 }
 
-func WriteMetadata(p, etag string) config.MetaFile {
-	_ = os.Mkdir(config.Metadata, 0755)
+func WriteMetadata(p, etag string, subdir string) config.MetaFile {
+	_ = os.MkdirAll(path.Join(config.Metadata, subdir), 0755)
 
 	var id, filepath, sant = getId(p)
 
@@ -65,6 +65,6 @@ func WriteMetadata(p, etag string) config.MetaFile {
 	}
 
 	buf, _ := json.Marshal(data)
-	_ = os.WriteFile(path.Join(config.Metadata, data.Id+".json"), buf, 0644)
+	_ = os.WriteFile(path.Join(config.Metadata, subdir, data.Id+".json"), buf, 0644)
 	return data
 }

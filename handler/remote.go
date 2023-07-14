@@ -75,18 +75,18 @@ func downloadFile(filepath string, url string) {
 
 }
 
-func fetchRemoteImg(url string) config.MetaFile {
+func fetchRemoteImg(url string, subdir string) config.MetaFile {
 	// url is https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	// How do we know if the remote img is changed? we're using hash(etag+length)
 	log.Infof("Remote Addr is %s, pinging for info...", url)
 	etag := pingURL(url)
-	metadata := helper.ReadMetadata(url, etag)
-	localRawImagePath := path.Join(config.RemoteRaw, metadata.Id)
+	metadata := helper.ReadMetadata(url, etag, subdir)
+	localRawImagePath := path.Join(config.RemoteRaw, subdir, metadata.Id)
 
 	if !helper.ImageExists(localRawImagePath) || metadata.Checksum != helper.HashString(etag) {
 		// remote file has changed or local file not exists
 		log.Info("Remote file not found in remote-raw, re-fetching...")
-		cleanProxyCache(path.Join(config.Config.ExhaustPath, metadata.Id+"*"))
+		cleanProxyCache(path.Join(config.Config.ExhaustPath, subdir, metadata.Id+"*"))
 		downloadFile(localRawImagePath, url)
 	}
 	return metadata
