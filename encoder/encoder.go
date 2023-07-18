@@ -224,39 +224,34 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
+		// Lossless mode will not encounter problems as below, because in libvips as code below
+		// 	config.method = ExUtilGetInt(argv[++c], 0, &parse_error);
+		//   use_lossless_preset = 0;   // disable -z option
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
 			Lossless:      true,
 			StripMetadata: true,
 		})
-		// Lossless mode will not encount problems as below, because in libvips as code below
-		// 	config.method = ExUtilGetInt(argv[++c], 0, &parse_error);
-		//   use_lossless_preset = 0;   // disable -z option
 	} else {
-		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
+		// If some special images cannot encode with default ReductionEffort(0), then try with 4
+		// Example: https://github.com/webp-sh/webp_server_go/issues/234
+		ep := vips.WebpExportParams{
 			Quality:       quality,
 			Lossless:      false,
 			StripMetadata: true,
-		})
-		// If some special images cannot encode with default ReductionEffort(0), then try with 4
-		// Example: https://github.com/webp-sh/webp_server_go/issues/234
-		if err != nil {
-			if strings.Contains(err.Error(), "unable to encode") {
-				log.Warnf("Can't encode source image to WebP with default ReductionEffort")
-				// Loop through ReductionEffort from 1 to 6
-				for i := 1; i <= 6; i++ {
-					log.Warnf("Retry using ReductionEffort: %d", i)
-					buf, _, err = img.ExportWebp(&vips.WebpExportParams{
-						Quality:         quality,
-						Lossless:        false,
-						StripMetadata:   true,
-						ReductionEffort: i,
-					})
-					if err == nil {
-						break
-					}
-				}
+		}
+		for i := 0; i <= 6; i++ {
+			ep.ReductionEffort = i
+			buf, _, err = img.ExportWebp(&ep)
+			if err != nil && strings.Contains(err.Error(), "unable to encode") {
+				log.Warnf("Can't encode image to WebP with ReductionEffort %d, trying higher value...", i)
+			} else if err != nil {
+				log.Warnf("Can't encode source image to WebP:%v", err)
+			} else {
+				break
 			}
 		}
+		buf, _, err = img.ExportWebp(&ep)
+
 	}
 
 	if err != nil {
