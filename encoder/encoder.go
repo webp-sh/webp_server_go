@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 	"sync"
 	"webp_server_go/config"
 	"webp_server_go/helper"
@@ -224,17 +225,40 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
-			Lossless:        true,
-			StripMetadata:   true,
-			ReductionEffort: 4,
+			Lossless:      true,
+			StripMetadata: true,
 		})
+		// If some special images cannot encode with default ReductionEffort(0), then try with 4
+		// Example: https://github.com/webp-sh/webp_server_go/issues/234
+		if err != nil {
+			if strings.Contains(err.Error(), "unable to encode") {
+				log.Warnf("Can't encode source image to WebP with default ReductionEffort, retry using ReductionEffort:4")
+				buf, _, err = img.ExportWebp(&vips.WebpExportParams{
+					Lossless:        true,
+					StripMetadata:   true,
+					ReductionEffort: 4,
+				})
+			}
+		}
 	} else {
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
-			Quality:         quality,
-			Lossless:        false,
-			StripMetadata:   true,
-			ReductionEffort: 4,
+			Quality:       quality,
+			Lossless:      false,
+			StripMetadata: true,
 		})
+		// If some special images cannot encode with default ReductionEffort(0), then try with 4
+		// Example: https://github.com/webp-sh/webp_server_go/issues/234
+		if err != nil {
+			if strings.Contains(err.Error(), "unable to encode") {
+				log.Warnf("Can't encode source image to WebP with default ReductionEffort, retry using ReductionEffort:4")
+				buf, _, err = img.ExportWebp(&vips.WebpExportParams{
+					Quality:         quality,
+					Lossless:        false,
+					StripMetadata:   true,
+					ReductionEffort: 4,
+				})
+			}
+		}
 	}
 
 	if err != nil {
