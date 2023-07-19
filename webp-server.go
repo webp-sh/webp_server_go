@@ -17,8 +17,8 @@ import (
 )
 
 var app = fiber.New(fiber.Config{
-	ServerHeader:          "Webp Server Go",
-	AppName:               "Webp Server Go",
+	ServerHeader:          "WebP Server Go",
+	AppName:               "WebP Server Go",
 	DisableStartupMessage: true,
 	ProxyHeader:           "X-Real-IP",
 })
@@ -43,7 +43,7 @@ func setupLogger() {
 		TimeFormat: config.TimeDateFormat,
 	}))
 	app.Use(recover.New(recover.Config{}))
-	log.Infoln("fiber ready.")
+	log.Infoln("WebP Server Go ready.")
 }
 
 func init() {
