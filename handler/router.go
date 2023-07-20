@@ -3,7 +3,8 @@ package handler
 import (
 	"net/http"
 	"net/url"
-	// "strings"
+	"regexp"
+	"strings"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
 	"webp_server_go/helper"
@@ -31,6 +32,7 @@ func Convert(c *fiber.Ctx) error {
 		targetHostName     = config.LocalHostAlias
 		targetHost         = config.Config.ImgPath
 		proxyMode          = config.ProxyMode
+		mapMode            = false
 	)
 
 	log.Debugf("Incoming connection from %s %s %s", c.IP(), reqHostname, reqURIwithQuery)
@@ -58,17 +60,44 @@ func Convert(c *fiber.Ctx) error {
 
 	// Rewrite the target backend if a mapping rule matches the hostname
 	if hostMap, hostMapFound := config.Config.ImageMap[reqHost]; hostMapFound {
-		log.Debugf("Found mapping %s -> %s", reqHostname, hostMap)
+		log.Debugf("Found host mapping %s -> %s", reqHostname, hostMap)
 		targetHostUrl, _ := url.Parse(hostMap)
 		targetHostName = targetHostUrl.Host
-		targetHost = hostMap
+		targetHost = targetHostUrl.Scheme + "://" + targetHostUrl.Host
 		proxyMode = true
+	} else {
+		// There's not matching host mapping, now check for any URI map that apply
+		httpRegexpMatcher := regexp.MustCompile(config.HttpRegexp)
+		for uriMap, uriMapTarget := range config.Config.ImageMap {
+			if strings.HasPrefix(reqURI, uriMap) {
+				log.Debugf("Found URI mapping %s -> %s", uriMap, uriMapTarget)
+				mapMode = true
+
+				// if uriMapTarget we use the proxy mode to fetch the remote
+				if httpRegexpMatcher.Match([]byte(uriMapTarget)) {
+					targetHostUrl, _ := url.Parse(uriMapTarget)
+					targetHostName = targetHostUrl.Host
+					targetHost = targetHostUrl.Scheme + "://" + targetHostUrl.Host
+					reqURI          = strings.Replace(reqURI,          uriMap, targetHostUrl.Path, 1)
+					reqURIwithQuery = strings.Replace(reqURIwithQuery, uriMap, targetHostUrl.Path, 1)
+					proxyMode = true
+				} else {
+					reqURI          = strings.Replace(reqURI,          uriMap, uriMapTarget, 1)
+					reqURIwithQuery = strings.Replace(reqURIwithQuery, uriMap, uriMapTarget, 1)
+				}
+				break
+			}
+		}
+
 	}
 
 	if proxyMode {
-		// Don't deal with the encoding to avoid upstream compatibilities
-		reqURI = c.Path()
-		reqURIwithQuery = c.OriginalURL()
+
+		if !mapMode {
+			// Don't deal with the encoding to avoid upstream compatibilities
+			reqURI = c.Path()
+			reqURIwithQuery = c.OriginalURL()
+		}
 		log.Tracef("reqURIwithQuery is %s", reqURIwithQuery)
 
 		// Replace host in the URL

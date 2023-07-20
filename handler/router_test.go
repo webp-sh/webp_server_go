@@ -41,6 +41,7 @@ func requestToServer(reqUrl string, app *fiber.App, ua, accept string) (*http.Re
 	req.Header.Set("User-Agent", ua)
 	req.Header.Set("Accept", accept)
 	req.Header.Set("Host", parsedUrl.Host)
+	req.Host = parsedUrl.Host
 	resp, err := app.Test(req, 120000)
 	if err != nil {
 		return nil, nil
@@ -239,23 +240,58 @@ func TestConvertProxyModeWork(t *testing.T) {
 func TestConvertProxyImgMap(t *testing.T) {
 	setupParam()
 	config.ProxyMode = false
-	config.Config.ImageMap = map[string]string {"http://example.com": "https://webp.sh"}
+	config.Config.ImageMap = map[string]string {
+		"/2": "../pics/dir1",
+		"/3": "../pics3",  // Invalid path, does not exists
+		"www.invalid-path.com": "https://webp.sh", // Invalid, it does not start with '/'
+		"/www.weird-path.com": "https://webp.sh",
+		"/www.even-more-werid-path.com": "https://webp.sh/images",
+		"http://example.com": "https://webp.sh",
+	}
 
 	var app = fiber.New()
 	app.Get("/*", Convert)
 
-	url := "http://example.com/images/cover.jpg"
+	var testUrls = map[string]string{
+		"http://127.0.0.1:3333/webp_server.jpg": "image/webp",
+		"http://127.0.0.1:3333/2/inside.jpg": "image/webp",
+		"http://127.0.0.1:3333/www.weird-path.com/images/cover.jpg": "image/webp",
+		"http://127.0.0.1:3333/www.even-more-werid-path.com/cover.jpg": "image/webp",
+		"http://example.com/images/cover.jpg": "image/webp",
+	}
 
-	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
-	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "image/webp", helper.GetContentType(data))
+	var testUrlsLegacy = map[string]string{
+		"http://127.0.0.1:3333/webp_server.jpg": "image/jpeg",
+		"http://127.0.0.1:3333/2/inside.jpg": "image/jpeg",
+		"http://example.com/images/cover.jpg": "image/jpeg",
+	}
 
-	// test proxyMode with Safari
-	resp, data = requestToServer(url, app, safariUA, acceptLegacy)
-	defer resp.Body.Close()
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "image/jpeg", helper.GetContentType(data))
+	var testUrlsInvalid = map[string]string{
+		"http://127.0.0.1:3333/3/does-not-exist.jpg": "", // Dir mapped does not exist
+		"http://127.0.0.1:3333/www.weird-path.com/cover.jpg": "", // Host mapped, final URI invalid 
+	}
+
+	for url, respType := range testUrls {
+		resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, respType, helper.GetContentType(data))
+	}
+
+	// tests with Safari
+	for url, respType := range testUrlsLegacy {
+		resp, data := requestToServer(url, app, safariUA, acceptLegacy)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, respType, helper.GetContentType(data))
+	}
+
+	for url, respType := range testUrlsInvalid {
+		resp, data := requestToServer(url, app, safariUA, acceptLegacy)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		assert.Equal(t, respType, helper.GetContentType(data))
+	}
 }
 
 func TestConvertBigger(t *testing.T) {
