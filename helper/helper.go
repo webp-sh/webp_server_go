@@ -14,8 +14,15 @@ import (
 	"github.com/cespare/xxhash"
 	"github.com/valyala/fasthttp"
 
+	svg "github.com/h2non/go-is-svg"
 	log "github.com/sirupsen/logrus"
 )
+
+var _ = filetype.AddMatcher(filetype.NewType("svg", "image/svg+xml"), svgMatcher)
+
+func svgMatcher(buf []byte) bool {
+	return svg.Is(buf)
+}
 
 func GetFileContentType(filename string) string {
 	// raw image, need to use filetype to determine

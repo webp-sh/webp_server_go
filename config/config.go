@@ -26,7 +26,7 @@ const (
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
   "IMG_MAP": {},
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg"],
   "ENABLE_AVIF": false,
   "ENABLE_EXTRA_PARAMS": false
 }`
@@ -58,7 +58,7 @@ var (
 	ProxyMode   bool
 	Prefetch    bool
 	Config      jsonFile
-	Version     = "0.9.7"
+	Version     = "0.9.8"
 	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw   = "./remote-raw"
 	Metadata    = "./metadata"
