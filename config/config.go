@@ -26,7 +26,7 @@ const (
   "QUALITY": "80",
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg"],
   "ENABLE_AVIF": false,
   "ENABLE_EXTRA_PARAMS": false
 }`
