@@ -1,8 +1,9 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -19,15 +20,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, Config.Quality, 80)
 	assert.Equal(t, Config.ImgPath, "./pics")
 	assert.Equal(t, Config.ExhaustPath, "./exhaust")
-}
-
-func TestExtraParamsString(t *testing.T) {
-	param := ExtraParams{
-		Width:  100,
-		Height: 100,
-	}
-	assert.Equal(t, param.String(), "_width=100&height=100")
-
 }
 
 func TestSwitchProxyMode(t *testing.T) {

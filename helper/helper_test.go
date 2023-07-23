@@ -18,16 +18,12 @@ func TestMain(m *testing.M) {
 func TestFileCount(t *testing.T) {
 	// test helper dir
 	count := FileCount("./")
-	assert.Equal(t, int64(3), count)
+	assert.Equal(t, int64(4), count)
 }
 
 func TestImageExists(t *testing.T) {
 	t.Run("file not exists", func(t *testing.T) {
 		assert.False(t, ImageExists("dgyuaikdsa"))
-	})
-
-	t.Run("file size incorrect", func(t *testing.T) {
-		assert.False(t, ImageExists("test.txt"))
 	})
 
 	// TODO: how to test lock?
@@ -43,7 +39,7 @@ func TestImageExists(t *testing.T) {
 
 func TestCheckAllowedType(t *testing.T) {
 	t.Run("not allowed type", func(t *testing.T) {
-		assert.False(t, CheckAllowedType("test.txt"))
+		assert.False(t, CheckAllowedType("./helper_test.go"))
 	})
 
 	t.Run("allowed type", func(t *testing.T) {

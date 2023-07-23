@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 	"regexp"
 	"runtime"
@@ -27,7 +26,7 @@ const (
   "QUALITY": "80",
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp"],
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg"],
   "ENABLE_AVIF": false,
   "ENABLE_EXTRA_PARAMS": false
 }`
@@ -59,9 +58,17 @@ var (
 	ProxyMode   bool
 	Prefetch    bool
 	Config      jsonFile
-	Version     = "0.9.3"
+	Version     = "0.9.8"
 	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
 )
+
+const Metadata = "metadata"
+
+type MetaFile struct {
+	Id       string `json:"id"`       // hash of below path️, also json file name id.webp
+	Path     string `json:"path"`     // local: path with width and height, proxy: full url
+	Checksum string `json:"checksum"` // hash of original file or hash(etag). Use this to identify changes
+}
 
 type jsonFile struct {
 	Host              string   `json:"HOST"`
@@ -81,7 +88,6 @@ func init() {
 	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json")
 	flag.BoolVar(&DumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
-
 }
 
 func LoadConfig() {
@@ -98,11 +104,6 @@ func LoadConfig() {
 type ExtraParams struct {
 	Width  int // in px
 	Height int // in px
-}
-
-// String : convert ExtraParams to string, used to generate cache path
-func (e *ExtraParams) String() string {
-	return fmt.Sprintf("_width=%d&height=%d", e.Width, e.Height)
 }
 
 func switchProxyMode() {

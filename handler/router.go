@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 	"net/url"
-	"os"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
 	"webp_server_go/helper"
@@ -40,31 +39,47 @@ func Convert(c *fiber.Ctx) error {
 	reqURI = path.Clean(reqURI)
 	reqURIwithQuery = path.Clean(reqURIwithQuery)
 
-	WidthInt, err := strconv.Atoi(c.Query("w"))
+	width, err := strconv.Atoi(c.Query("w"))
 	if err != nil {
-		WidthInt = 0
+		width = 0
 	}
-	HeightInt, err := strconv.Atoi(c.Query("h"))
+	height, err := strconv.Atoi(c.Query("h"))
 	if err != nil {
-		HeightInt = 0
+		height = 0
 	}
 	var extraParams = config.ExtraParams{
-		Width:  WidthInt,
-		Height: HeightInt,
+		Width:  width,
+		Height: height,
 	}
 
 	var rawImageAbs string
+	var metadata = config.MetaFile{}
 	if config.ProxyMode {
 		// this is proxyMode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
 		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
-		rawImageAbs = fetchRemoteImg(config.Config.ImgPath + reqURIwithQuery)
-
+		metadata = fetchRemoteImg(config.Config.ImgPath + reqURIwithQuery)
+		rawImageAbs = path.Join(config.RemoteRaw, metadata.Id)
 	} else {
 		// not proxyMode, we'll use local path
-		rawImageAbs = path.Join(config.Config.ImgPath, reqURI) // /home/xxx/mypic/123.jpg
+		metadata = helper.ReadMetadata(reqURIwithQuery, "")
+		rawImageAbs = path.Join(config.Config.ImgPath, reqURI)
+		// detect if source file has changed
+		if metadata.Checksum != helper.HashFile(rawImageAbs) {
+			log.Info("Source file has changed, re-encoding...")
+			helper.WriteMetadata(reqURIwithQuery, "")
+			cleanProxyCache(path.Join(config.Config.ExhaustPath, metadata.Id))
+		}
 	}
 
 	goodFormat := helper.GuessSupportedFormat(&c.Request().Header)
+	// resize itself and return if only one format(raw) is supported
+	if len(goodFormat) == 1 {
+		dest := path.Join(config.Config.ExhaustPath, metadata.Id)
+		if !helper.ImageExists(dest) {
+			encoder.ResizeItself(rawImageAbs, dest, extraParams)
+		}
+		return c.SendFile(dest)
+	}
 
 	// Check the original image for existence,
 	if !helper.ImageExists(rawImageAbs) {
@@ -75,11 +90,7 @@ func Convert(c *fiber.Ctx) error {
 		return nil
 	}
 
-	// generate with timestamp to make sure files are update-to-date
-	// If extraParams not enabled, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-	// If extraParams enabled, and given request at tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200&height=0
-	// If extraParams enabled, and given request at tsuki.jpg, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=0&height=0
-	avifAbs, webpAbs := helper.GenOptimizedAbsPath(rawImageAbs, reqURI, extraParams)
+	avifAbs, webpAbs := helper.GenOptimizedAbsPath(metadata)
 	encoder.ConvertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
 
 	var availableFiles = []string{rawImageAbs}
@@ -93,9 +104,7 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)
-
-	buf, _ := os.ReadFile(finalFilename)
-	contentType := helper.GetFileContentType(buf)
+	contentType := helper.GetFileContentType(finalFilename)
 	c.Set("Content-Type", contentType)
 
 	c.Set("X-Compression-Rate", helper.GetCompressionRate(rawImageAbs, finalFilename))

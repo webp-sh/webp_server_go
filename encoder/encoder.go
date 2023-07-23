@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -32,7 +31,7 @@ func init() {
 func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 	imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
 	if extraParams.Width > 0 && extraParams.Height > 0 {
-		err := img.Thumbnail(extraParams.Width, extraParams.Height, 0)
+		err := img.Thumbnail(extraParams.Width, extraParams.Height, vips.InterestingAttention)
 		if err != nil {
 			return err
 		}
@@ -85,27 +84,20 @@ func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParam
 	}
 }
 
+func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
+	log.Infof("Resize %s itself to %s", raw, dest)
+	img, _ := vips.LoadImageFromFile(raw, &vips.ImportParams{
+		FailOnError: boolFalse,
+	})
+	_ = resizeImage(img, extraParams)
+	buf, _, _ := img.ExportNative()
+	_ = os.WriteFile(dest, buf, 0600)
+	img.Close()
+}
+
 func convertImage(raw, optimized, imageType string, extraParams config.ExtraParams) error {
-	// we don't have /path/to/tsuki.jpg.1582558990.webp, maybe we have /path/to/tsuki.jpg.1082008000.webp
-	// delete the old converted pic and convert a new one.
-	// optimized: /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp
-	// we'll delete file starts with /home/webp_server/exhaust/path/to/tsuki.jpg.ts.imageType
-	// If contain extraParams like tsuki.jpg?width=200, exhaust path will be /home/webp_server/exhaust/path/to/tsuki.jpg.1582558990.webp_width=200
-
-	s := strings.Split(path.Base(optimized), ".")
-	pattern := path.Join(path.Dir(optimized), s[0]+"."+s[1]+".*."+s[len(s)-1])
-
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		log.Error(err.Error())
-	} else {
-		for _, p := range matches {
-			_ = os.Remove(p)
-		}
-	}
-
 	// we need to create dir first
-	err = os.MkdirAll(path.Dir(optimized), 0755)
+	var err = os.MkdirAll(path.Dir(optimized), 0755)
 	if err != nil {
 		log.Error(err.Error())
 	}
@@ -232,18 +224,34 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
+		// Lossless mode will not encounter problems as below, because in libvips as code below
+		// 	config.method = ExUtilGetInt(argv[++c], 0, &parse_error);
+		//   use_lossless_preset = 0;   // disable -z option
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
-			Lossless:        true,
-			StripMetadata:   true,
-			ReductionEffort: 4,
+			Lossless:      true,
+			StripMetadata: true,
 		})
 	} else {
-		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
-			Quality:         quality,
-			Lossless:        false,
-			StripMetadata:   true,
-			ReductionEffort: 4,
-		})
+		// If some special images cannot encode with default ReductionEffort(0), then try with 4
+		// Example: https://github.com/webp-sh/webp_server_go/issues/234
+		ep := vips.WebpExportParams{
+			Quality:       quality,
+			Lossless:      false,
+			StripMetadata: true,
+		}
+		for i := 0; i <= 6; i++ {
+			ep.ReductionEffort = i
+			buf, _, err = img.ExportWebp(&ep)
+			if err != nil && strings.Contains(err.Error(), "unable to encode") {
+				log.Warnf("Can't encode image to WebP with ReductionEffort %d, trying higher value...", i)
+			} else if err != nil {
+				log.Warnf("Can't encode source image to WebP:%v", err)
+			} else {
+				break
+			}
+		}
+		buf, _, err = img.ExportWebp(&ep)
+
 	}
 
 	if err != nil {

@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"time"
 	"webp_server_go/config"
 	"webp_server_go/helper"
@@ -35,8 +34,8 @@ func PrefetchImages() {
 				return nil
 			}
 			// RawImagePath string, ImgFilename string, reqURI string
-			proposedURI := strings.Replace(picAbsPath, config.Config.ImgPath, "", 1)
-			avif, webp := helper.GenOptimizedAbsPath(picAbsPath, proposedURI, config.ExtraParams{Width: 0, Height: 0})
+			metadata := helper.ReadMetadata(picAbsPath, "")
+			avif, webp := helper.GenOptimizedAbsPath(metadata)
 			_ = os.MkdirAll(path.Dir(avif), 0755)
 			log.Infof("Prefetching %s", picAbsPath)
 			go ConvertFilter(picAbsPath, avif, webp, config.ExtraParams{Width: 0, Height: 0}, finishChan)
