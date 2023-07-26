@@ -91,7 +91,7 @@ You can refer to [Docker | WebP Server Documentation](https://docs.webp.sh/usage
 
 ## Advanced Usage
 
-If you'd like to use with binary, please consult to [Basic Usage | WebP Server Documentation](https://docs.webp.sh/usage/basic-usage/)
+If you'd like to use with binary, please consult to [Use with Binary(Advanced) | WebP Server Documentation](https://docs.webp.sh/usage/usage-with-binary/)
 
 >spoiler alert: you may encounter issues with `glibc` and some dependency libraries.
 
