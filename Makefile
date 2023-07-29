@@ -5,9 +5,11 @@ else
 endif
 
 ifeq ($(shell uname -m),aarch64)
-	ARCH=arm64
+    ARCH=arm64
+else ifeq ($(shell uname -m),arm64)
+    ARCH=arm64
 else
-	ARCH=amd64
+    ARCH=amd64
 endif
 
 default:
