@@ -31,12 +31,25 @@ func TestSwitchProxyMode(t *testing.T) {
 	assert.True(t, ProxyMode)
 }
 
-// func TestSwitchProxyModeImgMap(t *testing.T) {
-// 	switchProxyMode()
-// 	assert.False(t, ProxyMode)
-// 	Config.ImageMap = map[string]string{
-// 		"https://picsum.photos": "https://picsum.photos",
-// 		} 
-// 	switchProxyMode()
-// 	assert.True(t, ProxyMode)
-// }
+func TestParseImgMap(t *testing.T) {
+	empty := map[string]string{}
+	good := map[string]string{
+		"/1": "../pics/dir1",
+		"http://example.com": "../pics",
+		"https://example.com": "../pics",
+	}
+	bad := map[string]string{
+		"1": "../pics/dir1",
+		"httpx://example.com": "../pics",
+		"ftp://example.com": "../pics",
+	}
+	
+	assert.Equal(t, empty, parseImgMap(empty))
+	assert.Equal(t, empty, parseImgMap(bad))
+	assert.Equal(t, good, parseImgMap(good))
+
+	for k, v := range good {
+		bad[k] = v
+	}
+	assert.Equal(t, good, parseImgMap(bad))
+}

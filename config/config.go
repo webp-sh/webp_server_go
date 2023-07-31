@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/patrickmn/go-cache"
@@ -101,6 +102,22 @@ func LoadConfig() {
 	_ = decoder.Decode(&Config)
 	_ = jsonObject.Close()
 	switchProxyMode()
+	Config.ImageMap = parseImgMap(Config.ImageMap)
+}
+
+func parseImgMap(imgMap map[string]string) map[string]string {
+	var parsedImgMap = map[string]string{}
+	httpRegexpMatcher := regexp.MustCompile(HttpRegexp)
+	for uriMap, uriMapTarget := range imgMap {
+		if httpRegexpMatcher.Match([]byte(uriMap)) || strings.HasPrefix(uriMap, "/") {
+			// Valid
+			parsedImgMap[uriMap] = uriMapTarget
+		} else {
+			// Invalid
+			log.Warnf("IMG_MAP key '%s' does matches '%s' or starts with '/' - skipped", uriMap, HttpRegexp)
+		}
+	}
+	return parsedImgMap
 }
 
 type ExtraParams struct {
