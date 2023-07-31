@@ -8,17 +8,13 @@
 [![codecov](https://codecov.io/gh/webp-sh/webp_server_go/branch/master/graph/badge.svg?token=VR3BMZME65)](https://codecov.io/gh/webp-sh/webp_server_go)
 ![Docker Pulls](https://img.shields.io/docker/pulls/webpsh/webp-server-go?style=plastic)
 
-[Documentation](https://docs.webp.sh/) | [Website](https://webp.sh/)
+[Documentation](https://docs.webp.sh/) | [Website](https://webp.sh/) | [Blog](https://blog.webp.se/)
 
 This is a Server based on Golang, which allows you to serve WebP images on the fly.
 
-* currently supported image format: JPEG, PNG, BMP, GIF, SVG
+Currently supported image format: JPEG, PNG, BMP, GIF, SVG
 
-> e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp` format without changing the
-> URL.
->
-> ~~For Safari and Opera users, the original image will be used.~~
-> We've now supported Safari/Chrome/Firefox on iOS 14/iPadOS 14
+> e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp` format without changing the URL.
 
 ## Usage with Docker(recommended)
 
@@ -52,7 +48,7 @@ Suppose your website and image has the following pattern.
 Then
 
 * `./path/to/pics` should be changed to `/var/www/img.webp.sh`
-* `./exhaust` is cache folder for output images, by default it will be in `exhaust` directory alongside with `docker-compose.yml` file, if you'd like to keep cached images in another folder as , you can change  `./exhaust` to `/some/other/path/to/exhaust`
+* `./exhaust` is cache folder for output images, by default it will be in `exhaust` directory alongside with `docker-compose.yml` file, if you'd like to keep cached images in another folder, you can change  `./exhaust` to `/some/other/path/to/exhaust`
 
 Start the container using:
 
@@ -62,25 +58,57 @@ docker-compose up -d
 
 Now the server should be running on `127.0.0.1:3333`, visiting `http://127.0.0.1:3333/path/tsuki.jpg` will see the optimized version of `/var/www/img.webp.sh/path/tsuki.jpg`, you can now add reverse proxy to make it public, for example, let Nginx to `proxy_pass http://127.0.0.1:3333/;`, and your WebP Server is on-the-fly!
 
+## Custom config
+
+If you'd like to use a customized `config.json`, you can follow the steps in [Basic Usage](https://docs.webp.sh/usage/basic-usage/) to genereate one, and mount it into the container's `/etc/config.json`, example `docker-compose.yml` as follows:
+
+```yml
+version: '3'
+
+services:
+  webp:
+    image: webpsh/webp-server-go
+    # image: ghcr.io/webp-sh/webp_server_go
+    restart: always
+    environment:
+      - MALLOC_ARENA_MAX=1
+      # - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+      # - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.6
+    volumes:
+      - ./path/to/pics:/opt/pics
+      - ./path/to/exhaust:/opt/exhaust
+      - ./config.json:/etc/config.json
+    ports:
+      -  127.0.0.1:3333:3333
+    deploy:
+      resources:
+        limits:
+          memory: 400M
+    memswap_limit: 400M
+```
+
 You can refer to [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/) for more info, such as custom config, AVIF support etc.
 
 ## Advanced Usage
 
-If you'd like to use with binary, please consult to [Basic Usage | WebP Server Documentation](https://docs.webp.sh/usage/basic-usage/), spoiler alert: you may encounter issues with `glibc` and some dependency libraries.
+If you'd like to use with binary, please consult to [Use with Binary(Advanced) | WebP Server Documentation](https://docs.webp.sh/usage/usage-with-binary/)
 
-For supervisor or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
+>spoiler alert: you may encounter issues with `glibc` and some dependency libraries.
+
+For `supervisor` or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
 
 ## WebP Cloud Services
 
-We are currently building a new service called [WebP Cloud Services](https://webp.se/), it now has two services:
+We are currently building a new service called [WebP Cloud Services](https://webp.se/), it now has two parts:
 
 * [Public Service](https://public.webp.se)
   * GitHub Avatar/Gravater reverse proxy with WebP optimization, for example, change `https://www.gravatar.com/avatar/09eba3a443a7ea91cf818f6b27607d66` to `https://gravatar.webp.se/avatar/09eba3a443a7ea91cf818f6b27607d66` for rendering will get a smaller version of gravater, making your website faster 
-  * Totally free service and currently has a large number of users, this includes, but is not limited to [CNX Software](https://medium.com/amarao/scaleway-arm-servers-50f85c4cefbe),[Indienova](https://indienova.com/en) 
+  * Totally free service and currently has a large number of users, this includes, but is not limited to [CNX Software](https://www.cnx-software.com/), [Indienova](https://indienova.com/en) 
 * [WebP Cloud](https://docs.webp.se/webp-cloud/)
-  * No need to install WebP Server Go, especially suitable for static websites.
-  * Image Conversion: WebP Cloud converts images to WebP format, reducing size while maintaining quality for faster website loading.
-    * Example: Original image URL (https://yyets.dmesg.app/api/user/avatar/Benny) becomes compressed URL (https://vz4w427.webp.ee/api/user/avatar/Benny).
+  * No need to install WebP Server Go yourself, especially suitable for static websites.
+  * Image Conversion: WebP Cloud converts images to WebP/AVIF format, reducing size while maintaining quality for faster website loading.
+    * Example 1: Original image URL (https://yyets.dmesg.app/api/user/avatar/BennyThink) becomes compressed URL (https://vz4w427.webp.ee/api/user/avatar/Benny).
+    * Example 2: Original image URL (https://yyets.dmesg.app/api/user/avatar/BennyThink) becomes a thumbnail image using URL (https://vz4w427.webp.ee/api/user/avatar/BennyThink?width=200).
   * Caching: WebP Cloud automatically caches served images, reducing traffic and bandwidth load on the origin server.
 
 For detailed information, please visit [WebP Cloud Services Website](https://webp.se/) or [WebP Cloud Services Docs](https://docs.webp.se/).
