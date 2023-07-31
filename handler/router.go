@@ -118,7 +118,12 @@ func Convert(c *fiber.Ctx) error {
 	} else {
 		// not proxyMode, we'll use local path
 		metadata = helper.ReadMetadata(reqURIwithQuery, "", targetHostName)
-		rawImageAbs = path.Join(config.Config.ImgPath, reqURI)
+		if !mapMode {
+			// by default images are hosted in ImgPath
+			rawImageAbs = path.Join(config.Config.ImgPath, reqURI)
+		} else {
+			rawImageAbs = reqURI
+		}
 		// detect if source file has changed
 		if metadata.Checksum != helper.HashFile(rawImageAbs) {
 			log.Info("Source file has changed, re-encoding...")

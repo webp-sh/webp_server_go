@@ -2,9 +2,9 @@ package handler
 
 import (
 	"io"
-	"net/url"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 	"webp_server_go/config"
@@ -32,6 +32,8 @@ func setupParam() {
 	config.Metadata = "../metadata"
 	config.RemoteRaw = "../remote-raw"
 	config.ProxyMode = false
+	config.Config.EnableAVIF = false
+	config.Config.Quality = 80
 	config.Config.ImageMap = map[string]string{}
 }
 
@@ -90,7 +92,7 @@ func TestConvertDuplicates(t *testing.T) {
 		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
-		"http://127.0.0.1:3333/太神啦.png":                       "image/webp",
+		"http://127.0.0.1:3333/太神啦.png":                         "image/webp",
 	}
 
 	var app = fiber.New()
@@ -98,7 +100,7 @@ func TestConvertDuplicates(t *testing.T) {
 
 	// test Chrome
 	for url, respType := range testLink {
-		for i:=0; i<N; i++ {
+		for i := 0; i < N; i++ {
 			resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 			defer resp.Body.Close()
 			contentType := helper.GetContentType(data)
@@ -119,7 +121,7 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
-		"http://127.0.0.1:3333/太神啦.png":                       "image/webp",
+		"http://127.0.0.1:3333/太神啦.png":                         "image/webp",
 	}
 
 	var testChromeAvifLink = map[string]string{
@@ -131,7 +133,7 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/12314.jpg":                       "",
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/avif",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/avif",
-		"http://127.0.0.1:3333/太神啦.png":                       "image/avif",
+		"http://127.0.0.1:3333/太神啦.png":                         "image/avif",
 	}
 
 	var testSafariLink = map[string]string{
@@ -146,7 +148,7 @@ func TestConvert(t *testing.T) {
 
 	var app = fiber.New()
 	app.Get("/*", Convert)
-	
+
 	// // test Chrome
 	for url, respType := range testChromeLink {
 		resp, data := requestToServer(url, app, chromeUA, acceptWebP)
@@ -162,7 +164,7 @@ func TestConvert(t *testing.T) {
 		contentType := helper.GetContentType(data)
 		assert.Equal(t, respType, contentType)
 	}
-	
+
 	// test Avif is processed in proxy mode
 	config.Config.EnableAVIF = true
 	for url, respType := range testChromeAvifLink {
@@ -240,36 +242,35 @@ func TestConvertProxyModeWork(t *testing.T) {
 func TestConvertProxyImgMap(t *testing.T) {
 	setupParam()
 	config.ProxyMode = false
-	config.Config.ImageMap = map[string]string {
-		"/2": "../pics/dir1",
-		"/3": "../pics3",  // Invalid path, does not exists
-		"www.invalid-path.com": "https://webp.sh", // Invalid, it does not start with '/'
-		"/www.weird-path.com": "https://webp.sh",
+	config.Config.ImageMap = map[string]string{
+		"/2":                            "../pics/dir1",
+		"/3":                            "../pics3",        // Invalid path, does not exists
+		"www.invalid-path.com":          "https://webp.sh", // Invalid, it does not start with '/'
+		"/www.weird-path.com":           "https://webp.sh",
 		"/www.even-more-werid-path.com": "https://webp.sh/images",
-		"http://example.com": "https://webp.sh",
+		"http://example.com":            "https://webp.sh",
 	}
 
 	var app = fiber.New()
 	app.Get("/*", Convert)
 
-
 	var testUrls = map[string]string{
-		"http://127.0.0.1:3333/webp_server.jpg": "image/webp",
-		"http://127.0.0.1:3333/2/inside.jpg": "image/webp",
-		"http://127.0.0.1:3333/www.weird-path.com/images/cover.jpg": "image/webp",
+		"http://127.0.0.1:3333/webp_server.jpg":                        "image/webp",
+		"http://127.0.0.1:3333/2/inside.jpg":                           "image/webp",
+		"http://127.0.0.1:3333/www.weird-path.com/images/cover.jpg":    "image/webp",
 		"http://127.0.0.1:3333/www.even-more-werid-path.com/cover.jpg": "image/webp",
-		"http://example.com/images/cover.jpg": "image/webp",
+		"http://example.com/images/cover.jpg":                          "image/webp",
 	}
 
 	var testUrlsLegacy = map[string]string{
 		"http://127.0.0.1:3333/webp_server.jpg": "image/jpeg",
-		"http://127.0.0.1:3333/2/inside.jpg": "image/jpeg",
-		"http://example.com/images/cover.jpg": "image/jpeg",
+		"http://127.0.0.1:3333/2/inside.jpg":    "image/jpeg",
+		"http://example.com/images/cover.jpg":   "image/jpeg",
 	}
 
 	var testUrlsInvalid = map[string]string{
-		"http://127.0.0.1:3333/3/does-not-exist.jpg": "", // Dir mapped does not exist
-		"http://127.0.0.1:3333/www.weird-path.com/cover.jpg": "", // Host mapped, final URI invalid 
+		"http://127.0.0.1:3333/3/does-not-exist.jpg":         "", // Dir mapped does not exist
+		"http://127.0.0.1:3333/www.weird-path.com/cover.jpg": "", // Host mapped, final URI invalid
 	}
 
 	for url, respType := range testUrls {
@@ -291,6 +292,35 @@ func TestConvertProxyImgMap(t *testing.T) {
 		resp, data := requestToServer(url, app, safariUA, acceptLegacy)
 		defer resp.Body.Close()
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		assert.Equal(t, respType, helper.GetContentType(data))
+	}
+}
+
+func TestConvertProxyImgMapCWD(t *testing.T) {
+	setupParam()
+	config.ProxyMode = false
+	config.Config.ImgPath = ".." // equivalent to "" when not testing
+	config.Config.ImageMap = map[string]string{
+		"/1":                     "../pics/dir1",
+		"/2":                     "../pics",
+		"/3":                     "../pics", // Invalid path, does not exists
+		"http://www.example.com": "https://webp.sh",
+	}
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	var testUrls = map[string]string{
+		"http://127.0.0.1:3333/1/inside.jpg":      "image/webp",
+		"http://127.0.0.1:3333/2/webp_server.jpg": "image/webp",
+		"http://127.0.0.1:3333/3/webp_server.jpg": "image/webp",
+		"http://www.example.com/images/cover.jpg": "image/webp",
+	}
+
+	for url, respType := range testUrls {
+		resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		assert.Equal(t, respType, helper.GetContentType(data))
 	}
 }
