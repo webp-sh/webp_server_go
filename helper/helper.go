@@ -25,16 +25,15 @@ func svgMatcher(buf []byte) bool {
 }
 
 func GetFileContentType(filename string) string {
-	if strings.HasSuffix(filename, ".webp") {
-		return "image/webp"
-	} else if strings.HasSuffix(filename, ".avif") {
-		return "image/avif"
-	} else {
-		// raw image, need to use filetype to determine
-		buf, _ := os.ReadFile(filename)
-		kind, _ := filetype.Match(buf)
-		return kind.MIME.Value
-	}
+	// raw image, need to use filetype to determine
+	buf, _ := os.ReadFile(filename)
+	return GetContentType(buf)
+}
+
+func GetContentType(buf []byte) string {
+	// raw image, need to use filetype to determine
+	kind, _ := filetype.Match(buf)
+	return kind.MIME.Value
 }
 
 func FileCount(dir string) int64 {
@@ -96,11 +95,11 @@ func CheckAllowedType(imgFilename string) bool {
 	return false
 }
 
-func GenOptimizedAbsPath(metadata config.MetaFile) (string, string) {
+func GenOptimizedAbsPath(metadata config.MetaFile, subdir string) (string, string) {
 	webpFilename := fmt.Sprintf("%s.webp", metadata.Id)
 	avifFilename := fmt.Sprintf("%s.avif", metadata.Id)
-	webpAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, webpFilename))
-	avifAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, avifFilename))
+	webpAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, subdir, webpFilename))
+	avifAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, subdir, avifFilename))
 	return avifAbsolutePath, webpAbsolutePath
 }
 

@@ -12,7 +12,6 @@ func TestMain(m *testing.M) {
 	config.LoadConfig()
 	m.Run()
 	config.ConfigPath = "config.json"
-
 }
 
 func TestFileCount(t *testing.T) {
