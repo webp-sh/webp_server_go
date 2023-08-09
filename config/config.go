@@ -51,18 +51,18 @@ WantedBy=multi-user.target`
 )
 
 var (
-	ConfigPath  string
-	Jobs        int
-	DumpSystemd bool
-	DumpConfig  bool
-	ShowVersion bool
-	ProxyMode   bool
-	Prefetch    bool
-	Config      jsonFile
-	Version     = "0.9.8"
-	WriteLock   = cache.New(5*time.Minute, 10*time.Minute)
-	RemoteRaw   = "./remote-raw"
-	Metadata    = "./metadata"
+	ConfigPath     string
+	Jobs           int
+	DumpSystemd    bool
+	DumpConfig     bool
+	ShowVersion    bool
+	ProxyMode      bool
+	Prefetch       bool
+	Config         jsonFile
+	Version        = "0.9.9"
+	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
+	RemoteRaw      = "./remote-raw"
+	Metadata       = "./metadata"
 	LocalHostAlias = "local"
 )
 

@@ -9,6 +9,8 @@ import (
 	"time"
 	"webp_server_go/config"
 
+	"slices"
+
 	"github.com/h2non/filetype"
 
 	"github.com/cespare/xxhash"
@@ -83,14 +85,13 @@ func ImageExists(filename string) bool {
 }
 
 func CheckAllowedType(imgFilename string) bool {
-	for _, allowedType := range config.Config.AllowedTypes {
-		if allowedType == "*" {
-			return true
-		}
-		allowedType = "." + strings.ToLower(allowedType)
-		if strings.HasSuffix(strings.ToLower(imgFilename), allowedType) {
-			return true
-		}
+	if config.Config.AllowedTypes[0] == "*" {
+		return true
+	}
+	imgFilenameExtension := strings.ToLower(path.Ext(imgFilename))
+	imgFilenameExtension = strings.TrimPrefix(imgFilenameExtension, ".") // .jpg -> jpg
+	if slices.Contains(config.Config.AllowedTypes, imgFilenameExtension) {
+		return true
 	}
 	return false
 }
@@ -137,19 +138,20 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 		supported["avif"] = true
 	}
 
-	// chrome on iOS will not send valid image accept header
-	if strings.Contains(ua, "iPhone OS 14") || strings.Contains(ua, "CPU OS 14") ||
-		strings.Contains(ua, "iPhone OS 15") || strings.Contains(ua, "CPU OS 15") ||
-		strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") ||
-		strings.Contains(ua, "iPhone OS 17") || strings.Contains(ua, "CPU OS 17") ||
-		strings.Contains(ua, "Android") || strings.Contains(ua, "Linux") {
-		supported["webp"] = true
+	supportedWebPs := []string{"iPhone OS 14", "CPU OS 14", "iPhone OS 15", "CPU OS 15", "iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17"}
+	for _, version := range supportedWebPs {
+		if strings.Contains(ua, version) {
+			supported["webp"] = true
+			break
+		}
 	}
 
-	// iOS 16 supports AVIF
-	if strings.Contains(ua, "iPhone OS 16") || strings.Contains(ua, "CPU OS 16") ||
-		strings.Contains(ua, "iPhone OS 17") || strings.Contains(ua, "CPU OS 17") {
-		supported["avif"] = true
+	supportedAVIFs := []string{"iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17"}
+	for _, version := range supportedAVIFs {
+		if strings.Contains(ua, version) {
+			supported["avif"] = true
+			break
+		}
 	}
 
 	// save true value's key to slice
