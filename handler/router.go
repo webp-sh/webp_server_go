@@ -78,11 +78,11 @@ func Convert(c *fiber.Ctx) error {
 					targetHostUrl, _ := url.Parse(uriMapTarget)
 					targetHostName = targetHostUrl.Host
 					targetHost = targetHostUrl.Scheme + "://" + targetHostUrl.Host
-					reqURI          = strings.Replace(reqURI,          uriMap, targetHostUrl.Path, 1)
+					reqURI = strings.Replace(reqURI, uriMap, targetHostUrl.Path, 1)
 					reqURIwithQuery = strings.Replace(reqURIwithQuery, uriMap, targetHostUrl.Path, 1)
 					proxyMode = true
 				} else {
-					reqURI          = strings.Replace(reqURI,          uriMap, uriMapTarget, 1)
+					reqURI = strings.Replace(reqURI, uriMap, uriMapTarget, 1)
 					reqURIwithQuery = strings.Replace(reqURIwithQuery, uriMap, uriMapTarget, 1)
 				}
 				break
@@ -106,15 +106,15 @@ func Convert(c *fiber.Ctx) error {
 		realRemoteAddr = targetHost + reqURIwithQuery
 		log.Debugf("realRemoteAddr is %s", realRemoteAddr)
 	}
-	
+
 	var rawImageAbs string
 	var metadata = config.MetaFile{}
 	if proxyMode {
 		// this is proxyMode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
 		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
-		
+
 		metadata = fetchRemoteImg(realRemoteAddr, targetHostName)
-		rawImageAbs = path.Join(config.RemoteRaw, targetHostName,  metadata.Id)
+		rawImageAbs = path.Join(config.RemoteRaw, targetHostName, metadata.Id)
 	} else {
 		// not proxyMode, we'll use local path
 		metadata = helper.ReadMetadata(reqURIwithQuery, "", targetHostName)
@@ -144,6 +144,7 @@ func Convert(c *fiber.Ctx) error {
 
 	// Check the original image for existence,
 	if !helper.ImageExists(rawImageAbs) {
+		helper.DeleteMetadata(reqURIwithQuery, targetHostName)
 		msg := "image not found"
 		_ = c.Send([]byte(msg))
 		log.Warn(msg)
