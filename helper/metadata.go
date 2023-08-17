@@ -68,3 +68,12 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 	_ = os.WriteFile(path.Join(config.Metadata, subdir, data.Id+".json"), buf, 0644)
 	return data
 }
+
+func DeleteMetadata(p string, subdir string) {
+	var id, _, _ = getId(p)
+	metadataPath := path.Join(config.Metadata, subdir, id+".json")
+	err := os.Remove(metadataPath)
+	if err != nil {
+		log.Warnf("failed to delete metadata", err)
+	}
+}

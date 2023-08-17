@@ -12,7 +12,7 @@
 
 This is a Server based on Golang, which allows you to serve WebP images on the fly.
 
-Currently supported image format: JPEG, PNG, BMP, GIF, SVG
+Currently supported image format: JPEG, PNG, BMP, GIF, SVG, HEIC
 
 > e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp` format without changing the URL.
 
@@ -35,6 +35,7 @@ services:
     volumes:
       - ./path/to/pics:/opt/pics
       - ./exhaust:/opt/exhaust
+      - ./metadata:/opt/metadata
     ports:
       -  127.0.0.1:3333:3333
 ```
@@ -49,6 +50,7 @@ Then
 
 * `./path/to/pics` should be changed to `/var/www/img.webp.sh`
 * `./exhaust` is cache folder for output images, by default it will be in `exhaust` directory alongside with `docker-compose.yml` file, if you'd like to keep cached images in another folder, you can change  `./exhaust` to `/some/other/path/to/exhaust`
+* `./metadata` is cache folder for images' metadata, by default it will be in `metadata` directory alongside with `docker-compose.yml` file
 
 Start the container using:
 
@@ -77,6 +79,7 @@ services:
     volumes:
       - ./path/to/pics:/opt/pics
       - ./path/to/exhaust:/opt/exhaust
+      - ./path/to/metadata:/opt/metadata
       - ./config.json:/etc/config.json
     ports:
       -  127.0.0.1:3333:3333
