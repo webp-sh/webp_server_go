@@ -74,6 +74,6 @@ func DeleteMetadata(p string, subdir string) {
 	metadataPath := path.Join(config.Metadata, subdir, id+".json")
 	err := os.Remove(metadataPath)
 	if err != nil {
-		log.Warnf("failed to delete metadata", err)
+		log.Warnln("failed to delete metadata", err)
 	}
 }
