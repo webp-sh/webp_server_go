@@ -216,6 +216,15 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 		return errors.New("encoder: ignore image type")
 	}
 
+	// If the image is smaller than the minimum file size set in config, we just copy it without any compressions.
+	if config.Config.MinFileSizeBytes > 0 {
+		originalSize := fileSizeBytes(p1)
+		if originalSize < int64(config.Config.MinFileSizeBytes) {
+			copyImage(p1, p2)
+			return nil
+		}
+	}
+
 	if config.Config.EnableExtraParams {
 		err = resizeImage(img, extraParams)
 		if err != nil {
@@ -294,4 +303,25 @@ func convertLog(itype, p1 string, p2 string, quality int) {
 	}
 	log.Infof("%s@%d%%: %s->%s %d->%d %.2f%% deflated", itype, quality,
 		p1, p2, oldf.Size(), newf.Size(), float32(newf.Size())/float32(oldf.Size())*100)
+}
+
+func fileSizeBytes(file string) int64 {
+	fileInfo, err := os.Stat(file)
+	if err != nil {
+		log.Error(err)
+		return 0
+	}
+	return fileInfo.Size()
+}
+
+func copyImage(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(dst, data, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
 }

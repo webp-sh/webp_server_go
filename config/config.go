@@ -82,6 +82,7 @@ type jsonFile struct {
 	ExhaustPath       string            `json:"EXHAUST_PATH"`
 	EnableAVIF        bool              `json:"ENABLE_AVIF"`
 	EnableExtraParams bool              `json:"ENABLE_EXTRA_PARAMS"`
+	MinFileSizeBytes  int64             `json:"MIN_FILE_SIZE_BYTES,string"`
 }
 
 func init() {

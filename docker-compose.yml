@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  webp:
+    build:
+      context: .
+    restart: always
+    environment:
+      - MALLOC_ARENA_MAX=1
+    volumes:
+      - ./p4:/opt/pics
+      - ./exhaust:/opt/exhaust
+      - ./metadata:/opt/metadata
+    ports:
+      -  127.0.0.1:3333:3333
