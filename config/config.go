@@ -94,13 +94,32 @@ func init() {
 }
 
 func LoadConfig() {
-	jsonObject, err := os.Open(ConfigPath)
+	var paths = []string{
+		ConfigPath,
+		"/etc/config.json",
+	}
+
+	var (
+		jsonObject *os.File
+		err        error
+	)
+
+	for _, path := range paths {
+		jsonObject, err = os.Open(path)
+		if err == nil {
+			defer jsonObject.Close()
+			decoder := json.NewDecoder(jsonObject)
+			decodeErr := decoder.Decode(&Config)
+			if decodeErr == nil {
+				break
+			}
+		}
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	decoder := json.NewDecoder(jsonObject)
-	_ = decoder.Decode(&Config)
-	_ = jsonObject.Close()
+
 	switchProxyMode()
 	Config.ImageMap = parseImgMap(Config.ImageMap)
 }
