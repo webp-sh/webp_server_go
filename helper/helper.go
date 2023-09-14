@@ -55,7 +55,7 @@ func FileCount(dir string) int64 {
 
 func ImageExists(filename string) bool {
 	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) || err != nil {
 		return false
 	}
 	//  if file size is less than 100 bytes, we assume it's invalid file
