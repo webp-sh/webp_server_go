@@ -20,12 +20,12 @@ var (
 )
 
 func init() {
+	vips.LoggingSettings(nil, vips.LogLevelError)
 	vips.Startup(&vips.Config{
 		ConcurrencyLevel: runtime.NumCPU(),
 	})
 	boolFalse.Set(false)
 	intMinusOne.Set(-1)
-
 }
 
 func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {

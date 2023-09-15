@@ -47,23 +47,17 @@ func setupLogger() {
 }
 
 func init() {
-	// main init is the last one to be called
-	flag.Parse()
-	config.LoadConfig()
-	setupLogger()
-}
-
-func main() {
 	// Our banner
 	banner := fmt.Sprintf(`
-▌ ▌   ▌  ▛▀▖ ▞▀▖                ▞▀▖
-▌▖▌▞▀▖▛▀▖▙▄▘ ▚▄ ▞▀▖▙▀▖▌ ▌▞▀▖▙▀▖ ▌▄▖▞▀▖
-▙▚▌▛▀ ▌ ▌▌   ▖ ▌▛▀ ▌  ▐▐ ▛▀ ▌   ▌ ▌▌ ▌
-▘ ▘▝▀▘▀▀ ▘   ▝▀ ▝▀▘▘   ▘ ▝▀▘▘   ▝▀ ▝▀
-
-WebP Server Go - v%s
-Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
-
+		▌ ▌   ▌  ▛▀▖ ▞▀▖                ▞▀▖
+		▌▖▌▞▀▖▛▀▖▙▄▘ ▚▄ ▞▀▖▙▀▖▌ ▌▞▀▖▙▀▖ ▌▄▖▞▀▖
+		▙▚▌▛▀ ▌ ▌▌   ▖ ▌▛▀ ▌  ▐▐ ▛▀ ▌   ▌ ▌▌ ▌
+		▘ ▘▝▀▘▀▀ ▘   ▝▀ ▝▀▘▘   ▘ ▝▀▘▘   ▝▀ ▝▀
+		
+		WebP Server Go - v%s
+		Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
+	// main init is the last one to be called
+	flag.Parse()
 	// process cli params
 	if config.DumpConfig {
 		fmt.Println(config.SampleConfig)
@@ -77,11 +71,15 @@ Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
 		fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner+"", 0x1B)
 		os.Exit(0)
 	}
+	config.LoadConfig()
+	fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner, 0x1B)
+	setupLogger()
+}
 
+func main() {
 	if config.Prefetch {
 		go encoder.PrefetchImages()
 	}
-
 	app.Use(etag.New(etag.Config{
 		Weak: true,
 	}))
@@ -89,7 +87,6 @@ Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
 	listenAddress := config.Config.Host + ":" + config.Config.Port
 	app.Get("/*", handler.Convert)
 
-	fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner, 0x1B)
 	fmt.Println("WebP Server Go is Running on http://" + listenAddress)
 
 	_ = app.Listen(listenAddress)
