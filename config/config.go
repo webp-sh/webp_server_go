@@ -59,7 +59,7 @@ var (
 	ProxyMode      bool
 	Prefetch       bool
 	Config         jsonFile
-	Version        = "0.9.9"
+	Version        = "0.9.11"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw      = "./remote-raw"
 	Metadata       = "./metadata"
