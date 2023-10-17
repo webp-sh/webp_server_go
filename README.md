@@ -74,8 +74,6 @@ services:
     restart: always
     environment:
       - MALLOC_ARENA_MAX=1
-      # - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
-      # - LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.6
     volumes:
       - ./path/to/pics:/opt/pics
       - ./path/to/exhaust:/opt/exhaust
@@ -83,11 +81,6 @@ services:
       - ./config.json:/etc/config.json
     ports:
       -  127.0.0.1:3333:3333
-    deploy:
-      resources:
-        limits:
-          memory: 400M
-    memswap_limit: 400M
 ```
 
 You can refer to [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/) for more info, such as custom config, AVIF support etc.
@@ -96,7 +89,7 @@ You can refer to [Docker | WebP Server Documentation](https://docs.webp.sh/usage
 
 If you'd like to use with binary, please consult to [Use with Binary(Advanced) | WebP Server Documentation](https://docs.webp.sh/usage/usage-with-binary/)
 
->spoiler alert: you may encounter issues with `glibc` and some dependency libraries.
+> spoiler alert: you may encounter issues with `glibc` and some dependency libraries.
 
 For `supervisor` or detailed Nginx configuration, please read our documentation at [https://docs.webp.sh/](https://docs.webp.sh/)
 
