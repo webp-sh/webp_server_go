@@ -191,3 +191,11 @@ func HashFile(filepath string) string {
 	buf, _ := os.ReadFile(filepath)
 	return fmt.Sprintf("%x", xxhash.Sum64(buf))
 }
+
+func GetEnv(key string, defaultVal ...string) string {
+	value := os.Getenv(key)
+	if value == "" && len(defaultVal) > 0 {
+		return defaultVal[0]
+	}
+	return value
+}

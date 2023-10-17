@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
 	"webp_server_go/handler"
+	"webp_server_go/helper"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/etag"
@@ -16,11 +18,24 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	ReadBufferSizeStr   = helper.GetEnv("READ_BUFFER_SIZE", "4096") // Default: 4096
+	ReadBufferSize, _   = strconv.Atoi(ReadBufferSizeStr)
+	ConcurrencyStr      = helper.GetEnv("CONCURRENCY", "262144") // Default: 256 * 1024
+	Concurrency, _      = strconv.Atoi(ConcurrencyStr)
+	DisableKeepaliveStr = helper.GetEnv("DISABLE_KEEPALIVE", "false") // Default: false
+	DisableKeepalive, _ = strconv.ParseBool(DisableKeepaliveStr)
+)
+
+// https://docs.gofiber.io/api/fiber
 var app = fiber.New(fiber.Config{
 	ServerHeader:          "WebP Server Go",
 	AppName:               "WebP Server Go",
 	DisableStartupMessage: true,
 	ProxyHeader:           "X-Real-IP",
+	ReadBufferSize:        ReadBufferSize,   // per-connection buffer size for requests' reading. This also limits the maximum header size. Increase this buffer if your clients send multi-KB RequestURIs and/or multi-KB headers (for example, BIG cookies).
+	Concurrency:           Concurrency,      // Maximum number of concurrent connections.
+	DisableKeepalive:      DisableKeepalive, // Disable keep-alive connections, the server will close incoming connections after sending the first response to the client
 })
 
 func setupLogger() {

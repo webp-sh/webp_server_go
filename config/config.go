@@ -59,7 +59,7 @@ var (
 	ProxyMode      bool
 	Prefetch       bool
 	Config         jsonFile
-	Version        = "0.9.11"
+	Version        = "0.9.12"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw      = "./remote-raw"
 	Metadata       = "./metadata"
@@ -86,9 +86,9 @@ type jsonFile struct {
 
 func init() {
 	flag.StringVar(&ConfigPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
-	flag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert image to webp")
+	flag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert image to WebP format.")
 	flag.IntVar(&Jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
-	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json")
+	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json.")
 	flag.BoolVar(&DumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
 }
