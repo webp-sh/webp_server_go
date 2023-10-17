@@ -1,10 +1,12 @@
 package helper
 
 import (
+	"slices"
 	"testing"
 	"webp_server_go/config"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/valyala/fasthttp"
 )
 
 func TestMain(m *testing.M) {
@@ -44,4 +46,52 @@ func TestCheckAllowedType(t *testing.T) {
 	t.Run("allowed type", func(t *testing.T) {
 		assert.True(t, CheckAllowedType("test.jpg"))
 	})
+}
+
+func TestGuessSupportedFormat(t *testing.T) {
+	tests := []struct {
+		name      string
+		userAgent string
+		accept    string
+		expected  []string
+	}{
+		{
+			name:      "WebP/AVIF Supported",
+			userAgent: "iPhone OS 16",
+			accept:    "image/webp, image/png",
+			expected:  []string{"raw", "webp", "avif"},
+		},
+		{
+			name:      "Both Supported",
+			userAgent: "iPhone OS 16",
+			accept:    "image/webp, image/avif",
+			expected:  []string{"raw", "webp", "avif"},
+		},
+		{
+			name:      "No Supported Formats",
+			userAgent: "Unknown OS",
+			accept:    "image/jpeg, image/gif",
+			expected:  []string{"raw"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			header := &fasthttp.RequestHeader{}
+			header.Set("user-agent", test.userAgent)
+			header.Set("accept", test.accept)
+
+			result := GuessSupportedFormat(header)
+
+			if len(result) != len(test.expected) {
+				t.Errorf("Expected %v, but got %v", test.expected, result)
+			}
+
+			for _, format := range test.expected {
+				if !slices.Contains(result, format) {
+					t.Errorf("Expected format %s is not in the result", format)
+				}
+			}
+		})
+	}
 }
