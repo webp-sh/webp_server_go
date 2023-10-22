@@ -8,6 +8,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.49.2
 	github.com/h2non/filetype v1.1.4-0.20230123234534-cfcd7d097bc4
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
+	github.com/jeremytorres/rawparser v1.0.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/sirupsen/logrus v1.9.3
