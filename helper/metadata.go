@@ -56,7 +56,7 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 		Id: id,
 	}
 
-	if config.ProxyMode {
+	if etag != "" {
 		data.Path = p
 		data.Checksum = HashString(etag)
 	} else {
