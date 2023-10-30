@@ -112,12 +112,21 @@ func convertImage(raw, optimized, imageType string, extraParams config.ExtraPara
 	if err != nil {
 		log.Error(err.Error())
 	}
-
+	var jpgRaw = ConvertRawToJPG(raw, optimized)
+	if jpgRaw != raw {
+		raw = jpgRaw
+	}
 	switch imageType {
 	case "webp":
 		err = webpEncoder(raw, optimized, extraParams)
 	case "avif":
 		err = avifEncoder(raw, optimized, extraParams)
+	}
+	if jpgRaw == raw {
+		err := os.Remove(jpgRaw)
+		if err != nil {
+			log.Warnln("failed to delete converted file", err)
+		}
 	}
 	return err
 }
