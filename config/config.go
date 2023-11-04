@@ -73,7 +73,7 @@ type MetaFile struct {
 	Checksum string `json:"checksum"` // hash of original file or hash(etag). Use this to identify changes
 }
 
-type webpConfig struct {
+type WebpConfig struct {
 	Host              string            `json:"HOST"`
 	Port              string            `json:"PORT"`
 	ImgPath           string            `json:"IMG_PATH"`
@@ -85,8 +85,8 @@ type webpConfig struct {
 	EnableExtraParams bool              `json:"ENABLE_EXTRA_PARAMS"`
 }
 
-func NewWebPConfig() *webpConfig {
-	return &webpConfig{
+func NewWebPConfig() *WebpConfig {
+	return &WebpConfig{
 		Host:              "0.0.0.0",
 		Port:              "3333",
 		ImgPath:           "./pics",
