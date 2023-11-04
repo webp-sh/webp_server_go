@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"os"
 	"regexp"
 	"runtime"
@@ -168,9 +167,8 @@ func LoadConfig() {
 		// TODO
 	}
 
-	fmt.Println("Config init complete")
-	fmt.Println("Config", Config)
-
+	log.Debugln("Config init complete")
+	log.Debugln("Config", Config)
 }
 
 func parseImgMap(imgMap map[string]string) map[string]string {
