@@ -2,7 +2,6 @@ package encoder
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -127,7 +126,7 @@ func convertImage(raw, optimized, imageType string, extraParams config.ExtraPara
 	}
 	// Remove converted file after convertion
 	if converted {
-		fmt.Println("delete jpgRaw", convertedRaw)
+		log.Infoln("Removing intermediate conversion file:", convertedRaw)
 		err := os.Remove(convertedRaw)
 		if err != nil {
 			log.Warnln("failed to delete converted file", err)
