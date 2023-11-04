@@ -1,15 +1,16 @@
 package encoder
 
 import (
-	"github.com/jeremytorres/rawparser"
 	"path/filepath"
 	"strings"
+
+	"github.com/jeremytorres/rawparser"
 )
 
-func ConvertRawToJPG(rawPath, optimizedPath string) string {
+func ConvertRawToJPG(rawPath, optimizedPath string) (string, bool) {
 	if !strings.HasSuffix(strings.ToLower(rawPath), ".nef") {
 		// Maybe can use rawParser to convert other raw files to jpg, but I haven't tested it
-		return rawPath
+		return rawPath, false
 	}
 	parser, _ := rawparser.NewNefParser(true)
 	info := &rawparser.RawFileInfo{
@@ -20,7 +21,7 @@ func ConvertRawToJPG(rawPath, optimizedPath string) string {
 	_, err := parser.ProcessFile(info)
 	if err == nil {
 		_, file := filepath.Split(rawPath)
-		return optimizedPath + file + "_extracted.jpg"
+		return optimizedPath + file + "_extracted.jpg", true
 	}
-	return rawPath
+	return rawPath, false
 }

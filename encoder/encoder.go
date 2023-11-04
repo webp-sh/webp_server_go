@@ -112,9 +112,11 @@ func convertImage(raw, optimized, imageType string, extraParams config.ExtraPara
 	if err != nil {
 		log.Error(err.Error())
 	}
-	var jpgRaw = ConvertRawToJPG(raw, optimized)
-	if jpgRaw != raw {
-		raw = jpgRaw
+	// Convert NEF image to JPG first
+	var convertedRaw, converted = ConvertRawToJPG(raw, optimized)
+	// If converted, use converted file as raw
+	if converted {
+		raw = convertedRaw
 	}
 	switch imageType {
 	case "webp":
@@ -122,8 +124,10 @@ func convertImage(raw, optimized, imageType string, extraParams config.ExtraPara
 	case "avif":
 		err = avifEncoder(raw, optimized, extraParams)
 	}
-	if jpgRaw == raw {
-		err := os.Remove(jpgRaw)
+	// Remove converted file after convertion
+	if converted {
+		log.Infoln("Removing intermediate conversion file:", convertedRaw)
+		err := os.Remove(convertedRaw)
 		if err != nil {
 			log.Warnln("failed to delete converted file", err)
 		}

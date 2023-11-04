@@ -145,7 +145,7 @@ func Convert(c *fiber.Ctx) error {
 	// Check the original image for existence,
 	if !helper.ImageExists(rawImageAbs) {
 		helper.DeleteMetadata(reqURIwithQuery, targetHostName)
-		msg := "image not found"
+		msg := "Image not found!"
 		_ = c.Send([]byte(msg))
 		log.Warn(msg)
 		_ = c.SendStatus(404)
