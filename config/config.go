@@ -28,7 +28,7 @@ const (
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
   "IMG_MAP": {},
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg"],
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","nef"],
   "ENABLE_AVIF": false,
   "ENABLE_EXTRA_PARAMS": false
 }`
@@ -91,7 +91,7 @@ func NewWebPConfig() *WebpConfig {
 		Port:              "3333",
 		ImgPath:           "./pics",
 		Quality:           80,
-		AllowedTypes:      []string{"jpg", "png", "jpeg", "bmp", "svg"},
+		AllowedTypes:      []string{"jpg", "png", "jpeg", "bmp", "svg", "nef"},
 		ImageMap:          map[string]string{},
 		ExhaustPath:       "./exhaust",
 		EnableAVIF:        false,
