@@ -28,27 +28,13 @@ const (
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
   "IMG_MAP": {},
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","nef"],
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","heic","nef"],
   "ENABLE_AVIF": false,
   "ENABLE_EXTRA_PARAMS": false
+  "READ_BUFFER_SIZE": 4096,
+  "CONCURRENCY": 262144,
+  "DISABLE_KEEPALIVE": false
 }`
-
-	SampleSystemd = `
-[Unit]
-Description=WebP Server Go
-Documentation=https://github.com/webp-sh/webp_server_go
-After=nginx.target
-
-[Service]
-Type=simple
-StandardError=journal
-WorkingDirectory=/opt/webps
-ExecStart=/opt/webps/webp-server --config /opt/webps/config.json
-Restart=always
-RestartSec=3s
-
-[Install]
-WantedBy=multi-user.target`
 )
 
 var (
@@ -83,6 +69,9 @@ type WebpConfig struct {
 	ExhaustPath       string            `json:"EXHAUST_PATH"`
 	EnableAVIF        bool              `json:"ENABLE_AVIF"`
 	EnableExtraParams bool              `json:"ENABLE_EXTRA_PARAMS"`
+	ReadBufferSize    int               `json:"READ_BUFFER_SIZE"`
+	Concurrency       int               `json:"CONCURRENCY"`
+	DisableKeepalive  bool              `json:"DISABLE_KEEPALIVE"`
 }
 
 func NewWebPConfig() *WebpConfig {
@@ -96,6 +85,9 @@ func NewWebPConfig() *WebpConfig {
 		ExhaustPath:       "./exhaust",
 		EnableAVIF:        false,
 		EnableExtraParams: false,
+		ReadBufferSize:    4096,
+		Concurrency:       262144,
+		DisableKeepalive:  false,
 	}
 }
 
@@ -104,7 +96,6 @@ func init() {
 	flag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert image to WebP format.")
 	flag.IntVar(&Jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
 	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json.")
-	flag.BoolVar(&DumpSystemd, "dump-systemd", false, "Print sample systemd service file.")
 	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
 }
 
@@ -165,6 +156,32 @@ func LoadConfig() {
 	}
 	if os.Getenv("WEBP_IMG_MAP") != "" {
 		// TODO
+	}
+	if os.Getenv("WEBP_READ_BUFFER_SIZE") != "" {
+		readBufferSize, err := strconv.Atoi(os.Getenv("WEBP_READ_BUFFER_SIZE"))
+		if err != nil {
+			log.Warnf("WEBP_READ_BUFFER_SIZE is not a valid integer, using value in config.json %d", Config.ReadBufferSize)
+		} else {
+			Config.ReadBufferSize = readBufferSize
+		}
+	}
+	if os.Getenv("WEBP_CONCURRENCY") != "" {
+		concurrency, err := strconv.Atoi(os.Getenv("WEBP_CONCURRENCY"))
+		if err != nil {
+			log.Warnf("WEBP_CONCURRENCY is not a valid integer, using value in config.json %d", Config.Concurrency)
+		} else {
+			Config.Concurrency = concurrency
+		}
+	}
+	if os.Getenv("WEBP_DISABLE_KEEPALIVE") != "" {
+		disableKeepalive := os.Getenv("WEBP_DISABLE_KEEPALIVE")
+		if disableKeepalive == "true" {
+			Config.DisableKeepalive = true
+		} else if disableKeepalive == "false" {
+			Config.DisableKeepalive = false
+		} else {
+			log.Warnf("WEBP_DISABLE_KEEPALIVE is not a valid boolean, using value in config.json %t", Config.DisableKeepalive)
+		}
 	}
 
 	log.Debugln("Config init complete")
