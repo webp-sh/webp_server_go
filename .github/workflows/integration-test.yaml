@@ -32,7 +32,7 @@ jobs:
       - name: Send Requests to Server
         run: |
           cd pics
-          find * -type f -print | xargs -I {} curl -H "User-Agent: Mozilla/5.0 Gecko/20100101 Firefox/98.0" http://localhost:3333/{}
+          find * -type f -print | xargs -I {} curl -H "Accept: image/webp" http://localhost:3333/{}
 
       - name: Get container RAM stats
         run: |
@@ -61,7 +61,7 @@ jobs:
       - name: Send Requests to Server
         run: |
           cd pics
-          find * -type f -print | xargs -I {} curl -H "User-Agent: Mozilla/5.0 Gecko/20100101 Firefox/98.0" http://localhost:3333/{}
+          find * -type f -print | xargs -I {} curl -H "Accept: image/webp" http://localhost:3333/{}
 
       - name: Get container RAM stats
         run: |

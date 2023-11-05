@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -27,7 +28,7 @@ const (
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
   "IMG_MAP": {},
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg"],
+  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","nef"],
   "ENABLE_AVIF": false,
   "ENABLE_EXTRA_PARAMS": false
 }`
@@ -58,8 +59,8 @@ var (
 	ShowVersion    bool
 	ProxyMode      bool
 	Prefetch       bool
-	Config         jsonFile
-	Version        = "0.9.12"
+	Config         = NewWebPConfig()
+	Version        = "0.10.1"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw      = "./remote-raw"
 	Metadata       = "./metadata"
@@ -72,7 +73,7 @@ type MetaFile struct {
 	Checksum string `json:"checksum"` // hash of original file or hash(etag). Use this to identify changes
 }
 
-type jsonFile struct {
+type WebpConfig struct {
 	Host              string            `json:"HOST"`
 	Port              string            `json:"PORT"`
 	ImgPath           string            `json:"IMG_PATH"`
@@ -82,6 +83,20 @@ type jsonFile struct {
 	ExhaustPath       string            `json:"EXHAUST_PATH"`
 	EnableAVIF        bool              `json:"ENABLE_AVIF"`
 	EnableExtraParams bool              `json:"ENABLE_EXTRA_PARAMS"`
+}
+
+func NewWebPConfig() *WebpConfig {
+	return &WebpConfig{
+		Host:              "0.0.0.0",
+		Port:              "3333",
+		ImgPath:           "./pics",
+		Quality:           80,
+		AllowedTypes:      []string{"jpg", "png", "jpeg", "bmp", "svg", "nef"},
+		ImageMap:          map[string]string{},
+		ExhaustPath:       "./exhaust",
+		EnableAVIF:        false,
+		EnableExtraParams: false,
+	}
 }
 
 func init() {
@@ -103,6 +118,57 @@ func LoadConfig() {
 	_ = jsonObject.Close()
 	switchProxyMode()
 	Config.ImageMap = parseImgMap(Config.ImageMap)
+
+	// Read from ENV for override
+	if os.Getenv("WEBP_HOST") != "" {
+		Config.Host = os.Getenv("WEBP_HOST")
+	}
+	if os.Getenv("WEBP_PORT") != "" {
+		Config.Port = os.Getenv("WEBP_PORT")
+	}
+	if os.Getenv("WEBP_IMG_PATH") != "" {
+		Config.ImgPath = os.Getenv("WEBP_IMG_PATH")
+	}
+	if os.Getenv("WEBP_EXHAUST_PATH") != "" {
+		Config.ExhaustPath = os.Getenv("WEBP_EXHAUST_PATH")
+	}
+	if os.Getenv("WEBP_QUALITY") != "" {
+		quality, err := strconv.Atoi(os.Getenv("WEBP_QUALITY"))
+		if err != nil {
+			log.Warnf("WEBP_QUALITY is not a valid integer, using value in config.json %d", Config.Quality)
+		} else {
+			Config.Quality = quality
+		}
+	}
+	if os.Getenv("WEBP_ALLOWED_TYPES") != "" {
+		Config.AllowedTypes = strings.Split(os.Getenv("WEBP_ALLOWED_TYPES"), ",")
+	}
+	if os.Getenv("WEBP_ENABLE_AVIF") != "" {
+		enableAVIF := os.Getenv("WEBP_ENABLE_AVIF")
+		if enableAVIF == "true" {
+			Config.EnableAVIF = true
+		} else if enableAVIF == "false" {
+			Config.EnableAVIF = false
+		} else {
+			log.Warnf("WEBP_ENABLE_AVIF is not a valid boolean, using value in config.json %t", Config.EnableAVIF)
+		}
+	}
+	if os.Getenv("WEBP_ENABLE_EXTRA_PARAMS") != "" {
+		enableExtraParams := os.Getenv("WEBP_ENABLE_EXTRA_PARAMS")
+		if enableExtraParams == "true" {
+			Config.EnableExtraParams = true
+		} else if enableExtraParams == "false" {
+			Config.EnableExtraParams = false
+		} else {
+			log.Warnf("WEBP_ENABLE_EXTRA_PARAMS is not a valid boolean, using value in config.json %t", Config.EnableExtraParams)
+		}
+	}
+	if os.Getenv("WEBP_IMG_MAP") != "" {
+		// TODO
+	}
+
+	log.Debugln("Config init complete")
+	log.Debugln("Config", Config)
 }
 
 func parseImgMap(imgMap map[string]string) map[string]string {
