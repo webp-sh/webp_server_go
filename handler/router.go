@@ -37,6 +37,14 @@ func Convert(c *fiber.Ctx) error {
 
 	log.Debugf("Incoming connection from %s %s %s", c.IP(), reqHostname, reqURIwithQuery)
 
+	// /health endpoint
+	if reqURI == "/health" {
+		c.SendString("UP!")
+		c.SendStatus(http.StatusOK)
+		return nil
+	}
+
+
 	if !helper.CheckAllowedType(filename) {
 		msg := "File extension not allowed! " + filename
 		log.Warn(msg)
