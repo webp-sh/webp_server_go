@@ -84,9 +84,16 @@ func fetchRemoteImg(url string, subdir string) config.MetaFile {
 	localRawImagePath := path.Join(config.RemoteRaw, subdir, metadata.Id)
 
 	if !helper.ImageExists(localRawImagePath) || metadata.Checksum != helper.HashString(etag) {
-		// remote file has changed or local file not exists
-		log.Info("Remote file not found in remote-raw, re-fetching...")
 		cleanProxyCache(path.Join(config.Config.ExhaustPath, subdir, metadata.Id+"*"))
+		if metadata.Checksum != helper.HashString(etag) {
+			// remote file has changed
+			log.Info("Remote file changed, updating metadata and fetching image source...")
+			helper.DeleteMetadata(url, subdir)
+			helper.WriteMetadata(url, etag, subdir)
+		} else {
+			// local file not exists
+			log.Info("Remote file not found in remote-raw, re-fetching...")
+		}
 		downloadFile(localRawImagePath, url)
 	}
 	return metadata
