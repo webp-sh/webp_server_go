@@ -85,6 +85,8 @@ func main() {
 	}))
 
 	listenAddress := config.Config.Host + ":" + config.Config.Port
+
+	app.Get("/healthz", handler.Healthz)
 	app.Get("/*", handler.Convert)
 
 	fmt.Println("WebP Server Go is Running on http://" + listenAddress)
