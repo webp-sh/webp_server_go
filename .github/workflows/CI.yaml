@@ -79,6 +79,8 @@ jobs:
 
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
+        permissions: 
+          pull-requests: write 
         with:
           message: |
             ```
