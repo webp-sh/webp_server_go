@@ -79,12 +79,12 @@ jobs:
         run: |
           echo "${{ steps.trivy.outputs.stdout }}"
 
-      - name: Comment PR
+      - name: Comment PR for CVE
         uses: thollander/actions-comment-pull-request@v2
-
         with:
           message: |
             ```
             ${{ steps.trivy.outputs.stdout }}
             ```
+          comment_tag: cve
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
