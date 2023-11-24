@@ -31,6 +31,8 @@ jobs:
   image-test:
     name: Check for image build and CVE
     runs-on: ubuntu-latest
+    permissions: 
+      pull-requests: write 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -79,8 +81,7 @@ jobs:
 
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
-        permissions: 
-          pull-requests: write 
+
         with:
           message: |
             ```
