@@ -18,7 +18,9 @@ var (
 	boolFalse   vips.BoolParameter
 	intMinusOne vips.IntParameter
 	// Source image encoder ignore list for WebP and AVIF
+	// We shouldn't convert Unknown and AVIF to WebP
 	webpIgnore = []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeAVIF}
+	// We shouldn't convert Unknown,AVIF and GIF to AVIF
 	avifIgnore = append(webpIgnore, vips.ImageTypeGIF)
 )
 

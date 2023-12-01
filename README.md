@@ -12,7 +12,7 @@
 
 This is a Server based on Golang, which allows you to serve WebP images on the fly.
 
-Currently supported image format: JPEG, PNG, BMP, GIF, SVG, HEIC, NEF
+Currently supported image format: JPEG, PNG, BMP, GIF, SVG, HEIC, NEF, WEBP
 
 > e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp`/`image/avif` format without changing the URL.
 >
