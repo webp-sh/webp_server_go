@@ -80,7 +80,7 @@ func NewWebPConfig() *WebpConfig {
 		Port:              "3333",
 		ImgPath:           "./pics",
 		Quality:           80,
-		AllowedTypes:      []string{"jpg", "png", "jpeg", "bmp", "svg", "nef"},
+		AllowedTypes:      []string{"jpg", "png", "jpeg", "bmp", "svg", "nef", "heic"},
 		ImageMap:          map[string]string{},
 		ExhaustPath:       "./exhaust",
 		EnableAVIF:        false,

@@ -17,6 +17,9 @@ import (
 var (
 	boolFalse   vips.BoolParameter
 	intMinusOne vips.IntParameter
+	// Source image encoder ignore list for WebP and AVIF
+	webpIgnore = []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeAVIF}
+	avifIgnore = append(webpIgnore, vips.ImageTypeGIF)
 )
 
 func init() {
@@ -135,18 +138,6 @@ func convertImage(raw, optimized, imageType string, extraParams config.ExtraPara
 	return err
 }
 
-func imageIgnore(imageFormat vips.ImageType) bool {
-	// Ignore Unknown, WebP, AVIF
-	ignoreList := []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeWEBP, vips.ImageTypeAVIF}
-	for _, ignore := range ignoreList {
-		if imageFormat == ignore {
-			// Return err to render original image
-			return true
-		}
-	}
-	return false
-}
-
 func avifEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 	// if convert fails, return error; success nil
 	var (
@@ -160,8 +151,12 @@ func avifEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 		return err
 	}
 
-	if imageIgnore(img.Format()) {
-		return errors.New("encoder: ignore image type")
+	imageFormat := img.Format()
+	for _, ignore := range avifIgnore {
+		if imageFormat == ignore {
+			// Return err to render original image
+			return errors.New("AVIF encoder: ignore image type")
+		}
 	}
 
 	if config.Config.EnableExtraParams {
@@ -225,10 +220,13 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 		return err
 	}
 
-	if imageIgnore(img.Format()) {
-		return errors.New("encoder: ignore image type")
+	imageFormat := img.Format()
+	for _, ignore := range webpIgnore {
+		if imageFormat == ignore {
+			// Return err to render original image
+			return errors.New("WebP encoder: ignore image type")
+		}
 	}
-
 	if config.Config.EnableExtraParams {
 		err = resizeImage(img, extraParams)
 		if err != nil {
@@ -256,7 +254,7 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 			StripMetadata: true,
 		})
 	} else {
-		// If some special images cannot encode with default ReductionEffort(0), then try with 4
+		// If some special images cannot encode with default ReductionEffort(0), then retry from 0 to 6
 		// Example: https://github.com/webp-sh/webp_server_go/issues/234
 		ep := vips.WebpExportParams{
 			Quality:       quality,
