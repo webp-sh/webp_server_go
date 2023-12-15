@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"webp_server_go/config"
@@ -54,14 +55,13 @@ func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 	return nil
 }
 
-func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
+func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
 	// all absolute paths
-
 	var wg sync.WaitGroup
 	wg.Add(2)
 	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF {
 		go func() {
-			err := convertImage(raw, avifPath, "avif", extraParams)
+			err := convertImage(rawPath, avifPath, "avif", extraParams)
 			if err != nil {
 				log.Errorln(err)
 			}
@@ -73,7 +73,7 @@ func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParam
 
 	if !helper.ImageExists(webpPath) {
 		go func() {
-			err := convertImage(raw, webpPath, "webp", extraParams)
+			err := convertImage(rawPath, webpPath, "webp", extraParams)
 			if err != nil {
 				log.Errorln(err)
 			}
@@ -111,37 +111,87 @@ func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
 	img.Close()
 }
 
-func convertImage(raw, optimized, imageType string, extraParams config.ExtraParams) error {
+// Pre-process image(auto rotate, resize, etc.)
+func preProcessImage(rawPath string, imageType string, extraParams config.ExtraParams) error {
+	img, err := vips.LoadImageFromFile(rawPath, &vips.ImportParams{
+		FailOnError: boolFalse,
+	})
+	if err != nil {
+		log.Warnf("Could not load %s: %s", rawPath, err)
+		return err
+	}
+	defer img.Close()
+
+	// Check Width/Height and ignore image formats
+	switch imageType {
+	case "webp":
+		if img.Metadata().Width > config.WebpMax || img.Metadata().Height > config.WebpMax {
+			return errors.New("WebP: image too large")
+		}
+		imageFormat := img.Format()
+		if slices.Contains(webpIgnore, imageFormat) {
+			// Return err to render original image
+			return errors.New("WebP encoder: ignore image type")
+		}
+	case "avif":
+		if img.Metadata().Width > config.AvifMax || img.Metadata().Height > config.AvifMax {
+			return errors.New("AVIF: image too large")
+		}
+		imageFormat := img.Format()
+		if slices.Contains(avifIgnore, imageFormat) {
+			// Return err to render original image
+			return errors.New("AVIF encoder: ignore image type")
+		}
+	}
+
+	// Auto rotate
+	err = img.AutoRotate()
+	if err != nil {
+		return err
+	}
+	if config.Config.EnableExtraParams {
+		err = resizeImage(img, extraParams)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func convertImage(rawPath, optimizedPath, imageType string, extraParams config.ExtraParams) error {
 	// we need to create dir first
-	var err = os.MkdirAll(path.Dir(optimized), 0755)
+	var err = os.MkdirAll(path.Dir(optimizedPath), 0755)
 	if err != nil {
 		log.Error(err.Error())
 	}
 	// Convert NEF image to JPG first
-	var convertedRaw, converted = ConvertRawToJPG(raw, optimized)
+	var convertedRaw, converted = ConvertRawToJPG(rawPath, optimizedPath)
 	// If converted, use converted file as raw
 	if converted {
-		raw = convertedRaw
+		rawPath = convertedRaw
+		// Remove converted file after convertion
+		defer func() {
+			log.Infoln("Removing intermediate conversion file:", convertedRaw)
+			err := os.Remove(convertedRaw)
+			if err != nil {
+				log.Warnln("failed to delete converted file", err)
+			}
+		}()
 	}
+	// Pre-process image(auto rotate, resize, etc.)
+	preProcessImage(rawPath, imageType, extraParams)
+
 	switch imageType {
 	case "webp":
-		err = webpEncoder(raw, optimized, extraParams)
+		err = webpEncoder(rawPath, optimizedPath, extraParams)
 	case "avif":
-		err = avifEncoder(raw, optimized, extraParams)
-	}
-	// Remove converted file after convertion
-	if converted {
-		log.Infoln("Removing intermediate conversion file:", convertedRaw)
-		err := os.Remove(convertedRaw)
-		if err != nil {
-			log.Warnln("failed to delete converted file", err)
-		}
+		err = avifEncoder(rawPath, optimizedPath, extraParams)
 	}
 	return err
 }
 
 func avifEncoder(p1, p2 string, extraParams config.ExtraParams) error {
-	// if convert fails, return error; success nil
 	var (
 		buf     []byte
 		quality = config.Config.Quality
@@ -152,31 +202,7 @@ func avifEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 	if err != nil {
 		return err
 	}
-
-	imageFormat := img.Format()
-	for _, ignore := range avifIgnore {
-		if imageFormat == ignore {
-			// Return err to render original image
-			return errors.New("AVIF encoder: ignore image type")
-		}
-	}
-
-	if config.Config.EnableExtraParams {
-		err = resizeImage(img, extraParams)
-		if err != nil {
-			return err
-		}
-	}
-
-	// AVIF has a maximum resolution of 65536 x 65536 pixels.
-	if img.Metadata().Width > config.AvifMax || img.Metadata().Height > config.AvifMax {
-		return errors.New("AVIF: image too large")
-	}
-
-	err = img.AutoRotate()
-	if err != nil {
-		return err
-	}
+	defer img.Close()
 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
@@ -201,14 +227,12 @@ func avifEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 		log.Error(err)
 		return err
 	}
-	img.Close()
 
 	convertLog("AVIF", p1, p2, quality)
 	return nil
 }
 
 func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
-	// if convert fails, return error; success nil
 	var (
 		buf     []byte
 		quality = config.Config.Quality
@@ -221,30 +245,7 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 	if err != nil {
 		return err
 	}
-
-	imageFormat := img.Format()
-	for _, ignore := range webpIgnore {
-		if imageFormat == ignore {
-			// Return err to render original image
-			return errors.New("WebP encoder: ignore image type")
-		}
-	}
-	if config.Config.EnableExtraParams {
-		err = resizeImage(img, extraParams)
-		if err != nil {
-			return err
-		}
-	}
-
-	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
-	if (img.Metadata().Width > config.WebpMax || img.Metadata().Height > config.WebpMax) && img.Format() != vips.ImageTypeGIF {
-		return errors.New("WebP: image too large")
-	}
-
-	err = img.AutoRotate()
-	if err != nil {
-		return err
-	}
+	defer img.Close()
 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
@@ -287,7 +288,6 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 		log.Error(err)
 		return err
 	}
-	img.Close()
 
 	convertLog("WebP", p1, p2, quality)
 	return nil
