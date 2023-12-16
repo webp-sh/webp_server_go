@@ -1,7 +1,6 @@
 package encoder
 
 import (
-	"errors"
 	"os"
 	"path"
 	"runtime"
@@ -33,35 +32,13 @@ func init() {
 	intMinusOne.Set(-1)
 }
 
-func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
-	imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
-	if extraParams.Width > 0 && extraParams.Height > 0 {
-		err := img.Thumbnail(extraParams.Width, extraParams.Height, vips.InterestingAttention)
-		if err != nil {
-			return err
-		}
-	} else if extraParams.Width > 0 && extraParams.Height == 0 {
-		err := img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
-		if err != nil {
-			return err
-		}
-	} else if extraParams.Height > 0 && extraParams.Width == 0 {
-		err := img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
+func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
 	// all absolute paths
-
 	var wg sync.WaitGroup
 	wg.Add(2)
 	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF {
 		go func() {
-			err := convertImage(raw, avifPath, "avif", extraParams)
+			err := convertImage(rawPath, avifPath, "avif", extraParams)
 			if err != nil {
 				log.Errorln(err)
 			}
@@ -73,7 +50,7 @@ func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParam
 
 	if !helper.ImageExists(webpPath) {
 		go func() {
-			err := convertImage(raw, webpPath, "webp", extraParams)
+			err := convertImage(rawPath, webpPath, "webp", extraParams)
 			if err != nil {
 				log.Errorln(err)
 			}
@@ -89,94 +66,54 @@ func ConvertFilter(raw, avifPath, webpPath string, extraParams config.ExtraParam
 	}
 }
 
-func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
-	log.Infof("Resize %s itself to %s", raw, dest)
-
+func convertImage(rawPath, optimizedPath, imageType string, extraParams config.ExtraParams) error {
 	// we need to create dir first
-	var err = os.MkdirAll(path.Dir(dest), 0755)
+	var err = os.MkdirAll(path.Dir(optimizedPath), 0755)
 	if err != nil {
 		log.Error(err.Error())
 	}
+	// If original image is NEF, convert NEF image to JPG first
+	if strings.HasSuffix(strings.ToLower(rawPath), ".nef") {
+		var convertedRaw, converted = ConvertRawToJPG(rawPath, optimizedPath)
+		// If converted, use converted file as raw
+		if converted {
+			// Use converted file(JPG) as raw input for further convertion
+			rawPath = convertedRaw
+			// Remove converted file after convertion
+			defer func() {
+				log.Infoln("Removing intermediate conversion file:", convertedRaw)
+				err := os.Remove(convertedRaw)
+				if err != nil {
+					log.Warnln("failed to delete converted file", err)
+				}
+			}()
+		}
+	}
 
-	img, err := vips.LoadImageFromFile(raw, &vips.ImportParams{
+	// Image is only opened here
+	img, err := vips.LoadImageFromFile(rawPath, &vips.ImportParams{
 		FailOnError: boolFalse,
 	})
-	if err != nil {
-		log.Warnf("Could not load %s: %s", raw, err)
-		return
-	}
-	_ = resizeImage(img, extraParams)
-	buf, _, _ := img.ExportNative()
-	_ = os.WriteFile(dest, buf, 0600)
-	img.Close()
-}
+	defer img.Close()
 
-func convertImage(raw, optimized, imageType string, extraParams config.ExtraParams) error {
-	// we need to create dir first
-	var err = os.MkdirAll(path.Dir(optimized), 0755)
-	if err != nil {
-		log.Error(err.Error())
-	}
-	// Convert NEF image to JPG first
-	var convertedRaw, converted = ConvertRawToJPG(raw, optimized)
-	// If converted, use converted file as raw
-	if converted {
-		raw = convertedRaw
-	}
+	// Pre-process image(auto rotate, resize, etc.)
+	preProcessImage(img, imageType, extraParams)
+
 	switch imageType {
 	case "webp":
-		err = webpEncoder(raw, optimized, extraParams)
+		err = webpEncoder(img, rawPath, optimizedPath, extraParams)
 	case "avif":
-		err = avifEncoder(raw, optimized, extraParams)
-	}
-	// Remove converted file after convertion
-	if converted {
-		log.Infoln("Removing intermediate conversion file:", convertedRaw)
-		err := os.Remove(convertedRaw)
-		if err != nil {
-			log.Warnln("failed to delete converted file", err)
-		}
+		err = avifEncoder(img, rawPath, optimizedPath, extraParams)
 	}
 	return err
 }
 
-func avifEncoder(p1, p2 string, extraParams config.ExtraParams) error {
-	// if convert fails, return error; success nil
+func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string, extraParams config.ExtraParams) error {
 	var (
 		buf     []byte
 		quality = config.Config.Quality
+		err     error
 	)
-	img, err := vips.LoadImageFromFile(p1, &vips.ImportParams{
-		FailOnError: boolFalse,
-	})
-	if err != nil {
-		return err
-	}
-
-	imageFormat := img.Format()
-	for _, ignore := range avifIgnore {
-		if imageFormat == ignore {
-			// Return err to render original image
-			return errors.New("AVIF encoder: ignore image type")
-		}
-	}
-
-	if config.Config.EnableExtraParams {
-		err = resizeImage(img, extraParams)
-		if err != nil {
-			return err
-		}
-	}
-
-	// AVIF has a maximum resolution of 65536 x 65536 pixels.
-	if img.Metadata().Width > config.AvifMax || img.Metadata().Height > config.AvifMax {
-		return errors.New("AVIF: image too large")
-	}
-
-	err = img.AutoRotate()
-	if err != nil {
-		return err
-	}
 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
@@ -197,54 +134,21 @@ func avifEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 		return err
 	}
 
-	if err := os.WriteFile(p2, buf, 0600); err != nil {
+	if err := os.WriteFile(optimizedPath, buf, 0600); err != nil {
 		log.Error(err)
 		return err
 	}
-	img.Close()
 
-	convertLog("AVIF", p1, p2, quality)
+	convertLog("AVIF", rawPath, optimizedPath, quality)
 	return nil
 }
 
-func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
-	// if convert fails, return error; success nil
+func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string, extraParams config.ExtraParams) error {
 	var (
 		buf     []byte
 		quality = config.Config.Quality
+		err     error
 	)
-
-	img, err := vips.LoadImageFromFile(p1, &vips.ImportParams{
-		FailOnError: boolFalse,
-		NumPages:    intMinusOne,
-	})
-	if err != nil {
-		return err
-	}
-
-	imageFormat := img.Format()
-	for _, ignore := range webpIgnore {
-		if imageFormat == ignore {
-			// Return err to render original image
-			return errors.New("WebP encoder: ignore image type")
-		}
-	}
-	if config.Config.EnableExtraParams {
-		err = resizeImage(img, extraParams)
-		if err != nil {
-			return err
-		}
-	}
-
-	// The maximum pixel dimensions of a WebP image is 16383 x 16383.
-	if (img.Metadata().Width > config.WebpMax || img.Metadata().Height > config.WebpMax) && img.Format() != vips.ImageTypeGIF {
-		return errors.New("WebP: image too large")
-	}
-
-	err = img.AutoRotate()
-	if err != nil {
-		return err
-	}
 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
@@ -283,28 +187,27 @@ func webpEncoder(p1, p2 string, extraParams config.ExtraParams) error {
 		return err
 	}
 
-	if err := os.WriteFile(p2, buf, 0600); err != nil {
+	if err := os.WriteFile(optimizedPath, buf, 0600); err != nil {
 		log.Error(err)
 		return err
 	}
-	img.Close()
 
-	convertLog("WebP", p1, p2, quality)
+	convertLog("WebP", rawPath, optimizedPath, quality)
 	return nil
 }
 
-func convertLog(itype, p1 string, p2 string, quality int) {
-	oldf, err := os.Stat(p1)
+func convertLog(itype, rawPath string, optimizedPath string, quality int) {
+	oldf, err := os.Stat(rawPath)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	newf, err := os.Stat(p2)
+	newf, err := os.Stat(optimizedPath)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	log.Infof("%s@%d%%: %s->%s %d->%d %.2f%% deflated", itype, quality,
-		p1, p2, oldf.Size(), newf.Size(), float32(newf.Size())/float32(oldf.Size())*100)
+		rawPath, optimizedPath, oldf.Size(), newf.Size(), float32(newf.Size())/float32(oldf.Size())*100)
 }

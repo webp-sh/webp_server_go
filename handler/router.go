@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
@@ -23,16 +24,28 @@ func Convert(c *fiber.Ctx) error {
 	// 3. pass it to encoder, get the result, send it back
 
 	var (
-		reqHostname        = c.Hostname()
-		reqHost            = c.Protocol() + "://" + reqHostname // http://www.example.com:8000
-		reqURI, _          = url.QueryUnescape(c.Path())        // /mypic/123.jpg
-		reqURIwithQuery, _ = url.QueryUnescape(c.OriginalURL()) // /mypic/123.jpg?someother=200&somebugs=200
-		filename           = path.Base(reqURI)
-		realRemoteAddr     = ""
-		targetHostName     = config.LocalHostAlias
-		targetHost         = config.Config.ImgPath
-		proxyMode          = config.ProxyMode
-		mapMode            = false
+		reqHostname = c.Hostname()
+		reqHost     = c.Protocol() + "://" + reqHostname // http://www.example.com:8000
+		reqHeader   = &c.Request().Header
+
+		reqURIRaw, _          = url.QueryUnescape(c.Path())        // /mypic/123.jpg
+		reqURIwithQueryRaw, _ = url.QueryUnescape(c.OriginalURL()) // /mypic/123.jpg?someother=200&somebugs=200
+		reqURI                = path.Clean(reqURIRaw)              // delete ../ in reqURI to mitigate directory traversal
+		reqURIwithQuery       = path.Clean(reqURIwithQueryRaw)     // Sometimes reqURIwithQuery can be https://example.tld/mypic/123.jpg?someother=200&somebugs=200, we need to extract it
+
+		filename       = path.Base(reqURI)
+		realRemoteAddr = ""
+		targetHostName = config.LocalHostAlias
+		targetHost     = config.Config.ImgPath
+		proxyMode      = config.ProxyMode
+		mapMode        = false
+
+		width, _    = strconv.Atoi(c.Query("width"))  // Extra Params
+		height, _   = strconv.Atoi(c.Query("height")) // Extra Params
+		extraParams = config.ExtraParams{
+			Width:  width,
+			Height: height,
+		}
 	)
 
 	log.Debugf("Incoming connection from %s %s %s", c.IP(), reqHostname, reqURIwithQuery)
@@ -43,19 +56,6 @@ func Convert(c *fiber.Ctx) error {
 		c.Status(http.StatusBadRequest)
 		_ = c.Send([]byte(msg))
 		return nil
-	}
-
-	// Sometimes reqURIwithQuery can be https://example.tld/mypic/123.jpg?someother=200&somebugs=200, we need to extract it.
-	// delete ../ in reqURI to mitigate directory traversal
-	reqURI = path.Clean(reqURI)
-	reqURIwithQuery = path.Clean(reqURIwithQuery)
-
-	width, _ := strconv.Atoi(c.Query("width"))
-	height, _ := strconv.Atoi(c.Query("height"))
-
-	var extraParams = config.ExtraParams{
-		Width:  width,
-		Height: height,
 	}
 
 	// Rewrite the target backend if a mapping rule matches the hostname
@@ -132,9 +132,9 @@ func Convert(c *fiber.Ctx) error {
 		}
 	}
 
-	goodFormat := helper.GuessSupportedFormat(&c.Request().Header)
+	supportedFormats := helper.GuessSupportedFormat(reqHeader)
 	// resize itself and return if only one format(raw) is supported
-	if len(goodFormat) == 1 {
+	if len(supportedFormats) == 1 {
 		dest := path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id)
 		if !helper.ImageExists(dest) {
 			encoder.ResizeItself(rawImageAbs, dest, extraParams)
@@ -156,13 +156,11 @@ func Convert(c *fiber.Ctx) error {
 	encoder.ConvertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
 
 	var availableFiles = []string{rawImageAbs}
-	for _, v := range goodFormat {
-		if v == "avif" {
-			availableFiles = append(availableFiles, avifAbs)
-		}
-		if v == "webp" {
-			availableFiles = append(availableFiles, webpAbs)
-		}
+	if slices.Contains(supportedFormats, "avif") {
+		availableFiles = append(availableFiles, avifAbs)
+	}
+	if slices.Contains(supportedFormats, "webp") {
+		availableFiles = append(availableFiles, webpAbs)
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)
