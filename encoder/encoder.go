@@ -39,7 +39,7 @@ func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraP
 
 	for {
 		if _, found := config.ConvertLock.Get(rawPath); found {
-			log.Infof("file %s is locked under conversion, retrying in %s", rawPath, retryDelay)
+			log.Debugf("file %s is locked under conversion, retrying in %s", rawPath, retryDelay)
 			time.Sleep(retryDelay)
 		} else {
 			// The lock is released, indicating that the conversion is complete
