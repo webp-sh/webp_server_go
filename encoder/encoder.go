@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 	"webp_server_go/config"
 	"webp_server_go/helper"
 
@@ -33,7 +34,24 @@ func init() {
 }
 
 func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
-	// all absolute paths
+	// Wait for the conversion to complete and return the converted image
+	retryDelay := 100 * time.Millisecond // Initial retry delay
+
+	for {
+		if _, found := config.ConvertLock.Get(rawPath); found {
+			log.Infof("file %s is locked under conversion, retrying in %s", rawPath, retryDelay)
+			time.Sleep(retryDelay)
+		} else {
+			// The lock is released, indicating that the conversion is complete
+			break
+		}
+	}
+
+	// If there is a lock here, it means that another thread is converting the same image
+	// Lock rawPath to prevent concurrent convertion
+	config.ConvertLock.Set(rawPath, true, -1)
+	defer config.ConvertLock.Delete(rawPath)
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF {
@@ -105,6 +123,7 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 	case "avif":
 		err = avifEncoder(img, rawPath, optimizedPath, extraParams)
 	}
+
 	return err
 }
 
@@ -179,7 +198,6 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string, extra
 			}
 		}
 		buf, _, err = img.ExportWebp(&ep)
-
 	}
 
 	if err != nil {

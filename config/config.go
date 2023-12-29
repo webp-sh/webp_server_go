@@ -48,6 +48,7 @@ var (
 	Config         = NewWebPConfig()
 	Version        = "0.10.4"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
+	ConvertLock    = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw      = "./remote-raw"
 	Metadata       = "./metadata"
 	LocalHostAlias = "local"
