@@ -48,7 +48,7 @@ func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraP
 	}
 
 	// If there is a lock here, it means that another thread is converting the same image
-	// Lock rawPath to prevent concurrent convertion
+	// Lock rawPath to prevent concurrent conversion
 	config.ConvertLock.Set(rawPath, true, -1)
 	defer config.ConvertLock.Delete(rawPath)
 
@@ -95,9 +95,9 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 		var convertedRaw, converted = ConvertRawToJPG(rawPath, optimizedPath)
 		// If converted, use converted file as raw
 		if converted {
-			// Use converted file(JPG) as raw input for further convertion
+			// Use converted file(JPG) as raw input for further conversion
 			rawPath = convertedRaw
-			// Remove converted file after convertion
+			// Remove converted file after conversion
 			defer func() {
 				log.Infoln("Removing intermediate conversion file:", convertedRaw)
 				err := os.Remove(convertedRaw)
