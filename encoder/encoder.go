@@ -111,6 +111,7 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 	// Image is only opened here
 	img, err := vips.LoadImageFromFile(rawPath, &vips.ImportParams{
 		FailOnError: boolFalse,
+		NumPages:    intMinusOne,
 	})
 	defer img.Close()
 
