@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/davidbyttow/govips/v2 v2.13.0
-	github.com/gofiber/fiber/v2 v2.51.0
+	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/h2non/filetype v1.1.4-0.20230123234534-cfcd7d097bc4
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
 	github.com/jeremytorres/rawparser v1.0.2
@@ -19,7 +19,7 @@ require (
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.5.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -31,7 +31,7 @@ require (
 	github.com/valyala/tcplisten v1.0.0 // indirect
 	golang.org/x/image v0.10.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
