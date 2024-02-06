@@ -7,12 +7,12 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 	"webp_server_go/config"
 	"webp_server_go/helper"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/h2non/filetype"
+	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -94,7 +94,7 @@ func fetchRemoteImg(url string, subdir string) config.MetaFile {
 		log.Infof("Remote Addr is %s, pinging for info...", url)
 		etag = pingURL(url)
 		if cacheKey != "" {
-			config.RemoteCache.Set(cacheKey, etag, time.Duration(config.Config.CacheTTL) * time.Second)
+			config.RemoteCache.Set(cacheKey, etag, cache.DefaultExpiration)
 		}
 		
 	}
