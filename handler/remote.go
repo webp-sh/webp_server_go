@@ -79,24 +79,17 @@ func downloadFile(filepath string, url string) {
 func fetchRemoteImg(url string, subdir string) config.MetaFile {
 	// url is https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	// How do we know if the remote img is changed? we're using hash(etag+length)
-	var cacheKey, etag string
+	var etag string
 	
-	cacheKey = subdir+":"+helper.HashString(url)
+	cacheKey := subdir+":"+helper.HashString(url)
 	
-	if cacheKey != "" {
-		if val, found := config.RemoteCache.Get(cacheKey); found {
-			log.Infof("Using cache for remote addr: %s", url)
-			etag = val.(string)
-		} 
-	}
-	
-	if etag == "" {
+	if val, found := config.RemoteCache.Get(cacheKey); found {
+		log.Infof("Using cache for remote addr: %s", url)
+		etag = val.(string)
+	} else {
 		log.Infof("Remote Addr is %s, pinging for info...", url)
 		etag = pingURL(url)
-		if cacheKey != "" {
-			config.RemoteCache.Set(cacheKey, etag, cache.DefaultExpiration)
-		}
-		
+		config.RemoteCache.Set(cacheKey, etag, cache.DefaultExpiration)
 	}
 	
 	metadata := helper.ReadMetadata(url, etag, subdir)
