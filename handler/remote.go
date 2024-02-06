@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 	"webp_server_go/config"
 	"webp_server_go/helper"
 
@@ -78,8 +79,26 @@ func downloadFile(filepath string, url string) {
 func fetchRemoteImg(url string, subdir string) config.MetaFile {
 	// url is https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	// How do we know if the remote img is changed? we're using hash(etag+length)
-	log.Infof("Remote Addr is %s, pinging for info...", url)
-	etag := pingURL(url)
+	var cacheKey, etag string
+	
+	cacheKey = subdir+":"+helper.HashString(url)
+	
+	if cacheKey != "" {
+		if val, found := config.RemoteCache.Get(cacheKey); found {
+			log.Infof("Using cache for remote addr: %s", url)
+			etag = val.(string)
+		} 
+	}
+	
+	if etag == "" {
+		log.Infof("Remote Addr is %s, pinging for info...", url)
+		etag = pingURL(url)
+		if cacheKey != "" {
+			config.RemoteCache.Set(cacheKey, etag, time.Duration(config.Config.CacheTTL) * time.Second)
+		}
+		
+	}
+	
 	metadata := helper.ReadMetadata(url, etag, subdir)
 	localRawImagePath := path.Join(config.RemoteRaw, subdir, metadata.Id)
 

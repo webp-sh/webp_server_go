@@ -33,7 +33,8 @@ const (
   "ENABLE_EXTRA_PARAMS": false
   "READ_BUFFER_SIZE": 4096,
   "CONCURRENCY": 262144,
-  "DISABLE_KEEPALIVE": false
+  "DISABLE_KEEPALIVE": false,
+  "CACHE_TTL": 259200,
 }`
 )
 
@@ -52,6 +53,7 @@ var (
 	RemoteRaw      = "./remote-raw"
 	Metadata       = "./metadata"
 	LocalHostAlias = "local"
+	RemoteCache    *cache.Cache
 )
 
 type MetaFile struct {
@@ -73,6 +75,7 @@ type WebpConfig struct {
 	ReadBufferSize    int               `json:"READ_BUFFER_SIZE"`
 	Concurrency       int               `json:"CONCURRENCY"`
 	DisableKeepalive  bool              `json:"DISABLE_KEEPALIVE"`
+	CacheTTL     	  int               `json:"CACHE_TTL"`
 }
 
 func NewWebPConfig() *WebpConfig {
@@ -89,6 +92,7 @@ func NewWebPConfig() *WebpConfig {
 		ReadBufferSize:    4096,
 		Concurrency:       262144,
 		DisableKeepalive:  false,
+		CacheTTL:          259200,
 	}
 }
 
@@ -183,6 +187,20 @@ func LoadConfig() {
 		} else {
 			log.Warnf("WEBP_DISABLE_KEEPALIVE is not a valid boolean, using value in config.json %t", Config.DisableKeepalive)
 		}
+	}
+	if os.Getenv("CACHE_TTL") != "" {
+		cacheTTL, err := strconv.Atoi(os.Getenv("CACHE_TTL"))
+		if err != nil {
+			log.Warnf("CACHE_TTL is not a valid integer, using value in config.json %d", Config.CacheTTL)
+		} else {
+			Config.CacheTTL = cacheTTL
+		}
+	}
+
+	if Config.CacheTTL == 0 {
+		RemoteCache = cache.New(cache.NoExpiration, 10*time.Minute)
+	} else {
+		RemoteCache = cache.New(time.Duration(Config.CacheTTL)*time.Minute, 10*time.Minute)
 	}
 
 	log.Debugln("Config init complete")
