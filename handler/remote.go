@@ -89,7 +89,9 @@ func fetchRemoteImg(url string, subdir string) config.MetaFile {
 	} else {
 		log.Infof("Remote Addr is %s, pinging for info...", url)
 		etag = pingURL(url)
-		config.RemoteCache.Set(cacheKey, etag, cache.DefaultExpiration)
+		if etag != "" {
+			config.RemoteCache.Set(cacheKey, etag, cache.DefaultExpiration)
+		}
 	}
 	
 	metadata := helper.ReadMetadata(url, etag, subdir)
