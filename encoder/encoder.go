@@ -187,7 +187,7 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string, extra
 			Lossless:      false,
 			StripMetadata: true,
 		}
-		for i := 0; i <= 6; i++ {
+		for i := range 7 {
 			ep.ReductionEffort = i
 			buf, _, err = img.ExportWebp(&ep)
 			if err != nil && strings.Contains(err.Error(), "unable to encode") {

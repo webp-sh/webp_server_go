@@ -18,7 +18,7 @@ func PrefetchImages() {
 	var sTime = time.Now()
 	log.Infof("Prefetching using %d cores", config.Jobs)
 	var finishChan = make(chan int, config.Jobs)
-	for i := 0; i < config.Jobs; i++ {
+	for _ = range config.Jobs {
 		finishChan <- 1
 	}
 

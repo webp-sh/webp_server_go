@@ -100,7 +100,7 @@ func TestConvertDuplicates(t *testing.T) {
 
 	// test Chrome
 	for url, respType := range testLink {
-		for i := 0; i < N; i++ {
+		for _ = range N {
 			resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 			defer resp.Body.Close()
 			contentType := helper.GetContentType(data)
