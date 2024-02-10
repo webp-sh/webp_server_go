@@ -100,7 +100,7 @@ func TestConvertDuplicates(t *testing.T) {
 
 	// test Chrome
 	for url, respType := range testLink {
-		for i := 0; i < N; i++ {
+		for _ = range N {
 			resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 			defer resp.Body.Close()
 			contentType := helper.GetContentType(data)
@@ -220,12 +220,12 @@ func TestConvertProxyModeBad(t *testing.T) {
 func TestConvertProxyModeWork(t *testing.T) {
 	setupParam()
 	config.ProxyMode = true
-	config.Config.ImgPath = "https://webp.sh"
+	config.Config.ImgPath = "https://docs.webp.sh"
 
 	var app = fiber.New()
 	app.Get("/*", Convert)
 
-	url := "http://127.0.0.1:3333/images/cover.jpg"
+	url := "http://127.0.0.1:3333/images/webp_server.jpg"
 
 	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
@@ -244,28 +244,28 @@ func TestConvertProxyImgMap(t *testing.T) {
 	config.ProxyMode = false
 	config.Config.ImageMap = map[string]string{
 		"/2":                            "../pics/dir1",
-		"/3":                            "../pics3",        // Invalid path, does not exists
-		"www.invalid-path.com":          "https://webp.sh", // Invalid, it does not start with '/'
-		"/www.weird-path.com":           "https://webp.sh",
-		"/www.even-more-werid-path.com": "https://webp.sh/images",
-		"http://example.com":            "https://webp.sh",
+		"/3":                            "../pics3",             // Invalid path, does not exists
+		"www.invalid-path.com":          "https://docs.webp.sh", // Invalid, it does not start with '/'
+		"/www.weird-path.com":           "https://docs.webp.sh",
+		"/www.even-more-werid-path.com": "https://docs.webp.sh/images",
+		"http://example.com":            "https://docs.webp.sh",
 	}
 
 	var app = fiber.New()
 	app.Get("/*", Convert)
 
 	var testUrls = map[string]string{
-		"http://127.0.0.1:3333/webp_server.jpg":                        "image/webp",
-		"http://127.0.0.1:3333/2/inside.jpg":                           "image/webp",
-		"http://127.0.0.1:3333/www.weird-path.com/images/cover.jpg":    "image/webp",
-		"http://127.0.0.1:3333/www.even-more-werid-path.com/cover.jpg": "image/webp",
-		"http://example.com/images/cover.jpg":                          "image/webp",
+		"http://127.0.0.1:3333/webp_server.jpg":                              "image/webp",
+		"http://127.0.0.1:3333/2/inside.jpg":                                 "image/webp",
+		"http://127.0.0.1:3333/www.weird-path.com/images/webp_server.jpg":    "image/webp",
+		"http://127.0.0.1:3333/www.even-more-werid-path.com/webp_server.jpg": "image/webp",
+		"http://example.com//images/webp_server.jpg":                         "image/webp",
 	}
 
 	var testUrlsLegacy = map[string]string{
-		"http://127.0.0.1:3333/webp_server.jpg": "image/jpeg",
-		"http://127.0.0.1:3333/2/inside.jpg":    "image/jpeg",
-		"http://example.com/images/cover.jpg":   "image/jpeg",
+		"http://127.0.0.1:3333/webp_server.jpg":     "image/jpeg",
+		"http://127.0.0.1:3333/2/inside.jpg":        "image/jpeg",
+		"http://example.com/images/webp_server.jpg": "image/jpeg",
 	}
 
 	var testUrlsInvalid = map[string]string{
@@ -304,17 +304,17 @@ func TestConvertProxyImgMapCWD(t *testing.T) {
 		"/1":                     "../pics/dir1",
 		"/2":                     "../pics",
 		"/3":                     "../pics", // Invalid path, does not exists
-		"http://www.example.com": "https://webp.sh",
+		"http://www.example.com": "https://docs.webp.sh",
 	}
 
 	var app = fiber.New()
 	app.Get("/*", Convert)
 
 	var testUrls = map[string]string{
-		"http://127.0.0.1:3333/1/inside.jpg":      "image/webp",
-		"http://127.0.0.1:3333/2/webp_server.jpg": "image/webp",
-		"http://127.0.0.1:3333/3/webp_server.jpg": "image/webp",
-		"http://www.example.com/images/cover.jpg": "image/webp",
+		"http://127.0.0.1:3333/1/inside.jpg":            "image/webp",
+		"http://127.0.0.1:3333/2/webp_server.jpg":       "image/webp",
+		"http://127.0.0.1:3333/3/webp_server.jpg":       "image/webp",
+		"http://www.example.com/images/webp_server.jpg": "image/webp",
 	}
 
 	for url, respType := range testUrls {
