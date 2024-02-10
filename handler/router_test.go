@@ -263,9 +263,9 @@ func TestConvertProxyImgMap(t *testing.T) {
 	}
 
 	var testUrlsLegacy = map[string]string{
-		"http://127.0.0.1:3333/webp_server.jpg":      "image/jpeg",
-		"http://127.0.0.1:3333/2/inside.jpg":         "image/jpeg",
-		"http://example.com//images/webp_server.jpg": "image/jpeg",
+		"http://127.0.0.1:3333/webp_server.jpg":     "image/jpeg",
+		"http://127.0.0.1:3333/2/inside.jpg":        "image/jpeg",
+		"http://example.com/images/webp_server.jpg": "image/jpeg",
 	}
 
 	var testUrlsInvalid = map[string]string{
@@ -311,10 +311,10 @@ func TestConvertProxyImgMapCWD(t *testing.T) {
 	app.Get("/*", Convert)
 
 	var testUrls = map[string]string{
-		"http://127.0.0.1:3333/1/inside.jpg":      "image/webp",
-		"http://127.0.0.1:3333/2/webp_server.jpg": "image/webp",
-		"http://127.0.0.1:3333/3/webp_server.jpg": "image/webp",
-		"http://www.example.com/images/cover.jpg": "image/webp",
+		"http://127.0.0.1:3333/1/inside.jpg":            "image/webp",
+		"http://127.0.0.1:3333/2/webp_server.jpg":       "image/webp",
+		"http://127.0.0.1:3333/3/webp_server.jpg":       "image/webp",
+		"http://www.example.com/images/webp_server.jpg": "image/webp",
 	}
 
 	for url, respType := range testUrls {
