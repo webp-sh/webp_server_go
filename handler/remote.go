@@ -84,9 +84,15 @@ func fetchRemoteImg(url string, subdir string) config.MetaFile {
 	cacheKey := subdir+":"+helper.HashString(url)
 	
 	if val, found := config.RemoteCache.Get(cacheKey); found {
-		log.Infof("Using cache for remote addr: %s", url)
-		etag = val.(string)
-	} else {
+		if etagVal, ok := val.(string); ok {
+			log.Infof("Using cache for remote addr: %s", url)
+			etag = etagVal
+		} else {
+			config.RemoteCache.Delete(cacheKey)
+		}
+	} 
+	
+	if etag == "" {
 		log.Infof("Remote Addr is %s, pinging for info...", url)
 		etag = pingURL(url)
 		if etag != "" {
