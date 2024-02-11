@@ -47,7 +47,7 @@ var (
 	ProxyMode      bool
 	Prefetch       bool
 	Config         = NewWebPConfig()
-	Version        = "0.10.6"
+	Version        = "0.10.7"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock    = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw      = "./remote-raw"
@@ -75,7 +75,7 @@ type WebpConfig struct {
 	ReadBufferSize    int               `json:"READ_BUFFER_SIZE"`
 	Concurrency       int               `json:"CONCURRENCY"`
 	DisableKeepalive  bool              `json:"DISABLE_KEEPALIVE"`
-	CacheTTL     	  int               `json:"CACHE_TTL"`
+	CacheTTL          int               `json:"CACHE_TTL"`
 }
 
 func NewWebPConfig() *WebpConfig {
