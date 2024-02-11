@@ -12,6 +12,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/h2non/filetype"
+	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -78,8 +79,27 @@ func downloadFile(filepath string, url string) {
 func fetchRemoteImg(url string, subdir string) config.MetaFile {
 	// url is https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	// How do we know if the remote img is changed? we're using hash(etag+length)
-	log.Infof("Remote Addr is %s, pinging for info...", url)
-	etag := pingURL(url)
+	var etag string
+	
+	cacheKey := subdir+":"+helper.HashString(url)
+	
+	if val, found := config.RemoteCache.Get(cacheKey); found {
+		if etagVal, ok := val.(string); ok {
+			log.Infof("Using cache for remote addr: %s", url)
+			etag = etagVal
+		} else {
+			config.RemoteCache.Delete(cacheKey)
+		}
+	} 
+	
+	if etag == "" {
+		log.Infof("Remote Addr is %s, pinging for info...", url)
+		etag = pingURL(url)
+		if etag != "" {
+			config.RemoteCache.Set(cacheKey, etag, cache.DefaultExpiration)
+		}
+	}
+	
 	metadata := helper.ReadMetadata(url, etag, subdir)
 	localRawImagePath := path.Join(config.RemoteRaw, subdir, metadata.Id)
 
