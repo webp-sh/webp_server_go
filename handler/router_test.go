@@ -7,11 +7,13 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 	"webp_server_go/config"
 	"webp_server_go/helper"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/etag"
+	"github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,6 +37,7 @@ func setupParam() {
 	config.Config.EnableAVIF = false
 	config.Config.Quality = 80
 	config.Config.ImageMap = map[string]string{}
+	config.RemoteCache = cache.New(cache.NoExpiration, 10*time.Minute)
 }
 
 func requestToServer(reqUrl string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
