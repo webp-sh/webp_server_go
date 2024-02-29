@@ -59,7 +59,7 @@ func init() {
 		▘ ▘▝▀▘▀▀ ▘   ▝▀ ▝▀▘▘   ▘ ▝▀▘▘   ▝▀ ▝▀
 		
 		WebP Server Go - v%s
-		Develop by WebP Server team. https://github.com/webp-sh`, config.Version)
+		Developed by WebP Server team. https://github.com/webp-sh`, config.Version)
 	// main init is the last one to be called
 	flag.Parse()
 	// process cli params

@@ -47,7 +47,7 @@ var (
 	ProxyMode      bool
 	Prefetch       bool
 	Config         = NewWebPConfig()
-	Version        = "0.10.7"
+	Version        = "0.10.8"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock    = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw      = "./remote-raw"
