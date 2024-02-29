@@ -120,15 +120,15 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 
 	switch imageType {
 	case "webp":
-		err = webpEncoder(img, rawPath, optimizedPath, extraParams)
+		err = webpEncoder(img, rawPath, optimizedPath)
 	case "avif":
-		err = avifEncoder(img, rawPath, optimizedPath, extraParams)
+		err = avifEncoder(img, rawPath, optimizedPath)
 	}
 
 	return err
 }
 
-func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string, extraParams config.ExtraParams) error {
+func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {
 	var (
 		buf     []byte
 		quality = config.Config.Quality
@@ -163,7 +163,7 @@ func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string, extra
 	return nil
 }
 
-func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string, extraParams config.ExtraParams) error {
+func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {
 	var (
 		buf     []byte
 		quality = config.Config.Quality
