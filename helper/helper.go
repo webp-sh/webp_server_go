@@ -96,12 +96,14 @@ func CheckAllowedType(imgFilename string) bool {
 	return false
 }
 
-func GenOptimizedAbsPath(metadata config.MetaFile, subdir string) (string, string) {
+func GenOptimizedAbsPath(metadata config.MetaFile, subdir string) (string, string, string) {
 	webpFilename := fmt.Sprintf("%s.webp", metadata.Id)
 	avifFilename := fmt.Sprintf("%s.avif", metadata.Id)
+	jxlFilename := fmt.Sprintf("%s.jxl", metadata.Id)
 	webpAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, subdir, webpFilename))
 	avifAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, subdir, avifFilename))
-	return avifAbsolutePath, webpAbsolutePath
+	jxlAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, subdir, jxlFilename))
+	return avifAbsolutePath, webpAbsolutePath, jxlAbsolutePath
 }
 
 func GetCompressionRate(RawImagePath string, optimizedImg string) string {
@@ -125,6 +127,7 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 			"raw":  true,
 			"webp": false,
 			"avif": false,
+			"jxl":  false,
 		}
 
 		ua     = string(header.Peek("user-agent"))
@@ -136,6 +139,9 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 	}
 	if strings.Contains(accept, "image/avif") {
 		supported["avif"] = true
+	}
+	if strings.Contains(accept, "image/jxl") {
+		supported["jxl"] = true
 	}
 
 	supportedWebPs := []string{"iPhone OS 14", "CPU OS 14", "iPhone OS 15", "CPU OS 15", "iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17"}
@@ -150,6 +156,14 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 	for _, version := range supportedAVIFs {
 		if strings.Contains(ua, version) {
 			supported["avif"] = true
+			break
+		}
+	}
+
+	supportedJXLs := []string{"iPhone OS 17", "CPU OS 17"}
+	for _, version := range supportedJXLs {
+		if strings.Contains(ua, version) {
+			supported["jxl"] = true
 			break
 		}
 	}

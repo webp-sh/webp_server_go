@@ -35,10 +35,10 @@ func PrefetchImages() {
 			}
 			// RawImagePath string, ImgFilename string, reqURI string
 			metadata := helper.ReadMetadata(picAbsPath, "", config.LocalHostAlias)
-			avif, webp := helper.GenOptimizedAbsPath(metadata, config.LocalHostAlias)
-			_ = os.MkdirAll(path.Dir(avif), 0755)
+			avifAbsPath, webpAbsPath, jxlAbsPath := helper.GenOptimizedAbsPath(metadata, config.LocalHostAlias)
+			_ = os.MkdirAll(path.Dir(avifAbsPath), 0755)
 			log.Infof("Prefetching %s", picAbsPath)
-			go ConvertFilter(picAbsPath, avif, webp, config.ExtraParams{Width: 0, Height: 0}, finishChan)
+			go ConvertFilter(picAbsPath, jxlAbsPath, avifAbsPath, webpAbsPath, config.ExtraParams{Width: 0, Height: 0}, finishChan)
 			_ = bar.Add(<-finishChan)
 			return nil
 		})

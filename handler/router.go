@@ -40,11 +40,15 @@ func Convert(c *fiber.Ctx) error {
 		proxyMode      = config.ProxyMode
 		mapMode        = false
 
-		width, _    = strconv.Atoi(c.Query("width"))  // Extra Params
-		height, _   = strconv.Atoi(c.Query("height")) // Extra Params
-		extraParams = config.ExtraParams{
-			Width:  width,
-			Height: height,
+		width, _     = strconv.Atoi(c.Query("width"))      // Extra Params
+		height, _    = strconv.Atoi(c.Query("height"))     // Extra Params
+		maxHeight, _ = strconv.Atoi(c.Query("max_height")) // Extra Params
+		maxWidth, _  = strconv.Atoi(c.Query("max_width"))  // Extra Params
+		extraParams  = config.ExtraParams{
+			Width:     width,
+			Height:    height,
+			MaxWidth:  maxWidth,
+			MaxHeight: maxHeight,
 		}
 	)
 
@@ -152,8 +156,8 @@ func Convert(c *fiber.Ctx) error {
 		return nil
 	}
 
-	avifAbs, webpAbs := helper.GenOptimizedAbsPath(metadata, targetHostName)
-	encoder.ConvertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
+	avifAbs, webpAbs, jxlAbs := helper.GenOptimizedAbsPath(metadata, targetHostName)
+	encoder.ConvertFilter(rawImageAbs, jxlAbs, avifAbs, webpAbs, extraParams, nil)
 
 	var availableFiles = []string{rawImageAbs}
 	if slices.Contains(supportedFormats, "avif") {
@@ -161,6 +165,9 @@ func Convert(c *fiber.Ctx) error {
 	}
 	if slices.Contains(supportedFormats, "webp") {
 		availableFiles = append(availableFiles, webpAbs)
+	}
+	if slices.Contains(supportedFormats, "jxl") {
+		availableFiles = append(availableFiles, jxlAbs)
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)

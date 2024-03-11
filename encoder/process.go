@@ -12,18 +12,69 @@ import (
 )
 
 func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
-	imgHeightWidthRatio := float32(img.Metadata().Height) / float32(img.Metadata().Width)
+	imageHeight := img.Height()
+	imageWidth := img.Width()
+
+	imgHeightWidthRatio := float32(imageHeight) / float32(imageWidth)
+
+	// Here we have width, height and max_width, max_height
+	// Both pairs cannot be used at the same time
+
+	// max_height and max_width are used to make sure bigger images are resized to max_height and max_width
+	// e.g, 500x500px image with max_width=200,max_height=100 will be resized to 100x100
+	// while smaller images are untouched
+
+	// If both are used, we will use width and height
+
+	if extraParams.MaxHeight > 0 && extraParams.MaxWidth > 0 {
+		// If any of it exceeds
+		if imageHeight > extraParams.MaxHeight || imageWidth > extraParams.MaxWidth {
+			// Check which dimension exceeds most
+			heightExceedRatio := float32(imageHeight) / float32(extraParams.MaxHeight)
+			widthExceedRatio := float32(imageWidth) / float32(extraParams.MaxWidth)
+			// If height exceeds more, like 500x500 -> 200x100 (2.5 < 5)
+			// Take max_height as new height ,resize and retain ratio
+			if heightExceedRatio > widthExceedRatio {
+				err := img.Thumbnail(int(float32(extraParams.MaxHeight)/imgHeightWidthRatio), extraParams.MaxHeight, 0)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := img.Thumbnail(extraParams.MaxWidth, int(float32(extraParams.MaxWidth)*imgHeightWidthRatio), 0)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	if extraParams.MaxHeight > 0 && imageHeight > extraParams.MaxHeight && extraParams.MaxWidth == 0 {
+		err := img.Thumbnail(int(float32(extraParams.MaxHeight)/imgHeightWidthRatio), extraParams.MaxHeight, 0)
+		if err != nil {
+			return err
+		}
+	}
+
+	if extraParams.MaxWidth > 0 && imageWidth > extraParams.MaxWidth && extraParams.MaxHeight == 0 {
+		err := img.Thumbnail(extraParams.MaxWidth, int(float32(extraParams.MaxWidth)*imgHeightWidthRatio), 0)
+		if err != nil {
+			return err
+		}
+	}
+
 	if extraParams.Width > 0 && extraParams.Height > 0 {
 		err := img.Thumbnail(extraParams.Width, extraParams.Height, vips.InterestingAttention)
 		if err != nil {
 			return err
 		}
-	} else if extraParams.Width > 0 && extraParams.Height == 0 {
+	}
+	if extraParams.Width > 0 && extraParams.Height == 0 {
 		err := img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
 		if err != nil {
 			return err
 		}
-	} else if extraParams.Height > 0 && extraParams.Width == 0 {
+	}
+	if extraParams.Height > 0 && extraParams.Width == 0 {
 		err := img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
 		if err != nil {
 			return err

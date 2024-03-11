@@ -18,12 +18,14 @@ import (
 )
 
 var (
-	chromeUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
+	chromeUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
+	safariUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
+	curlUA   = "curl/7.64.1"
+
 	acceptWebP   = "image/webp,image/apng,image/*,*/*;q=0.8"
 	acceptAvif   = "image/avif,image/*,*/*;q=0.8"
-	acceptLegacy = "image/jpeg"
-	safariUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
-	curlUA       = "curl/7.64.1"
+	acceptLegacy = "image/jpeg,image/png"
+	acceptJxl    = "image/jxl"
 )
 
 func setupParam() {

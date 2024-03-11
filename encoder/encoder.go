@@ -33,7 +33,7 @@ func init() {
 	intMinusOne.Set(-1)
 }
 
-func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
+func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
 	// Wait for the conversion to complete and return the converted image
 	retryDelay := 100 * time.Millisecond // Initial retry delay
 
@@ -53,7 +53,7 @@ func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraP
 	defer config.ConvertLock.Delete(rawPath)
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF {
 		go func() {
 			err := convertImage(rawPath, avifPath, "avif", extraParams)
@@ -66,7 +66,7 @@ func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraP
 		wg.Done()
 	}
 
-	if !helper.ImageExists(webpPath) {
+	if !helper.ImageExists(webpPath) && config.Config.EnableWebP {
 		go func() {
 			err := convertImage(rawPath, webpPath, "webp", extraParams)
 			if err != nil {
@@ -77,6 +77,19 @@ func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraP
 	} else {
 		wg.Done()
 	}
+
+	if !helper.ImageExists(jxlPath) && config.Config.EnableJXL {
+		go func() {
+			err := convertImage(rawPath, jxlPath, "jxl", extraParams)
+			if err != nil {
+				log.Errorln(err)
+			}
+			defer wg.Done()
+		}()
+	} else {
+		wg.Done()
+	}
+
 	wg.Wait()
 
 	if c != nil {
@@ -123,9 +136,46 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 		err = webpEncoder(img, rawPath, optimizedPath)
 	case "avif":
 		err = avifEncoder(img, rawPath, optimizedPath)
+	case "jxl":
+		err = jxlEncoder(img, rawPath, optimizedPath)
 	}
 
 	return err
+}
+
+func jxlEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {
+	var (
+		buf     []byte
+		quality = config.Config.Quality
+		err     error
+	)
+
+	// If quality >= 100, we use lossless mode
+	if quality >= 100 {
+		buf, _, err = img.ExportJxl(&vips.JxlExportParams{
+			Effort:   2,
+			Lossless: true,
+		})
+	} else {
+		buf, _, err = img.ExportJxl(&vips.JxlExportParams{
+			Effort:   2,
+			Quality:  quality,
+			Lossless: false,
+		})
+	}
+
+	if err != nil {
+		log.Warnf("Can't encode source image: %v to JXL", err)
+		return err
+	}
+
+	if err := os.WriteFile(optimizedPath, buf, 0600); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	convertLog("JXL", rawPath, optimizedPath, quality)
+	return nil
 }
 
 func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {

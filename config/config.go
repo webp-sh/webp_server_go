@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -29,7 +30,7 @@ const (
   "EXHAUST_PATH": "./exhaust",
   "IMG_MAP": {},
   "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","heic","nef"],
-  "ENABLE_AVIF": false,
+  "CONVERT_TYPES": ["webp","avif","jxl"],
   "ENABLE_EXTRA_PARAMS": false
   "READ_BUFFER_SIZE": 4096,
   "CONCURRENCY": 262144,
@@ -47,7 +48,7 @@ var (
 	ProxyMode      bool
 	Prefetch       bool
 	Config         = NewWebPConfig()
-	Version        = "0.10.8"
+	Version        = "0.11.0"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock    = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw      = "./remote-raw"
@@ -63,31 +64,41 @@ type MetaFile struct {
 }
 
 type WebpConfig struct {
-	Host              string            `json:"HOST"`
-	Port              string            `json:"PORT"`
-	ImgPath           string            `json:"IMG_PATH"`
-	Quality           int               `json:"QUALITY,string"`
-	AllowedTypes      []string          `json:"ALLOWED_TYPES"`
-	ImageMap          map[string]string `json:"IMG_MAP"`
-	ExhaustPath       string            `json:"EXHAUST_PATH"`
-	EnableAVIF        bool              `json:"ENABLE_AVIF"`
-	EnableExtraParams bool              `json:"ENABLE_EXTRA_PARAMS"`
-	ReadBufferSize    int               `json:"READ_BUFFER_SIZE"`
-	Concurrency       int               `json:"CONCURRENCY"`
-	DisableKeepalive  bool              `json:"DISABLE_KEEPALIVE"`
-	CacheTTL          int               `json:"CACHE_TTL"`
+	Host         string            `json:"HOST"`
+	Port         string            `json:"PORT"`
+	ImgPath      string            `json:"IMG_PATH"`
+	Quality      int               `json:"QUALITY,string"`
+	AllowedTypes []string          `json:"ALLOWED_TYPES"`
+	ConvertTypes []string          `json:"CONVERT_TYPES"`
+	ImageMap     map[string]string `json:"IMG_MAP"`
+	ExhaustPath  string            `json:"EXHAUST_PATH"`
+
+	EnableWebP bool `json:"ENABLE_WEBP"`
+	EnableAVIF bool `json:"ENABLE_AVIF"`
+	EnableJXL  bool `json:"ENABLE_JXL"`
+
+	EnableExtraParams bool `json:"ENABLE_EXTRA_PARAMS"`
+	ReadBufferSize    int  `json:"READ_BUFFER_SIZE"`
+	Concurrency       int  `json:"CONCURRENCY"`
+	DisableKeepalive  bool `json:"DISABLE_KEEPALIVE"`
+	CacheTTL          int  `json:"CACHE_TTL"`
 }
 
 func NewWebPConfig() *WebpConfig {
 	return &WebpConfig{
-		Host:              "0.0.0.0",
-		Port:              "3333",
-		ImgPath:           "./pics",
-		Quality:           80,
-		AllowedTypes:      []string{"jpg", "png", "jpeg", "bmp", "svg", "nef", "heic", "webp"},
-		ImageMap:          map[string]string{},
-		ExhaustPath:       "./exhaust",
-		EnableAVIF:        false,
+		Host:         "0.0.0.0",
+		Port:         "3333",
+		ImgPath:      "./pics",
+		Quality:      80,
+		AllowedTypes: []string{"jpg", "png", "jpeg", "bmp", "svg", "nef", "heic", "webp"},
+		ConvertTypes: []string{"webp"},
+		ImageMap:     map[string]string{},
+		ExhaustPath:  "./exhaust",
+
+		EnableWebP: false,
+		EnableAVIF: false,
+		EnableJXL:  false,
+
 		EnableExtraParams: false,
 		ReadBufferSize:    4096,
 		Concurrency:       262144,
@@ -115,6 +126,16 @@ func LoadConfig() {
 	switchProxyMode()
 	Config.ImageMap = parseImgMap(Config.ImageMap)
 
+	if slices.Contains(Config.ConvertTypes, "webp") {
+		Config.EnableWebP = true
+	}
+	if slices.Contains(Config.ConvertTypes, "avif") {
+		Config.EnableAVIF = true
+	}
+	if slices.Contains(Config.ConvertTypes, "jxl") {
+		Config.EnableJXL = true
+	}
+
 	// Read from ENV for override
 	if os.Getenv("WEBP_HOST") != "" {
 		Config.Host = os.Getenv("WEBP_HOST")
@@ -139,16 +160,24 @@ func LoadConfig() {
 	if os.Getenv("WEBP_ALLOWED_TYPES") != "" {
 		Config.AllowedTypes = strings.Split(os.Getenv("WEBP_ALLOWED_TYPES"), ",")
 	}
-	if os.Getenv("WEBP_ENABLE_AVIF") != "" {
-		enableAVIF := os.Getenv("WEBP_ENABLE_AVIF")
-		if enableAVIF == "true" {
+
+	// Override enabled convert types
+	if os.Getenv("WEBP_CONVERT_TYPES") != "" {
+		Config.ConvertTypes = strings.Split(os.Getenv("WEBP_CONVERT_TYPES"), ",")
+		Config.EnableWebP = false
+		Config.EnableAVIF = false
+		Config.EnableJXL = false
+		if slices.Contains(Config.ConvertTypes, "webp") {
+			Config.EnableWebP = true
+		}
+		if slices.Contains(Config.ConvertTypes, "avif") {
 			Config.EnableAVIF = true
-		} else if enableAVIF == "false" {
-			Config.EnableAVIF = false
-		} else {
-			log.Warnf("WEBP_ENABLE_AVIF is not a valid boolean, using value in config.json %t", Config.EnableAVIF)
+		}
+		if slices.Contains(Config.ConvertTypes, "jxl") {
+			Config.EnableJXL = true
 		}
 	}
+
 	if os.Getenv("WEBP_ENABLE_EXTRA_PARAMS") != "" {
 		enableExtraParams := os.Getenv("WEBP_ENABLE_EXTRA_PARAMS")
 		if enableExtraParams == "true" {
@@ -223,8 +252,10 @@ func parseImgMap(imgMap map[string]string) map[string]string {
 }
 
 type ExtraParams struct {
-	Width  int // in px
-	Height int // in px
+	Width     int // in px
+	Height    int // in px
+	MaxWidth  int // in px
+	MaxHeight int // in px
 }
 
 func switchProxyMode() {

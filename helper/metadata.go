@@ -18,9 +18,11 @@ func getId(p string) (string, string, string) {
 	parsed, _ := url.Parse(p)
 	width := parsed.Query().Get("width")
 	height := parsed.Query().Get("height")
-	// santizedPath will be /webp_server.jpg?width=200\u0026height= in local mode when requesting /webp_server.jpg?width=200
+	max_width := parsed.Query().Get("max_width")
+	max_height := parsed.Query().Get("max_height")
+	// santizedPath will be /webp_server.jpg?width=200\u0026height=\u0026max_width=\u0026max_height= in local mode when requesting /webp_server.jpg?width=200
 	// santizedPath will be https://docs.webp.sh/images/webp_server.jpg?width=400 in proxy mode when requesting /images/webp_server.jpg?width=400 with IMG_PATH = https://docs.webp.sh
-	santizedPath := parsed.Path + "?width=" + width + "&height=" + height
+	santizedPath := parsed.Path + "?width=" + width + "&height=" + height + "&max_width=" + max_width + "&max_height=" + max_height
 	id = HashString(santizedPath)
 
 	return id, path.Join(config.Config.ImgPath, parsed.Path), santizedPath

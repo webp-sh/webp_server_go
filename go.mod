@@ -36,3 +36,5 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/jeremytorres/rawparser v1.0.2 => github.com/webp-sh/rawparser v0.0.0-20240311121240-15117cd3320a
