@@ -36,6 +36,7 @@ func setupParam() {
 	config.Metadata = "../metadata"
 	config.RemoteRaw = "../remote-raw"
 	config.ProxyMode = false
+	config.Config.EnableWebP = true
 	config.Config.EnableAVIF = false
 	config.Config.Quality = 80
 	config.Config.ImageMap = map[string]string{}
