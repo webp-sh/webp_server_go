@@ -31,6 +31,7 @@ const (
   "IMG_MAP": {},
   "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","heic","nef"],
   "CONVERT_TYPES": ["webp","avif","jxl"],
+  "STRIP_METADATA": true,
   "ENABLE_EXTRA_PARAMS": false
   "READ_BUFFER_SIZE": 4096,
   "CONCURRENCY": 262144,
@@ -78,6 +79,7 @@ type WebpConfig struct {
 	EnableJXL  bool `json:"ENABLE_JXL"`
 
 	EnableExtraParams bool `json:"ENABLE_EXTRA_PARAMS"`
+	StripMetadata     bool `json:"STRIP_METADATA"`
 	ReadBufferSize    int  `json:"READ_BUFFER_SIZE"`
 	Concurrency       int  `json:"CONCURRENCY"`
 	DisableKeepalive  bool `json:"DISABLE_KEEPALIVE"`
@@ -100,6 +102,7 @@ func NewWebPConfig() *WebpConfig {
 		EnableJXL:  false,
 
 		EnableExtraParams: false,
+		StripMetadata:     true,
 		ReadBufferSize:    4096,
 		Concurrency:       262144,
 		DisableKeepalive:  false,
@@ -186,6 +189,16 @@ func LoadConfig() {
 			Config.EnableExtraParams = false
 		} else {
 			log.Warnf("WEBP_ENABLE_EXTRA_PARAMS is not a valid boolean, using value in config.json %t", Config.EnableExtraParams)
+		}
+	}
+	if os.Getenv("WEBP_STRIP_METADATA") != "" {
+		stripMetadata := os.Getenv("WEBP_STRIP_METADATA")
+		if stripMetadata == "true" {
+			Config.StripMetadata = true
+		} else if stripMetadata == "false" {
+			Config.StripMetadata = false
+		} else {
+			log.Warnf("WEBP_STRIP_METADATA is not a valid boolean, using value in config.json %t", Config.StripMetadata)
 		}
 	}
 	if os.Getenv("WEBP_IMG_MAP") != "" {

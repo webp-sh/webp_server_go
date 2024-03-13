@@ -189,13 +189,13 @@ func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 	if quality >= 100 {
 		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
 			Lossless:      true,
-			StripMetadata: true,
+			StripMetadata: config.Config.StripMetadata,
 		})
 	} else {
 		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
 			Quality:       quality,
 			Lossless:      false,
-			StripMetadata: true,
+			StripMetadata: config.Config.StripMetadata,
 		})
 	}
 
@@ -227,7 +227,7 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 		//   use_lossless_preset = 0;   // disable -z option
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
 			Lossless:      true,
-			StripMetadata: true,
+			StripMetadata: config.Config.StripMetadata,
 		})
 	} else {
 		// If some special images cannot encode with default ReductionEffort(0), then retry from 0 to 6
@@ -235,7 +235,7 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 		ep := vips.WebpExportParams{
 			Quality:       quality,
 			Lossless:      false,
-			StripMetadata: true,
+			StripMetadata: config.Config.StripMetadata,
 		}
 		for i := range 7 {
 			ep.ReductionEffort = i

@@ -100,6 +100,9 @@ func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
 		return
 	}
 	_ = resizeImage(img, extraParams)
+	if config.Config.StripMetadata {
+		img.RemoveMetadata()
+	}
 	buf, _, _ := img.ExportNative()
 	_ = os.WriteFile(dest, buf, 0600)
 	img.Close()
