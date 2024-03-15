@@ -32,11 +32,11 @@ const (
   "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","heic","nef"],
   "CONVERT_TYPES": ["webp","avif","jxl"],
   "STRIP_METADATA": true,
-  "ENABLE_EXTRA_PARAMS": false
+  "ENABLE_EXTRA_PARAMS": false,
   "READ_BUFFER_SIZE": 4096,
   "CONCURRENCY": 262144,
   "DISABLE_KEEPALIVE": false,
-  "CACHE_TTL": 259200,
+  "CACHE_TTL": 259200
 }`
 )
 
