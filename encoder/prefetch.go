@@ -33,10 +33,16 @@ func PrefetchImages() {
 			if info.IsDir() {
 				return nil
 			}
+			if !helper.CheckAllowedType(picAbsPath) {
+				return nil
+			}
 			// RawImagePath string, ImgFilename string, reqURI string
 			metadata := helper.ReadMetadata(picAbsPath, "", config.LocalHostAlias)
 			avifAbsPath, webpAbsPath, jxlAbsPath := helper.GenOptimizedAbsPath(metadata, config.LocalHostAlias)
+
+			// Using avifAbsPath here is the same as using webpAbsPath/jxlAbsPath
 			_ = os.MkdirAll(path.Dir(avifAbsPath), 0755)
+
 			log.Infof("Prefetching %s", picAbsPath)
 			go ConvertFilter(picAbsPath, jxlAbsPath, avifAbsPath, webpAbsPath, config.ExtraParams{Width: 0, Height: 0}, finishChan)
 			_ = bar.Add(<-finishChan)
