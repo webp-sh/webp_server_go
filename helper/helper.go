@@ -140,9 +140,6 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 	if strings.Contains(accept, "image/avif") {
 		supported["avif"] = true
 	}
-	if strings.Contains(accept, "image/jxl") {
-		supported["jxl"] = true
-	}
 
 	supportedWebPs := []string{"iPhone OS 14", "CPU OS 14", "iPhone OS 15", "CPU OS 15", "iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17"}
 	for _, version := range supportedWebPs {
@@ -160,11 +157,16 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 		}
 	}
 
-	supportedJXLs := []string{"iPhone OS 17", "CPU OS 17"}
-	for _, version := range supportedJXLs {
-		if strings.Contains(ua, version) {
-			supported["jxl"] = true
-			break
+	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 <- iPad
+	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15 <- Mac
+	// Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1 <- iPhone @ Safari
+	supportedJXLs := []string{"iPhone OS 17", "CPU OS 17", "Version/17"}
+	if strings.Contains(ua, "iPhone") || strings.Contains(ua, "Macintosh") {
+		for _, version := range supportedJXLs {
+			if strings.Contains(ua, version) {
+				supported["jxl"] = true
+				break
+			}
 		}
 	}
 

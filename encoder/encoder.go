@@ -153,14 +153,18 @@ func jxlEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportJxl(&vips.JxlExportParams{
-			Effort:   2,
+			Effort:   1,
+			Tier:     4,
 			Lossless: true,
+			Distance: 1.0,
 		})
 	} else {
 		buf, _, err = img.ExportJxl(&vips.JxlExportParams{
-			Effort:   2,
+			Effort:   1,
+			Tier:     4,
 			Quality:  quality,
 			Lossless: false,
+			Distance: 1.0,
 		})
 	}
 

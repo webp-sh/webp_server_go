@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -137,6 +138,7 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)
+	fmt.Println("Supported formats:", supportedFormats)
 	// resize itself and return if only one format(raw) is supported
 	if len(supportedFormats) == 1 {
 		dest := path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id)

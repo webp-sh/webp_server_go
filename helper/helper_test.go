@@ -56,6 +56,12 @@ func TestGuessSupportedFormat(t *testing.T) {
 		expected  []string
 	}{
 		{
+			name:      "WebP/AVIF/JXL Supported",
+			userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15", // iPad
+			accept:    "image/webp, image/avif",
+			expected:  []string{"raw", "webp", "avif", "jxl"},
+		},
+		{
 			name:      "WebP/AVIF Supported",
 			userAgent: "iPhone OS 16",
 			accept:    "image/webp, image/png",
