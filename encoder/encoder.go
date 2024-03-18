@@ -33,7 +33,7 @@ func init() {
 	intMinusOne.Set(-1)
 }
 
-func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
+func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams config.ExtraParams, supportedFormats map[string]bool, c chan int) {
 	// Wait for the conversion to complete and return the converted image
 	retryDelay := 100 * time.Millisecond // Initial retry delay
 
@@ -54,7 +54,7 @@ func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams conf
 
 	var wg sync.WaitGroup
 	wg.Add(3)
-	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF {
+	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF && supportedFormats["avif"] {
 		go func() {
 			err := convertImage(rawPath, avifPath, "avif", extraParams)
 			if err != nil {
@@ -66,7 +66,7 @@ func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams conf
 		wg.Done()
 	}
 
-	if !helper.ImageExists(webpPath) && config.Config.EnableWebP {
+	if !helper.ImageExists(webpPath) && config.Config.EnableWebP && supportedFormats["webp"] {
 		go func() {
 			err := convertImage(rawPath, webpPath, "webp", extraParams)
 			if err != nil {
@@ -78,7 +78,7 @@ func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams conf
 		wg.Done()
 	}
 
-	if !helper.ImageExists(jxlPath) && config.Config.EnableJXL {
+	if !helper.ImageExists(jxlPath) && config.Config.EnableJXL && supportedFormats["jxl"] {
 		go func() {
 			err := convertImage(rawPath, jxlPath, "jxl", extraParams)
 			if err != nil {

@@ -1,11 +1,9 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
-	"slices"
 	"strings"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
@@ -138,9 +136,11 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)
-	fmt.Println("Supported formats:", supportedFormats)
-	// resize itself and return if only one format(raw) is supported
-	if len(supportedFormats) == 1 {
+	// resize itself and return if only raw(original format) is supported
+	if supportedFormats["raw"] == true &&
+		supportedFormats["webp"] == false &&
+		supportedFormats["avif"] == false &&
+		supportedFormats["jxl"] == false {
 		dest := path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id)
 		if !helper.ImageExists(dest) {
 			encoder.ResizeItself(rawImageAbs, dest, extraParams)
@@ -159,16 +159,17 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	avifAbs, webpAbs, jxlAbs := helper.GenOptimizedAbsPath(metadata, targetHostName)
-	encoder.ConvertFilter(rawImageAbs, jxlAbs, avifAbs, webpAbs, extraParams, nil)
+	// Do the convertion based on supported formats and config
+	encoder.ConvertFilter(rawImageAbs, jxlAbs, avifAbs, webpAbs, extraParams, supportedFormats, nil)
 
 	var availableFiles = []string{rawImageAbs}
-	if slices.Contains(supportedFormats, "avif") {
+	if supportedFormats["avif"] {
 		availableFiles = append(availableFiles, avifAbs)
 	}
-	if slices.Contains(supportedFormats, "webp") {
+	if supportedFormats["webp"] {
 		availableFiles = append(availableFiles, webpAbs)
 	}
-	if slices.Contains(supportedFormats, "jxl") {
+	if supportedFormats["jxl"] {
 		availableFiles = append(availableFiles, jxlAbs)
 	}
 

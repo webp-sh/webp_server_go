@@ -44,7 +44,16 @@ func PrefetchImages() {
 			_ = os.MkdirAll(path.Dir(avifAbsPath), 0755)
 
 			log.Infof("Prefetching %s", picAbsPath)
-			go ConvertFilter(picAbsPath, jxlAbsPath, avifAbsPath, webpAbsPath, config.ExtraParams{Width: 0, Height: 0}, finishChan)
+
+			// Allow all supported formats
+			supported := map[string]bool{
+				"raw":  true,
+				"webp": true,
+				"avif": true,
+				"jxl":  true,
+			}
+
+			go ConvertFilter(picAbsPath, jxlAbsPath, avifAbsPath, webpAbsPath, config.ExtraParams{Width: 0, Height: 0}, supported, finishChan)
 			_ = bar.Add(<-finishChan)
 			return nil
 		})

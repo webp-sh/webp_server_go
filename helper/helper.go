@@ -121,7 +121,7 @@ func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
-func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
+func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	var (
 		supported = map[string]bool{
 			"raw":  true,
@@ -170,14 +170,7 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 		}
 	}
 
-	// save true value's key to slice
-	var accepted []string
-	for k, v := range supported {
-		if v {
-			accepted = append(accepted, k)
-		}
-	}
-	return accepted
+	return supported
 }
 
 func FindSmallestFiles(files []string) string {
