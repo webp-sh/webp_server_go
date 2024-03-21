@@ -6,7 +6,7 @@
   "EXHAUST_PATH": "./exhaust",
   "IMG_MAP": {},
   "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","heic","nef"],
-  "CONVERT_TYPES": ["webp","avif","jxl"],
+  "CONVERT_TYPES": ["webp"],
   "STRIP_METADATA": true,
   "ENABLE_EXTRA_PARAMS": false,
   "READ_BUFFER_SIZE": 4096,
