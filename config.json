@@ -5,7 +5,7 @@
   "IMG_PATH": "./pics",
   "EXHAUST_PATH": "./exhaust",
   "IMG_MAP": {},
-  "ALLOWED_TYPES": ["jpg","png","jpeg","bmp","svg","heic","nef"],
+  "ALLOWED_TYPES": ["jpg","png","jpeg","gif","bmp","svg","heic","nef"],
   "CONVERT_TYPES": ["webp"],
   "STRIP_METADATA": true,
   "ENABLE_EXTRA_PARAMS": false,
