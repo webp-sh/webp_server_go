@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"slices"
 	"strings"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
@@ -40,11 +39,15 @@ func Convert(c *fiber.Ctx) error {
 		proxyMode      = config.ProxyMode
 		mapMode        = false
 
-		width, _    = strconv.Atoi(c.Query("width"))  // Extra Params
-		height, _   = strconv.Atoi(c.Query("height")) // Extra Params
-		extraParams = config.ExtraParams{
-			Width:  width,
-			Height: height,
+		width, _     = strconv.Atoi(c.Query("width"))      // Extra Params
+		height, _    = strconv.Atoi(c.Query("height"))     // Extra Params
+		maxHeight, _ = strconv.Atoi(c.Query("max_height")) // Extra Params
+		maxWidth, _  = strconv.Atoi(c.Query("max_width"))  // Extra Params
+		extraParams  = config.ExtraParams{
+			Width:     width,
+			Height:    height,
+			MaxWidth:  maxWidth,
+			MaxHeight: maxHeight,
 		}
 	)
 
@@ -133,8 +136,11 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)
-	// resize itself and return if only one format(raw) is supported
-	if len(supportedFormats) == 1 {
+	// resize itself and return if only raw(original format) is supported
+	if supportedFormats["raw"] == true &&
+		supportedFormats["webp"] == false &&
+		supportedFormats["avif"] == false &&
+		supportedFormats["jxl"] == false {
 		dest := path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id)
 		if !helper.ImageExists(dest) {
 			encoder.ResizeItself(rawImageAbs, dest, extraParams)
@@ -152,15 +158,19 @@ func Convert(c *fiber.Ctx) error {
 		return nil
 	}
 
-	avifAbs, webpAbs := helper.GenOptimizedAbsPath(metadata, targetHostName)
-	encoder.ConvertFilter(rawImageAbs, avifAbs, webpAbs, extraParams, nil)
+	avifAbs, webpAbs, jxlAbs := helper.GenOptimizedAbsPath(metadata, targetHostName)
+	// Do the convertion based on supported formats and config
+	encoder.ConvertFilter(rawImageAbs, jxlAbs, avifAbs, webpAbs, extraParams, supportedFormats, nil)
 
 	var availableFiles = []string{rawImageAbs}
-	if slices.Contains(supportedFormats, "avif") {
+	if supportedFormats["avif"] {
 		availableFiles = append(availableFiles, avifAbs)
 	}
-	if slices.Contains(supportedFormats, "webp") {
+	if supportedFormats["webp"] {
 		availableFiles = append(availableFiles, webpAbs)
+	}
+	if supportedFormats["jxl"] {
+		availableFiles = append(availableFiles, jxlAbs)
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)

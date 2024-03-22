@@ -33,7 +33,7 @@ func init() {
 	intMinusOne.Set(-1)
 }
 
-func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraParams, c chan int) {
+func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams config.ExtraParams, supportedFormats map[string]bool, c chan int) {
 	// Wait for the conversion to complete and return the converted image
 	retryDelay := 100 * time.Millisecond // Initial retry delay
 
@@ -53,8 +53,8 @@ func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraP
 	defer config.ConvertLock.Delete(rawPath)
 
 	var wg sync.WaitGroup
-	wg.Add(2)
-	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF {
+	wg.Add(3)
+	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF && supportedFormats["avif"] {
 		go func() {
 			err := convertImage(rawPath, avifPath, "avif", extraParams)
 			if err != nil {
@@ -66,7 +66,7 @@ func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraP
 		wg.Done()
 	}
 
-	if !helper.ImageExists(webpPath) {
+	if !helper.ImageExists(webpPath) && config.Config.EnableWebP && supportedFormats["webp"] {
 		go func() {
 			err := convertImage(rawPath, webpPath, "webp", extraParams)
 			if err != nil {
@@ -77,6 +77,19 @@ func ConvertFilter(rawPath, avifPath, webpPath string, extraParams config.ExtraP
 	} else {
 		wg.Done()
 	}
+
+	if !helper.ImageExists(jxlPath) && config.Config.EnableJXL && supportedFormats["jxl"] {
+		go func() {
+			err := convertImage(rawPath, jxlPath, "jxl", extraParams)
+			if err != nil {
+				log.Errorln(err)
+			}
+			defer wg.Done()
+		}()
+	} else {
+		wg.Done()
+	}
+
 	wg.Wait()
 
 	if c != nil {
@@ -123,9 +136,50 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 		err = webpEncoder(img, rawPath, optimizedPath)
 	case "avif":
 		err = avifEncoder(img, rawPath, optimizedPath)
+	case "jxl":
+		err = jxlEncoder(img, rawPath, optimizedPath)
 	}
 
 	return err
+}
+
+func jxlEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {
+	var (
+		buf     []byte
+		quality = config.Config.Quality
+		err     error
+	)
+
+	// If quality >= 100, we use lossless mode
+	if quality >= 100 {
+		buf, _, err = img.ExportJxl(&vips.JxlExportParams{
+			Effort:   1,
+			Tier:     4,
+			Lossless: true,
+			Distance: 1.0,
+		})
+	} else {
+		buf, _, err = img.ExportJxl(&vips.JxlExportParams{
+			Effort:   1,
+			Tier:     4,
+			Quality:  quality,
+			Lossless: false,
+			Distance: 1.0,
+		})
+	}
+
+	if err != nil {
+		log.Warnf("Can't encode source image: %v to JXL", err)
+		return err
+	}
+
+	if err := os.WriteFile(optimizedPath, buf, 0600); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	convertLog("JXL", rawPath, optimizedPath, quality)
+	return nil
 }
 
 func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {
@@ -139,13 +193,13 @@ func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 	if quality >= 100 {
 		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
 			Lossless:      true,
-			StripMetadata: true,
+			StripMetadata: config.Config.StripMetadata,
 		})
 	} else {
 		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
 			Quality:       quality,
 			Lossless:      false,
-			StripMetadata: true,
+			StripMetadata: config.Config.StripMetadata,
 		})
 	}
 
@@ -177,7 +231,7 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 		//   use_lossless_preset = 0;   // disable -z option
 		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
 			Lossless:      true,
-			StripMetadata: true,
+			StripMetadata: config.Config.StripMetadata,
 		})
 	} else {
 		// If some special images cannot encode with default ReductionEffort(0), then retry from 0 to 6
@@ -185,7 +239,7 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 		ep := vips.WebpExportParams{
 			Quality:       quality,
 			Lossless:      false,
-			StripMetadata: true,
+			StripMetadata: config.Config.StripMetadata,
 		}
 		for i := range 7 {
 			ep.ReductionEffort = i

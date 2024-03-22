@@ -32,9 +32,9 @@ func TestGetId(t *testing.T) {
 
 		// Verify the return values
 		parsed, _ := url.Parse(p)
-		expectedId := HashString(parsed.Path + "?width=400&height=500")
+		expectedId := HashString(parsed.Path + "?width=400&height=500&max_width=&max_height=")
 		expectedPath := path.Join(config.Config.ImgPath, parsed.Path)
-		expectedSantizedPath := parsed.Path + "?width=400&height=500"
+		expectedSantizedPath := parsed.Path + "?width=400&height=500&max_width=&max_height="
 		if id != expectedId || jointPath != expectedPath || santizedPath != expectedSantizedPath {
 			t.Errorf("Test case 2 failed: Expected (%s, %s, %s), but got (%s, %s, %s)",
 				expectedId, expectedPath, expectedSantizedPath, id, jointPath, santizedPath)

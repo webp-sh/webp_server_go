@@ -96,12 +96,14 @@ func CheckAllowedType(imgFilename string) bool {
 	return false
 }
 
-func GenOptimizedAbsPath(metadata config.MetaFile, subdir string) (string, string) {
+func GenOptimizedAbsPath(metadata config.MetaFile, subdir string) (string, string, string) {
 	webpFilename := fmt.Sprintf("%s.webp", metadata.Id)
 	avifFilename := fmt.Sprintf("%s.avif", metadata.Id)
+	jxlFilename := fmt.Sprintf("%s.jxl", metadata.Id)
 	webpAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, subdir, webpFilename))
 	avifAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, subdir, avifFilename))
-	return avifAbsolutePath, webpAbsolutePath
+	jxlAbsolutePath := path.Clean(path.Join(config.Config.ExhaustPath, subdir, jxlFilename))
+	return avifAbsolutePath, webpAbsolutePath, jxlAbsolutePath
 }
 
 func GetCompressionRate(RawImagePath string, optimizedImg string) string {
@@ -119,12 +121,13 @@ func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 	return fmt.Sprintf(`%.2f`, compressionRate)
 }
 
-func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
+func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	var (
 		supported = map[string]bool{
 			"raw":  true,
 			"webp": false,
 			"avif": false,
+			"jxl":  false,
 		}
 
 		ua     = string(header.Peek("user-agent"))
@@ -154,14 +157,20 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) []string {
 		}
 	}
 
-	// save true value's key to slice
-	var accepted []string
-	for k, v := range supported {
-		if v {
-			accepted = append(accepted, k)
+	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 <- iPad
+	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15 <- Mac
+	// Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1 <- iPhone @ Safari
+	supportedJXLs := []string{"iPhone OS 17", "CPU OS 17", "Version/17"}
+	if strings.Contains(ua, "iPhone") || strings.Contains(ua, "Macintosh") {
+		for _, version := range supportedJXLs {
+			if strings.Contains(ua, version) {
+				supported["jxl"] = true
+				break
+			}
 		}
 	}
-	return accepted
+
+	return supported
 }
 
 func FindSmallestFiles(files []string) string {

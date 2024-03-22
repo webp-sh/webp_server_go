@@ -18,12 +18,14 @@ import (
 )
 
 var (
-	chromeUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
+	chromeUA   = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
+	safariUA   = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
+	safari17UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15" // <- Mac with Safari 17
+	curlUA     = "curl/7.64.1"
+
 	acceptWebP   = "image/webp,image/apng,image/*,*/*;q=0.8"
 	acceptAvif   = "image/avif,image/*,*/*;q=0.8"
-	acceptLegacy = "image/jpeg"
-	safariUA     = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1 Safari/605.1.15"
-	curlUA       = "curl/7.64.1"
+	acceptLegacy = "image/jpeg,image/png"
 )
 
 func setupParam() {
@@ -34,6 +36,7 @@ func setupParam() {
 	config.Metadata = "../metadata"
 	config.RemoteRaw = "../remote-raw"
 	config.ProxyMode = false
+	config.Config.EnableWebP = true
 	config.Config.EnableAVIF = false
 	config.Config.Quality = 80
 	config.Config.ImageMap = map[string]string{}
@@ -103,7 +106,7 @@ func TestConvertDuplicates(t *testing.T) {
 
 	// test Chrome
 	for url, respType := range testLink {
-		for _ = range N {
+		for range N {
 			resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 			defer resp.Body.Close()
 			contentType := helper.GetContentType(data)

@@ -47,7 +47,10 @@ func setupLogger() {
 		TimeFormat: config.TimeDateFormat,
 	}))
 	app.Use(recover.New(recover.Config{}))
-	log.Infoln("WebP Server Go ready.")
+	fmt.Println("Allowed file types as source:", config.Config.AllowedTypes)
+	fmt.Println("Convert to WebP Enabled:", config.Config.EnableWebP)
+	fmt.Println("Convert to AVIF Enabled:", config.Config.EnableAVIF)
+	fmt.Println("Convert to JXL Enabled:", config.Config.EnableJXL)
 }
 
 func init() {
@@ -92,5 +95,4 @@ func main() {
 	fmt.Println("WebP Server Go is Running on http://" + listenAddress)
 
 	_ = app.Listen(listenAddress)
-
 }

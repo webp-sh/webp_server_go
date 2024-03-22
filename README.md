@@ -16,7 +16,7 @@ Currently supported image format: JPEG, PNG, BMP, GIF, SVG, HEIC, NEF, WEBP
 
 > e.g When you visit `https://your.website/pics/tsuki.jpg`，it will serve as `image/webp`/`image/avif` format without changing the URL.
 >
-> GIF image will not be converted to AVIF format even with `ENABLE_AVIF` to `true`, because the converted AVIF image is not animated.
+> GIF image will not be converted to AVIF format because the converted AVIF image is not animated.
 
 ## Usage with Docker(recommended)
 
@@ -32,8 +32,6 @@ services:
     image: webpsh/webp-server-go
     # image: ghcr.io/webp-sh/webp_server_go
     restart: always
-    environment:
-      - MALLOC_ARENA_MAX=1
     volumes:
       - ./path/to/pics:/opt/pics
       - ./exhaust:/opt/exhaust
@@ -74,8 +72,6 @@ services:
     image: webpsh/webp-server-go
     # image: ghcr.io/webp-sh/webp_server_go
     restart: always
-    environment:
-      - MALLOC_ARENA_MAX=1
     volumes:
       - ./path/to/pics:/opt/pics
       - ./path/to/exhaust:/opt/exhaust
