@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/davidbyttow/govips/v2 v2.14.0
-	github.com/gofiber/fiber/v2 v2.52.3
+	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/h2non/filetype v1.1.4-0.20230123234534-cfcd7d097bc4
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c
 	github.com/jeremytorres/rawparser v1.0.2

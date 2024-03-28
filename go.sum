@@ -9,8 +9,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davidbyttow/govips/v2 v2.14.0 h1:il3pX0XMZ5nlwipkFJHRZ3vGzcdXWApARalJxNpRHJU=
 github.com/davidbyttow/govips/v2 v2.14.0/go.mod h1:eglyvgm65eImDiJJk4wpj9LSz4pWivPzWgDqkxWJn5k=
-github.com/gofiber/fiber/v2 v2.52.3 h1:bgAZwPv0aHIfRwIUdkWhg6U8D3MEYnoJjT+HfW/dDTo=
-github.com/gofiber/fiber/v2 v2.52.3/go.mod h1:KEOE+cXMhXG0zHc9d8+E38hoX+ZN7bhOtgeF2oT6jrQ=
+github.com/gofiber/fiber/v2 v2.52.4 h1:P+T+4iK7VaqUsq2PALYEfBBo6bJZ4q3FP8cZ84EggTM=
+github.com/gofiber/fiber/v2 v2.52.4/go.mod h1:KEOE+cXMhXG0zHc9d8+E38hoX+ZN7bhOtgeF2oT6jrQ=
 github.com/google/uuid v1.5.0 h1:1p67kYwdtXjb0gL0BPiP1Av9wiZPo5A8z2cWkTZ+eyU=
 github.com/google/uuid v1.5.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/h2non/filetype v1.1.4-0.20230123234534-cfcd7d097bc4 h1:k7FGP5I7raiaC3aAzCLddcoxzboIrOm6/FVRXjp/5JM=
