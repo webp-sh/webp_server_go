@@ -140,6 +140,9 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	if strings.Contains(accept, "image/avif") {
 		supported["avif"] = true
 	}
+	if strings.Contains(accept, "image/jxl") {
+		supported["jxl"] = true
+	}
 
 	supportedWebPs := []string{"iPhone OS 14", "CPU OS 14", "iPhone OS 15", "CPU OS 15", "iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17"}
 	for _, version := range supportedWebPs {
