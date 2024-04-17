@@ -63,7 +63,27 @@ func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 	}
 
 	if extraParams.Width > 0 && extraParams.Height > 0 {
-		err := img.Thumbnail(extraParams.Width, extraParams.Height, vips.InterestingAttention)
+		var cropInteresting vips.Interesting
+		switch config.Config.ExtraParamsCropInteresting {
+		case "InterestingNone":
+			cropInteresting = vips.InterestingNone
+		case "InterestingCentre":
+			cropInteresting = vips.InterestingCentre
+		case "InterestingEntropy":
+			cropInteresting = vips.InterestingEntropy
+		case "InterestingAttention":
+			cropInteresting = vips.InterestingAttention
+		case "InterestingLow":
+			cropInteresting = vips.InterestingLow
+		case "InterestingHigh":
+			cropInteresting = vips.InterestingHigh
+		case "InterestingAll":
+			cropInteresting = vips.InterestingAll
+		default:
+			cropInteresting = vips.InterestingAttention
+		}
+
+		err := img.Thumbnail(extraParams.Width, extraParams.Height, cropInteresting)
 		if err != nil {
 			return err
 		}
