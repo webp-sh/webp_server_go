@@ -33,6 +33,7 @@ const (
   "CONVERT_TYPES": ["webp"],
   "STRIP_METADATA": true,
   "ENABLE_EXTRA_PARAMS": false,
+  "EXTRA_PARAMS_CROP_INTERESTING": "InterestingAttention",
   "READ_BUFFER_SIZE": 4096,
   "CONCURRENCY": 262144,
   "DISABLE_KEEPALIVE": false,
@@ -49,7 +50,7 @@ var (
 	ProxyMode      bool
 	Prefetch       bool
 	Config         = NewWebPConfig()
-	Version        = "0.11.1"
+	Version        = "0.11.2"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock    = cache.New(5*time.Minute, 10*time.Minute)
 	RemoteRaw      = "./remote-raw"
@@ -78,12 +79,14 @@ type WebpConfig struct {
 	EnableAVIF bool `json:"ENABLE_AVIF"`
 	EnableJXL  bool `json:"ENABLE_JXL"`
 
-	EnableExtraParams bool `json:"ENABLE_EXTRA_PARAMS"`
-	StripMetadata     bool `json:"STRIP_METADATA"`
-	ReadBufferSize    int  `json:"READ_BUFFER_SIZE"`
-	Concurrency       int  `json:"CONCURRENCY"`
-	DisableKeepalive  bool `json:"DISABLE_KEEPALIVE"`
-	CacheTTL          int  `json:"CACHE_TTL"`
+	EnableExtraParams          bool   `json:"ENABLE_EXTRA_PARAMS"`
+	ExtraParamsCropInteresting string `json:"EXTRA_PARAMS_CROP_INTERESTING"`
+
+	StripMetadata    bool `json:"STRIP_METADATA"`
+	ReadBufferSize   int  `json:"READ_BUFFER_SIZE"`
+	Concurrency      int  `json:"CONCURRENCY"`
+	DisableKeepalive bool `json:"DISABLE_KEEPALIVE"`
+	CacheTTL         int  `json:"CACHE_TTL"`
 }
 
 func NewWebPConfig() *WebpConfig {
@@ -101,12 +104,13 @@ func NewWebPConfig() *WebpConfig {
 		EnableAVIF: false,
 		EnableJXL:  false,
 
-		EnableExtraParams: false,
-		StripMetadata:     true,
-		ReadBufferSize:    4096,
-		Concurrency:       262144,
-		DisableKeepalive:  false,
-		CacheTTL:          259200,
+		EnableExtraParams:          false,
+		ExtraParamsCropInteresting: "InterestingAttention",
+		StripMetadata:              true,
+		ReadBufferSize:             4096,
+		Concurrency:                262144,
+		DisableKeepalive:           false,
+		CacheTTL:                   259200,
 	}
 }
 
@@ -191,6 +195,15 @@ func LoadConfig() {
 			log.Warnf("WEBP_ENABLE_EXTRA_PARAMS is not a valid boolean, using value in config.json %t", Config.EnableExtraParams)
 		}
 	}
+	if os.Getenv("WEBP_EXTRA_PARAMS_CROP_INTERESTING") != "" {
+		availableInteresting := []string{"InterestingNone", "InterestingEntropy", "InterestingCentre", "InterestingAttention", "InterestringLow", "InterestingHigh", "InterestingAll"}
+		if slices.Contains(availableInteresting, os.Getenv("WEBP_EXTRA_PARAMS_CROP_INTERESTING")) {
+			Config.ExtraParamsCropInteresting = os.Getenv("WEBP_EXTRA_PARAMS_CROP_INTERESTING")
+		} else {
+			log.Warnf("WEBP_EXTRA_PARAMS_CROP_INTERESTING is not a valid interesting, using value in config.json %s", Config.ExtraParamsCropInteresting)
+		}
+	}
+
 	if os.Getenv("WEBP_STRIP_METADATA") != "" {
 		stripMetadata := os.Getenv("WEBP_STRIP_METADATA")
 		if stripMetadata == "true" {
