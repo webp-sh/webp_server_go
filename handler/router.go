@@ -23,7 +23,7 @@ func Convert(c *fiber.Ctx) error {
 	// 3. pass it to encoder, get the result, send it back
 
 	// normal http request will start with /
-	if !strings.HasPrefix(c.Path(), "/") {
+	if strings.HasPrefix(c.Path(), ".") || strings.HasPrefix(c.Path(), "%2e") {
 		_ = c.SendStatus(http.StatusBadRequest)
 		return nil
 	}
