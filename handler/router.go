@@ -22,6 +22,12 @@ func Convert(c *fiber.Ctx) error {
 	// 2. generate rawImagePath, could be local path or remote url(possible with query string)
 	// 3. pass it to encoder, get the result, send it back
 
+	// normal http request will start with /
+	if !strings.HasPrefix(c.Path(), "/") {
+		_ = c.SendStatus(http.StatusBadRequest)
+		return nil
+	}
+
 	var (
 		reqHostname = c.Hostname()
 		reqHost     = c.Protocol() + "://" + reqHostname // http://www.example.com:8000
