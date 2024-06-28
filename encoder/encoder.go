@@ -126,10 +126,18 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 		FailOnError: boolFalse,
 		NumPages:    intMinusOne,
 	})
+	if err != nil {
+		log.Warnf("Can't open source image: %v", err)
+		return err
+	}
 	defer img.Close()
 
 	// Pre-process image(auto rotate, resize, etc.)
-	preProcessImage(img, imageType, extraParams)
+	err = preProcessImage(img, imageType, extraParams)
+	if err != nil {
+		log.Warnf("Can't pre-process source image: %v", err)
+		return err
+	}
 
 	switch imageType {
 	case "webp":
