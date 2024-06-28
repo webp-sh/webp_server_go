@@ -62,7 +62,7 @@ Now the server should be running on `127.0.0.1:3333`, visiting `http://127.0.0.1
 
 ## Custom config
 
-If you'd like to use a customized `config.json`, you can follow the steps in [Configuration](https://docs.webp.sh/usage/configuration/) to genereate one, and mount it into the container's `/etc/config.json`, example `docker-compose.yml` as follows:
+If you'd like to use a customized `config.json`, you can follow the steps in [Configuration | WebP Server Documentation](https://docs.webp.sh/usage/configuration/) to genereate one, and mount it into the container's `/etc/config.json`, example `docker-compose.yml` as follows:
 
 ```yml
 version: '3'
@@ -81,7 +81,7 @@ services:
       -  127.0.0.1:3333:3333
 ```
 
-You can refer to [Docker | WebP Server Documentation](https://docs.webp.sh/usage/docker/) for more info, such as custom config, AVIF support etc.
+You can refer to [Configuration | WebP Server Documentation](https://docs.webp.sh/usage/configuration/) for more info, such as custom config, AVIF support etc.
 
 ## Advanced Usage
 
@@ -93,7 +93,7 @@ For `supervisor` or detailed Nginx configuration, please read our documentation 
 
 ## WebP Cloud Services
 
-We are currently building a new service called [WebP Cloud Services](https://webp.se/), it now has two parts:
+We are currently building a new service called [WebP Cloud Services](https://webp.se/), it now has three parts:
 
 * [Public Service](https://public.webp.se)
   * GitHub Avatar/Gravater reverse proxy with WebP optimization, for example, change `https://www.gravatar.com/avatar/09eba3a443a7ea91cf818f6b27607d66` to `https://gravatar.webp.se/avatar/09eba3a443a7ea91cf818f6b27607d66` for rendering will get a smaller version of gravater, making your website faster 
@@ -104,6 +104,14 @@ We are currently building a new service called [WebP Cloud Services](https://web
     * Example 1: Original image URL (https://yyets.dmesg.app/api/user/avatar/BennyThink) becomes compressed URL (https://vz4w427.webp.ee/api/user/avatar/Benny).
     * Example 2: Original image URL (https://yyets.dmesg.app/api/user/avatar/BennyThink) becomes a thumbnail image using URL (https://vz4w427.webp.ee/api/user/avatar/BennyThink?width=200).
   * Caching: WebP Cloud automatically caches served images, reducing traffic and bandwidth load on the origin server.
+* [Fly](https://webp.se/fly/)
+  * We call this service Fly, with the aim of providing a public and free service that users can experience without registering on WebP Cloud.
+    As this is a public service, some limitations compared to WebP Cloud are imposed:
+
+    - Fly supports a maximum original image size of 8MB, while WebP Cloud supports up to 80MB.
+    - Fly cache time is 1 day, while WebP Cloud has unlimited time (can be manually cleared at any time).
+    - It does not support parameters like `blur`, `sharpen` for image processing.
+    - And that’s it.
 
 For detailed information, please visit [WebP Cloud Services Website](https://webp.se/) or [WebP Cloud Services Docs](https://docs.webp.se/).
 
