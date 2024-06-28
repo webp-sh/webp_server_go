@@ -33,8 +33,8 @@ func setupParam() {
 	config.Config.ImgPath = "../pics"
 	config.Config.ExhaustPath = "../exhaust_test"
 	config.Config.AllowedTypes = []string{"jpg", "png", "jpeg", "bmp"}
-	config.Metadata = "../metadata"
-	config.RemoteRaw = "../remote-raw"
+	config.Config.MetadataPath = "../metadata"
+	config.Config.RemoteRawPath = "../remote-raw"
 	config.ProxyMode = false
 	config.Config.EnableWebP = true
 	config.Config.EnableAVIF = false

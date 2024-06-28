@@ -123,7 +123,7 @@ func Convert(c *fiber.Ctx) error {
 		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 
 		metadata = fetchRemoteImg(realRemoteAddr, targetHostName)
-		rawImageAbs = path.Join(config.RemoteRaw, targetHostName, metadata.Id)
+		rawImageAbs = path.Join(config.Config.RemoteRawPath, targetHostName, metadata.Id)
 	} else {
 		// not proxyMode, we'll use local path
 		metadata = helper.ReadMetadata(reqURIwithQuery, "", targetHostName)
