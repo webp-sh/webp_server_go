@@ -90,10 +90,7 @@ func CheckAllowedType(imgFilename string) bool {
 	}
 	imgFilenameExtension := strings.ToLower(path.Ext(imgFilename))
 	imgFilenameExtension = strings.TrimPrefix(imgFilenameExtension, ".") // .jpg -> jpg
-	if slices.Contains(config.Config.AllowedTypes, imgFilenameExtension) {
-		return true
-	}
-	return false
+	return slices.Contains(config.Config.AllowedTypes, imgFilenameExtension)
 }
 
 func GenOptimizedAbsPath(metadata config.MetaFile, subdir string) (string, string, string) {

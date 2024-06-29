@@ -37,7 +37,8 @@ const (
   "READ_BUFFER_SIZE": 4096,
   "CONCURRENCY": 262144,
   "DISABLE_KEEPALIVE": false,
-  "CACHE_TTL": 259200
+  "CACHE_TTL": 259200,
+  "MAX_CACHE_SIZE": 0
 }`
 )
 
@@ -50,11 +51,9 @@ var (
 	ProxyMode      bool
 	Prefetch       bool
 	Config         = NewWebPConfig()
-	Version        = "0.11.3"
+	Version        = "0.11.4"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock    = cache.New(5*time.Minute, 10*time.Minute)
-	RemoteRaw      = "./remote-raw"
-	Metadata       = "./metadata"
 	LocalHostAlias = "local"
 	RemoteCache    *cache.Cache
 )
@@ -66,14 +65,16 @@ type MetaFile struct {
 }
 
 type WebpConfig struct {
-	Host         string            `json:"HOST"`
-	Port         string            `json:"PORT"`
-	ImgPath      string            `json:"IMG_PATH"`
-	Quality      int               `json:"QUALITY,string"`
-	AllowedTypes []string          `json:"ALLOWED_TYPES"`
-	ConvertTypes []string          `json:"CONVERT_TYPES"`
-	ImageMap     map[string]string `json:"IMG_MAP"`
-	ExhaustPath  string            `json:"EXHAUST_PATH"`
+	Host          string            `json:"HOST"`
+	Port          string            `json:"PORT"`
+	ImgPath       string            `json:"IMG_PATH"`
+	Quality       int               `json:"QUALITY,string"`
+	AllowedTypes  []string          `json:"ALLOWED_TYPES"`
+	ConvertTypes  []string          `json:"CONVERT_TYPES"`
+	ImageMap      map[string]string `json:"IMG_MAP"`
+	ExhaustPath   string            `json:"EXHAUST_PATH"`
+	MetadataPath  string            `json:"METADATA_PATH"`
+	RemoteRawPath string            `json:"REMOTE_RAW_PATH"`
 
 	EnableWebP bool `json:"ENABLE_WEBP"`
 	EnableAVIF bool `json:"ENABLE_AVIF"`
@@ -86,19 +87,23 @@ type WebpConfig struct {
 	ReadBufferSize   int  `json:"READ_BUFFER_SIZE"`
 	Concurrency      int  `json:"CONCURRENCY"`
 	DisableKeepalive bool `json:"DISABLE_KEEPALIVE"`
-	CacheTTL         int  `json:"CACHE_TTL"`
+	CacheTTL         int  `json:"CACHE_TTL"` // In minutes
+
+	MaxCacheSize int `json:"MAX_CACHE_SIZE"` // In MB, for max cached exhausted/metadata files(plus remote-raw if applicable), 0 means no limit
 }
 
 func NewWebPConfig() *WebpConfig {
 	return &WebpConfig{
-		Host:         "0.0.0.0",
-		Port:         "3333",
-		ImgPath:      "./pics",
-		Quality:      80,
-		AllowedTypes: []string{"jpg", "png", "jpeg", "bmp", "gif", "svg", "nef", "heic", "webp"},
-		ConvertTypes: []string{"webp"},
-		ImageMap:     map[string]string{},
-		ExhaustPath:  "./exhaust",
+		Host:          "0.0.0.0",
+		Port:          "3333",
+		ImgPath:       "./pics",
+		Quality:       80,
+		AllowedTypes:  []string{"jpg", "png", "jpeg", "bmp", "gif", "svg", "nef", "heic", "webp"},
+		ConvertTypes:  []string{"webp"},
+		ImageMap:      map[string]string{},
+		ExhaustPath:   "./exhaust",
+		MetadataPath:  "./metadata",
+		RemoteRawPath: "./remote-raw",
 
 		EnableWebP: false,
 		EnableAVIF: false,
@@ -111,6 +116,8 @@ func NewWebPConfig() *WebpConfig {
 		Concurrency:                262144,
 		DisableKeepalive:           false,
 		CacheTTL:                   259200,
+
+		MaxCacheSize: 0,
 	}
 }
 
@@ -243,10 +250,10 @@ func LoadConfig() {
 			log.Warnf("WEBP_DISABLE_KEEPALIVE is not a valid boolean, using value in config.json %t", Config.DisableKeepalive)
 		}
 	}
-	if os.Getenv("CACHE_TTL") != "" {
-		cacheTTL, err := strconv.Atoi(os.Getenv("CACHE_TTL"))
+	if os.Getenv("WEBP_CACHE_TTL") != "" {
+		cacheTTL, err := strconv.Atoi(os.Getenv("WEBP_CACHE_TTL"))
 		if err != nil {
-			log.Warnf("CACHE_TTL is not a valid integer, using value in config.json %d", Config.CacheTTL)
+			log.Warnf("WEBP_CACHE_TTL is not a valid integer, using value in config.json %d", Config.CacheTTL)
 		} else {
 			Config.CacheTTL = cacheTTL
 		}
@@ -256,6 +263,15 @@ func LoadConfig() {
 		RemoteCache = cache.New(cache.NoExpiration, 10*time.Minute)
 	} else {
 		RemoteCache = cache.New(time.Duration(Config.CacheTTL)*time.Minute, 10*time.Minute)
+	}
+
+	if os.Getenv("WEBP_MAX_CACHE_SIZE") != "" {
+		maxCacheSize, err := strconv.Atoi(os.Getenv("WEBP_MAX_CACHE_SIZE"))
+		if err != nil {
+			log.Warnf("WEBP_MAX_CACHE_SIZE is not a valid integer, using value in config.json %d", Config.MaxCacheSize)
+		} else {
+			Config.MaxCacheSize = maxCacheSize
+		}
 	}
 
 	log.Debugln("Config init complete")
