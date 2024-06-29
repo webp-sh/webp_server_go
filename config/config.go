@@ -51,7 +51,7 @@ var (
 	ProxyMode      bool
 	Prefetch       bool
 	Config         = NewWebPConfig()
-	Version        = "0.11.4"
+	Version        = "0.12.0"
 	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock    = cache.New(5*time.Minute, 10*time.Minute)
 	LocalHostAlias = "local"

@@ -22,6 +22,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, Config.ImageMap, map[string]string{})
 	assert.Equal(t, Config.ExhaustPath, "./exhaust")
 	assert.Equal(t, Config.CacheTTL, 259200)
+	assert.Equal(t, Config.MaxCacheSize, 0)
 }
 
 func TestSwitchProxyMode(t *testing.T) {
@@ -35,16 +36,16 @@ func TestSwitchProxyMode(t *testing.T) {
 func TestParseImgMap(t *testing.T) {
 	empty := map[string]string{}
 	good := map[string]string{
-		"/1": "../pics/dir1",
-		"http://example.com": "../pics",
+		"/1":                  "../pics/dir1",
+		"http://example.com":  "../pics",
 		"https://example.com": "../pics",
 	}
 	bad := map[string]string{
-		"1": "../pics/dir1",
+		"1":                   "../pics/dir1",
 		"httpx://example.com": "../pics",
-		"ftp://example.com": "../pics",
+		"ftp://example.com":   "../pics",
 	}
-	
+
 	assert.Equal(t, empty, parseImgMap(empty))
 	assert.Equal(t, empty, parseImgMap(bad))
 	assert.Equal(t, good, parseImgMap(good))
