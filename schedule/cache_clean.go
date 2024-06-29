@@ -90,21 +90,26 @@ func clearCacheFiles(path string, maxCacheSizeBytes int64) error {
 
 func CleanCache() {
 	log.Info("MaxCacheSize is not 0, starting cache cleaning service")
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
 	for {
-		// MB to bytes
-		maxCacheSizeBytes := int64(config.Config.MaxCacheSize) * 1024 * 1024
-		err := clearCacheFiles(config.Config.RemoteRawPath, maxCacheSizeBytes)
-		if err != nil {
-			log.Warn("Failed to clear remote raw cache")
+		select {
+		case <-ticker.C:
+			// MB to bytes
+			maxCacheSizeBytes := int64(config.Config.MaxCacheSize) * 1024 * 1024
+			err := clearCacheFiles(config.Config.RemoteRawPath, maxCacheSizeBytes)
+			if err != nil {
+				log.Warn("Failed to clear remote raw cache")
+			}
+			err = clearCacheFiles(config.Config.ExhaustPath, maxCacheSizeBytes)
+			if err != nil && err != os.ErrNotExist {
+				log.Warn("Failed to clear remote raw cache")
+			}
+			err = clearCacheFiles(config.Config.MetadataPath, maxCacheSizeBytes)
+			if err != nil && err != os.ErrNotExist {
+				log.Warn("Failed to clear remote raw cache")
+			}
 		}
-		err = clearCacheFiles(config.Config.ExhaustPath, maxCacheSizeBytes)
-		if err != nil && err != os.ErrNotExist {
-			log.Warn("Failed to clear remote raw cache")
-		}
-		err = clearCacheFiles(config.Config.MetadataPath, maxCacheSizeBytes)
-		if err != nil && err != os.ErrNotExist {
-			log.Warn("Failed to clear remote raw cache")
-		}
-		time.Sleep(1 * time.Minute)
 	}
 }
