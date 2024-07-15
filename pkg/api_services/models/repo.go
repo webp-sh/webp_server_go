@@ -1,6 +1,8 @@
 package models
 
-import "webp_server_go/pkg/api_services/database"
+import (
+	"webp_server_go/pkg/api_services/database"
+)
 
 type SiteRepository interface {
 	GetAll() ([]Sites, error)
@@ -52,7 +54,7 @@ func (r *siteRepository) Update(id uint, site *Sites) error {
 	existingSite.Origin.URL = site.Origin.URL
 	existingSite.Origin.S3Config = site.Origin.S3Config
 
-	result := r.db.DB.Save(&existingSite)
+	result := r.db.DB.Updates(&existingSite)
 	return result.Error
 }
 
