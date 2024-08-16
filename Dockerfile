@@ -1,4 +1,4 @@
-FROM golang:1.22-bookworm as builder
+FROM golang:1.23-bookworm as builder
 
 ARG IMG_PATH=/opt/pics
 ARG EXHAUST_PATH=/opt/exhaust
