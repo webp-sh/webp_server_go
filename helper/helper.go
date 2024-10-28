@@ -141,7 +141,7 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 		supported["jxl"] = true
 	}
 
-	supportedWebPs := []string{"iPhone OS 14", "CPU OS 14", "iPhone OS 15", "CPU OS 15", "iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17"}
+	supportedWebPs := []string{"iPhone OS 14", "CPU OS 14", "iPhone OS 15", "CPU OS 15", "iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17", "iPhone OS 18", "CPU OS 18"}
 	for _, version := range supportedWebPs {
 		if strings.Contains(ua, version) {
 			supported["webp"] = true
@@ -149,7 +149,7 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 		}
 	}
 
-	supportedAVIFs := []string{"iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17"}
+	supportedAVIFs := []string{"iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17", "iPhone OS 18", "CPU OS 18"}
 	for _, version := range supportedAVIFs {
 		if strings.Contains(ua, version) {
 			supported["avif"] = true
@@ -160,7 +160,7 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 <- iPad
 	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15 <- Mac
 	// Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1 <- iPhone @ Safari
-	supportedJXLs := []string{"iPhone OS 17", "CPU OS 17", "Version/17"}
+	supportedJXLs := []string{"iPhone OS 17", "CPU OS 17", "Version/17", "iPhone OS 18", "CPU OS 18", "Version/18"}
 	if strings.Contains(ua, "iPhone") || strings.Contains(ua, "Macintosh") {
 		for _, version := range supportedJXLs {
 			if strings.Contains(ua, version) {
