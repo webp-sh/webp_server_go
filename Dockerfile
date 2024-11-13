@@ -14,7 +14,7 @@ RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
 
 FROM debian:bookworm-slim
 
-RUN apt update && apt install --no-install-recommends libvips ca-certificates libjemalloc2 libtcmalloc-minimal4 -y && rm -rf /var/lib/apt/lists/* &&  rm -rf /var/cache/apt/archives/*
+RUN apt update && apt install --no-install-recommends libvips ca-certificates libjemalloc2 libtcmalloc-minimal4 curl -y && rm -rf /var/lib/apt/lists/* &&  rm -rf /var/cache/apt/archives/*
 
 # Download and install libam with correct arch
 # http://ftp.us.debian.org/debian/pool/main/a/aom/libaom3_3.11.0~rc1-1_amd64.deb
