@@ -43,19 +43,20 @@ const (
 )
 
 var (
-	ConfigPath     string
-	Jobs           int
-	DumpSystemd    bool
-	DumpConfig     bool
-	ShowVersion    bool
-	ProxyMode      bool
-	Prefetch       bool
-	Config         = NewWebPConfig()
-	Version        = "0.12.0"
-	WriteLock      = cache.New(5*time.Minute, 10*time.Minute)
-	ConvertLock    = cache.New(5*time.Minute, 10*time.Minute)
-	LocalHostAlias = "local"
-	RemoteCache    *cache.Cache
+	ConfigPath         string
+	Jobs               int
+	DumpSystemd        bool
+	DumpConfig         bool
+	ShowVersion        bool
+	ProxyMode          bool
+	Prefetch           bool // Prefech in go-routine, with WebP Server Go launch normally
+	PrefetchForeground bool // Standalone prefetch, prefetch and exit
+	Config             = NewWebPConfig()
+	Version            = "0.12.3"
+	WriteLock          = cache.New(5*time.Minute, 10*time.Minute)
+	ConvertLock        = cache.New(5*time.Minute, 10*time.Minute)
+	LocalHostAlias     = "local"
+	RemoteCache        *cache.Cache
 )
 
 type MetaFile struct {
@@ -123,7 +124,8 @@ func NewWebPConfig() *WebpConfig {
 
 func init() {
 	flag.StringVar(&ConfigPath, "config", "config.json", "/path/to/config.json. (Default: ./config.json)")
-	flag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert image to WebP format.")
+	flag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert images to optimized format, with WebP Server Go launch normally")
+	flag.BoolVar(&PrefetchForeground, "prefetch-foreground", false, "Prefetch and convert image to optimized format in foreground, prefetch and exit")
 	flag.IntVar(&Jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
 	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json.")
 	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
