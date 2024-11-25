@@ -86,6 +86,10 @@ func main() {
 	}
 	if config.Prefetch {
 		go encoder.PrefetchImages()
+	} else if config.PrefetchForeground {
+		// Standalone prefetch, prefetch and exit
+		encoder.PrefetchImages()
+		os.Exit(0)
 	}
 	app.Use(etag.New(etag.Config{
 		Weak: true,
@@ -98,5 +102,8 @@ func main() {
 
 	fmt.Println("WebP Server Go is Running on http://" + listenAddress)
 
-	_ = app.Listen(listenAddress)
+	bindErr := app.Listen(listenAddress)
+	if bindErr != nil {
+		log.Fatal("Error starting server: ", bindErr)
+	}
 }
