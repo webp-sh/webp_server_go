@@ -1,0 +1,16 @@
+{
+  "HOST": "127.0.0.1",
+  "PORT": "3333",
+  "QUALITY": "80",
+  "IMG_PATH": "./pics",
+  "EXHAUST_PATH": "./exhaust",
+  "IMG_MAP": {},
+  "ALLOWED_TYPES": ["jpg","png","jpeg","gif","bmp","svg","heic","nef"],
+  "CONVERT_TYPES": ["webp"],
+  "STRIP_METADATA": true,
+  "ENABLE_EXTRA_PARAMS": false,
+  "READ_BUFFER_SIZE": 4096,
+  "CONCURRENCY": 262144,
+  "DISABLE_KEEPALIVE": false,
+  "CACHE_TTL": 259200
+}

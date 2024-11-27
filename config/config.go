@@ -43,20 +43,22 @@ const (
 )
 
 var (
-	ConfigPath         string
-	Jobs               int
-	DumpSystemd        bool
-	DumpConfig         bool
-	ShowVersion        bool
-	ProxyMode          bool
-	Prefetch           bool // Prefech in go-routine, with WebP Server Go launch normally
-	PrefetchForeground bool // Standalone prefetch, prefetch and exit
-	Config             = NewWebPConfig()
-	Version            = "0.12.3"
-	WriteLock          = cache.New(5*time.Minute, 10*time.Minute)
-	ConvertLock        = cache.New(5*time.Minute, 10*time.Minute)
-	LocalHostAlias     = "local"
-	RemoteCache        *cache.Cache
+	ConfigPath          string
+	Jobs                int
+	DumpSystemd         bool
+	DumpConfig          bool
+	ShowVersion         bool
+	ProxyMode           bool
+	Prefetch            bool // Prefech in go-routine, with WebP Server Go launch normally
+	PrefetchForeground  bool // Standalone prefetch, prefetch and exit
+	AllowNonImage       bool
+	Config              = NewWebPConfig()
+	Version             = "0.13.0"
+	WriteLock           = cache.New(5*time.Minute, 10*time.Minute)
+	ConvertLock         = cache.New(5*time.Minute, 10*time.Minute)
+	LocalHostAlias      = "local"
+	RemoteCache         *cache.Cache
+	DefaultAllowedTypes = []string{"jpg", "png", "jpeg", "bmp", "gif", "svg", "nef", "heic"} // Default allowed image types
 )
 
 type MetaFile struct {
@@ -99,7 +101,7 @@ func NewWebPConfig() *WebpConfig {
 		Port:          "3333",
 		ImgPath:       "./pics",
 		Quality:       80,
-		AllowedTypes:  []string{"jpg", "png", "jpeg", "bmp", "gif", "svg", "nef", "heic", "webp"},
+		AllowedTypes:  DefaultAllowedTypes,
 		ConvertTypes:  []string{"webp"},
 		ImageMap:      map[string]string{},
 		ExhaustPath:   "./exhaust",

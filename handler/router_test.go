@@ -195,12 +195,33 @@ func TestConvertNotAllowed(t *testing.T) {
 	defer resp.Body.Close()
 	assert.Contains(t, string(data), "File extension not allowed")
 
+	// not allowed, but we have the file, this should return File extension not allowed
+	url = "http://127.0.0.1:3333/config.json"
+	resp, data = requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Contains(t, string(data), "File extension not allowed")
+
 	// not allowed, random file
 	url = url + "hagdgd"
 	resp, data = requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
 	assert.Contains(t, string(data), "File extension not allowed")
+}
 
+func TestConvertPassThrough(t *testing.T) {
+	setupParam()
+	config.Config.AllowedTypes = []string{"*"}
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	// not allowed, but we have the file, this should return File extension not allowed
+	url := "http://127.0.0.1:3333/config.json"
+	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+	assert.Contains(t, string(data), "HOST")
 }
 
 func TestConvertProxyModeBad(t *testing.T) {

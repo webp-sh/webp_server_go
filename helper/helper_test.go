@@ -37,13 +37,13 @@ func TestImageExists(t *testing.T) {
 	})
 }
 
-func TestCheckAllowedType(t *testing.T) {
+func TestCheckAllowedExtension(t *testing.T) {
 	t.Run("not allowed type", func(t *testing.T) {
-		assert.False(t, CheckAllowedType("./helper_test.go"))
+		assert.False(t, CheckAllowedExtension("./helper_test.go"))
 	})
 
 	t.Run("allowed type", func(t *testing.T) {
-		assert.True(t, CheckAllowedType("test.jpg"))
+		assert.True(t, CheckAllowedExtension("test.jpg"))
 	})
 }
 

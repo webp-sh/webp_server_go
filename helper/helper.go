@@ -84,13 +84,21 @@ func ImageExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func CheckAllowedType(imgFilename string) bool {
+// CheckAllowedExtension checks if the image extension is in the user's allowed types
+func CheckAllowedExtension(imgFilename string) bool {
 	if config.Config.AllowedTypes[0] == "*" {
 		return true
 	}
 	imgFilenameExtension := strings.ToLower(path.Ext(imgFilename))
 	imgFilenameExtension = strings.TrimPrefix(imgFilenameExtension, ".") // .jpg -> jpg
 	return slices.Contains(config.Config.AllowedTypes, imgFilenameExtension)
+}
+
+// CheckImageExtension checks if the image extension is in the WebP Server Go's default types
+func CheckImageExtension(imgFilename string) bool {
+	imgFilenameExtension := strings.ToLower(path.Ext(imgFilename))
+	imgFilenameExtension = strings.TrimPrefix(imgFilenameExtension, ".") // .jpg -> jpg
+	return slices.Contains(config.DefaultAllowedTypes, imgFilenameExtension)
 }
 
 func GenOptimizedAbsPath(metadata config.MetaFile, subdir string) (string, string, string) {
