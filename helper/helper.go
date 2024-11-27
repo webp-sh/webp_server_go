@@ -181,6 +181,13 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	return supported
 }
 
+func CopyFile(src, dst string) error {
+	// Read all content of src to data
+	data, _ := os.ReadFile(src)
+	// Write data to dst
+	return os.WriteFile(dst, data, 0644)
+}
+
 func FindSmallestFiles(files []string) string {
 	// walk files
 	var small int64

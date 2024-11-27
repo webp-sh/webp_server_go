@@ -136,16 +136,33 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 	err = preProcessImage(img, imageType, extraParams)
 	if err != nil {
 		log.Warnf("Can't pre-process source image: %v", err)
-		return err
 	}
+
+	// If image is already in the target format, just copy it
+	imageFormat := img.Format()
 
 	switch imageType {
 	case "webp":
-		err = webpEncoder(img, rawPath, optimizedPath)
+		if imageFormat == vips.ImageTypeWEBP {
+			log.Infof("Image is already in WebP format, copying %s to %s", rawPath, optimizedPath)
+			return helper.CopyFile(rawPath, optimizedPath)
+		} else {
+			err = webpEncoder(img, rawPath, optimizedPath)
+		}
 	case "avif":
-		err = avifEncoder(img, rawPath, optimizedPath)
+		if imageFormat == vips.ImageTypeAVIF {
+			log.Infof("Image is already in AVIF format, copying %s to %s", rawPath, optimizedPath)
+			return helper.CopyFile(rawPath, optimizedPath)
+		} else {
+			err = avifEncoder(img, rawPath, optimizedPath)
+		}
 	case "jxl":
-		err = jxlEncoder(img, rawPath, optimizedPath)
+		if imageFormat == vips.ImageTypeJXL {
+			log.Infof("Image is already in JXL format, copying %s to %s", rawPath, optimizedPath)
+			return helper.CopyFile(rawPath, optimizedPath)
+		} else {
+			err = jxlEncoder(img, rawPath, optimizedPath)
+		}
 	}
 
 	return err

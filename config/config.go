@@ -58,7 +58,7 @@ var (
 	ConvertLock         = cache.New(5*time.Minute, 10*time.Minute)
 	LocalHostAlias      = "local"
 	RemoteCache         *cache.Cache
-	DefaultAllowedTypes = []string{"jpg", "png", "jpeg", "bmp", "gif", "svg", "nef", "heic"} // Default allowed image types
+	DefaultAllowedTypes = []string{"jpg", "png", "jpeg", "bmp", "gif", "svg", "nef", "heic", "webp", "avif", "jxl"} // Default allowed image types
 )
 
 type MetaFile struct {
