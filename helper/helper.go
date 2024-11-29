@@ -12,6 +12,7 @@ import (
 	"slices"
 
 	"github.com/h2non/filetype"
+	"github.com/mileusna/useragent"
 
 	"github.com/cespare/xxhash"
 	"github.com/valyala/fasthttp"
@@ -163,6 +164,18 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 			supported["avif"] = true
 			break
 		}
+	}
+
+	// Firefox will not send correct accept header on url without image extension, we need to check user agent to see if `Firefox/133` version is supported
+	// https://caniuse.com/webp
+	parsedUA := useragent.Parse(ua)
+	if parsedUA.IsFirefox() && parsedUA.VersionNo.Major >= 133 {
+		supported["webp"] = true
+	}
+
+	// https://caniuse.com/avif
+	if parsedUA.IsFirefox() && parsedUA.VersionNo.Major >= 93 {
+		supported["avif"] = true
 	}
 
 	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 <- iPad
