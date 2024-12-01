@@ -66,13 +66,24 @@ func TestGuessSupportedFormat(t *testing.T) {
 			},
 		},
 		{
+			name:      "WebP Supported",
+			userAgent: "iPhone OS 15",
+			accept:    "image/webp, image/png",
+			expected: map[string]bool{
+				"raw":  true,
+				"webp": true,
+				"avif": false,
+				"jxl":  false,
+			},
+		},
+		{
 			name:      "WebP/AVIF Supported",
 			userAgent: "iPhone OS 16",
 			accept:    "image/webp, image/png",
 			expected: map[string]bool{
 				"raw":  true,
 				"webp": true,
-				"avif": true,
+				"avif": false,
 				"jxl":  false,
 			},
 		},

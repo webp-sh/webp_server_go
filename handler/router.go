@@ -152,7 +152,8 @@ func Convert(c *fiber.Ctx) error {
 	if supportedFormats["raw"] == true &&
 		supportedFormats["webp"] == false &&
 		supportedFormats["avif"] == false &&
-		supportedFormats["jxl"] == false {
+		supportedFormats["jxl"] == false &&
+		supportedFormats["heic"] == false {
 		dest := path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id)
 		if !helper.ImageExists(dest) {
 			encoder.ResizeItself(rawImageAbs, dest, extraParams)
@@ -183,6 +184,12 @@ func Convert(c *fiber.Ctx) error {
 	}
 	if supportedFormats["jxl"] {
 		availableFiles = append(availableFiles, jxlAbs)
+	}
+	// If raw format is not supported(e,g: heic), remove it from the list
+	// Because we shouldn't serve the heic format if it's not supported
+	if !supportedFormats["heic"] && helper.GetImageExtension(rawImageAbs) == "heic" {
+		// Remove the "raw" from the list
+		availableFiles = availableFiles[1:]
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)
