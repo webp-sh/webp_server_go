@@ -11,6 +11,7 @@ import (
 
 	"slices"
 
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/h2non/filetype"
 	"github.com/mileusna/useragent"
 
@@ -19,6 +20,11 @@ import (
 
 	svg "github.com/h2non/go-is-svg"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	boolFalse   vips.BoolParameter
+	intMinusOne vips.IntParameter
 )
 
 var _ = filetype.AddMatcher(filetype.NewType("svg", "image/svg+xml"), svgMatcher)

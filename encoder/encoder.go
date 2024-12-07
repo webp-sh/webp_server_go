@@ -33,6 +33,14 @@ func init() {
 	intMinusOne.Set(-1)
 }
 
+func LoadImage(filename string) (*vips.ImageRef, error) {
+	img, err := vips.LoadImageFromFile(filename, &vips.ImportParams{
+		FailOnError: boolFalse,
+		NumPages:    intMinusOne,
+	})
+	return img, err
+}
+
 func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams config.ExtraParams, supportedFormats map[string]bool, c chan int) {
 	// Wait for the conversion to complete and return the converted image
 	retryDelay := 100 * time.Millisecond // Initial retry delay
@@ -122,14 +130,7 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 	}
 
 	// Image is only opened here
-	img, err := vips.LoadImageFromFile(rawPath, &vips.ImportParams{
-		FailOnError: boolFalse,
-		NumPages:    intMinusOne,
-	})
-	if err != nil {
-		log.Warnf("Can't open source image: %v", err)
-		return err
-	}
+	img, err := LoadImage(rawPath)
 	defer img.Close()
 
 	// Pre-process image(auto rotate, resize, etc.)

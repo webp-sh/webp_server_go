@@ -61,10 +61,22 @@ var (
 	DefaultAllowedTypes = []string{"jpg", "png", "jpeg", "bmp", "gif", "svg", "nef", "heic", "webp", "avif", "jxl"} // Default allowed image types
 )
 
+type ImageMeta struct {
+	Width      int    `json:"width"`
+	Height     int    `json:"height"`
+	Format     string `json:"format"`
+	Size       int    `json:"size"`
+	NumPages   int    `json:"num_pages"`
+	Blurhash   string `json:"blurhash"`
+	Colorspace string `json:"colorspace"`
+}
+
 type MetaFile struct {
 	Id       string `json:"id"`       // hash of below path️, also json file name id.webp
 	Path     string `json:"path"`     // local: path with width and height, proxy: full url
 	Checksum string `json:"checksum"` // hash of original file or hash(etag). Use this to identify changes
+
+	ImageMeta
 }
 
 type WebpConfig struct {
@@ -96,12 +108,15 @@ type WebpConfig struct {
 }
 
 func NewWebPConfig() *WebpConfig {
+	// Copy DefaultAllowedTypes to avoid modification
+	defaultAllowedTypes := make([]string, len(DefaultAllowedTypes))
+	copy(defaultAllowedTypes, DefaultAllowedTypes)
 	return &WebpConfig{
 		Host:          "0.0.0.0",
 		Port:          "3333",
 		ImgPath:       "./pics",
 		Quality:       80,
-		AllowedTypes:  DefaultAllowedTypes,
+		AllowedTypes:  defaultAllowedTypes,
 		ConvertTypes:  []string{"webp"},
 		ImageMap:      map[string]string{},
 		ExhaustPath:   "./exhaust",

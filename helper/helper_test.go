@@ -62,7 +62,8 @@ func TestGuessSupportedFormat(t *testing.T) {
 				"raw":  true,
 				"webp": true,
 				"avif": true,
-				"jxl":  true,
+				"jxl":  false,
+				"heic": true,
 			},
 		},
 		{
@@ -74,6 +75,7 @@ func TestGuessSupportedFormat(t *testing.T) {
 				"webp": true,
 				"avif": false,
 				"jxl":  false,
+				"heic": false,
 			},
 		},
 		{
@@ -85,19 +87,32 @@ func TestGuessSupportedFormat(t *testing.T) {
 				"webp": true,
 				"avif": false,
 				"jxl":  false,
+				"heic": false,
 			},
 		},
 		{
 			name:      "Both Supported",
 			userAgent: "iPhone OS 16",
 			accept:    "image/webp, image/avif",
-			expected:  map[string]bool{"raw": true, "webp": true, "avif": true, "jxl": false},
+			expected: map[string]bool{
+				"raw":  true,
+				"webp": true,
+				"avif": true,
+				"jxl":  false,
+				"heic": false,
+			},
 		},
 		{
 			name:      "No Supported Formats",
 			userAgent: "Unknown OS",
 			accept:    "image/jpeg, image/gif",
-			expected:  map[string]bool{"raw": true, "webp": false, "avif": false, "jxl": false},
+			expected: map[string]bool{
+				"raw":  true,
+				"webp": false,
+				"avif": false,
+				"jxl":  false,
+				"heic": false,
+			},
 		},
 	}
 

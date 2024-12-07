@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -45,6 +46,8 @@ func Convert(c *fiber.Ctx) error {
 		proxyMode      = config.ProxyMode
 		mapMode        = false
 
+		meta = c.Query("meta") // Meta request
+
 		width, _     = strconv.Atoi(c.Query("width"))      // Extra Params
 		height, _    = strconv.Atoi(c.Query("height"))     // Extra Params
 		maxHeight, _ = strconv.Atoi(c.Query("max_height")) // Extra Params
@@ -70,6 +73,7 @@ func Convert(c *fiber.Ctx) error {
 	// Check if the file extension is allowed and not with image extension
 	// In this case we will serve the file directly
 	if helper.CheckAllowedExtension(filename) && !helper.CheckImageExtension(filename) {
+		fmt.Println("File extension is allowed and not with image extension")
 		return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
 	}
 
@@ -145,6 +149,19 @@ func Convert(c *fiber.Ctx) error {
 			helper.WriteMetadata(reqURIwithQuery, "", targetHostName)
 			cleanProxyCache(path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id))
 		}
+	}
+
+	// If meta request, return the metadata
+	if meta == "full" {
+		return c.JSON(fiber.Map{
+			"height":     metadata.ImageMeta.Height,
+			"width":      metadata.ImageMeta.Width,
+			"size":       metadata.ImageMeta.Size,
+			"format":     metadata.ImageMeta.Format,
+			"colorspace": metadata.ImageMeta.Colorspace,
+			"num_pages":  metadata.ImageMeta.NumPages,
+			"blurhash":   metadata.ImageMeta.Blurhash,
+		})
 	}
 
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)

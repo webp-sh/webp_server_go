@@ -3,6 +3,7 @@ module webp_server_go
 go 1.23
 
 require (
+	github.com/buckket/go-blurhash v1.1.0
 	github.com/cespare/xxhash v1.1.0
 	github.com/davidbyttow/govips/v2 v2.15.0
 	github.com/gofiber/fiber/v2 v2.52.5
