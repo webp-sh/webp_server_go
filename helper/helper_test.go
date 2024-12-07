@@ -37,13 +37,13 @@ func TestImageExists(t *testing.T) {
 	})
 }
 
-func TestCheckAllowedType(t *testing.T) {
+func TestCheckAllowedExtension(t *testing.T) {
 	t.Run("not allowed type", func(t *testing.T) {
-		assert.False(t, CheckAllowedType("./helper_test.go"))
+		assert.False(t, CheckAllowedExtension("./helper_test.go"))
 	})
 
 	t.Run("allowed type", func(t *testing.T) {
-		assert.True(t, CheckAllowedType("test.jpg"))
+		assert.True(t, CheckAllowedExtension("test.jpg"))
 	})
 }
 
@@ -62,7 +62,20 @@ func TestGuessSupportedFormat(t *testing.T) {
 				"raw":  true,
 				"webp": true,
 				"avif": true,
-				"jxl":  true,
+				"jxl":  false,
+				"heic": true,
+			},
+		},
+		{
+			name:      "WebP Supported",
+			userAgent: "iPhone OS 15",
+			accept:    "image/webp, image/png",
+			expected: map[string]bool{
+				"raw":  true,
+				"webp": true,
+				"avif": false,
+				"jxl":  false,
+				"heic": false,
 			},
 		},
 		{
@@ -72,21 +85,34 @@ func TestGuessSupportedFormat(t *testing.T) {
 			expected: map[string]bool{
 				"raw":  true,
 				"webp": true,
-				"avif": true,
+				"avif": false,
 				"jxl":  false,
+				"heic": false,
 			},
 		},
 		{
 			name:      "Both Supported",
 			userAgent: "iPhone OS 16",
 			accept:    "image/webp, image/avif",
-			expected:  map[string]bool{"raw": true, "webp": true, "avif": true, "jxl": false},
+			expected: map[string]bool{
+				"raw":  true,
+				"webp": true,
+				"avif": true,
+				"jxl":  false,
+				"heic": false,
+			},
 		},
 		{
 			name:      "No Supported Formats",
 			userAgent: "Unknown OS",
 			accept:    "image/jpeg, image/gif",
-			expected:  map[string]bool{"raw": true, "webp": false, "avif": false, "jxl": false},
+			expected: map[string]bool{
+				"raw":  true,
+				"webp": false,
+				"avif": false,
+				"jxl":  false,
+				"heic": false,
+			},
 		},
 	}
 

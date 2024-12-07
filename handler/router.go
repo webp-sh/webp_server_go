@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -45,6 +46,8 @@ func Convert(c *fiber.Ctx) error {
 		proxyMode      = config.ProxyMode
 		mapMode        = false
 
+		meta = c.Query("meta") // Meta request
+
 		width, _     = strconv.Atoi(c.Query("width"))      // Extra Params
 		height, _    = strconv.Atoi(c.Query("height"))     // Extra Params
 		maxHeight, _ = strconv.Atoi(c.Query("max_height")) // Extra Params
@@ -59,12 +62,19 @@ func Convert(c *fiber.Ctx) error {
 
 	log.Debugf("Incoming connection from %s %s %s", c.IP(), reqHostname, reqURIwithQuery)
 
-	if !helper.CheckAllowedType(filename) {
+	if !helper.CheckAllowedExtension(filename) {
 		msg := "File extension not allowed! " + filename
 		log.Warn(msg)
 		c.Status(http.StatusBadRequest)
-		_ = c.Send([]byte(msg))
+		_ = c.SendString(msg)
 		return nil
+	}
+
+	// Check if the file extension is allowed and not with image extension
+	// In this case we will serve the file directly
+	if helper.CheckAllowedExtension(filename) && !helper.CheckImageExtension(filename) {
+		fmt.Println("File extension is allowed and not with image extension")
+		return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
 	}
 
 	// Rewrite the target backend if a mapping rule matches the hostname
@@ -141,12 +151,26 @@ func Convert(c *fiber.Ctx) error {
 		}
 	}
 
+	// If meta request, return the metadata
+	if meta == "full" {
+		return c.JSON(fiber.Map{
+			"height":     metadata.ImageMeta.Height,
+			"width":      metadata.ImageMeta.Width,
+			"size":       metadata.ImageMeta.Size,
+			"format":     metadata.ImageMeta.Format,
+			"colorspace": metadata.ImageMeta.Colorspace,
+			"num_pages":  metadata.ImageMeta.NumPages,
+			"blurhash":   metadata.ImageMeta.Blurhash,
+		})
+	}
+
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)
 	// resize itself and return if only raw(original format) is supported
 	if supportedFormats["raw"] == true &&
 		supportedFormats["webp"] == false &&
 		supportedFormats["avif"] == false &&
-		supportedFormats["jxl"] == false {
+		supportedFormats["jxl"] == false &&
+		supportedFormats["heic"] == false {
 		dest := path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id)
 		if !helper.ImageExists(dest) {
 			encoder.ResizeItself(rawImageAbs, dest, extraParams)
@@ -177,6 +201,12 @@ func Convert(c *fiber.Ctx) error {
 	}
 	if supportedFormats["jxl"] {
 		availableFiles = append(availableFiles, jxlAbs)
+	}
+	// If raw format is not supported(e,g: heic), remove it from the list
+	// Because we shouldn't serve the heic format if it's not supported
+	if !supportedFormats["heic"] && helper.GetImageExtension(rawImageAbs) == "heic" {
+		// Remove the "raw" from the list
+		availableFiles = availableFiles[1:]
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)

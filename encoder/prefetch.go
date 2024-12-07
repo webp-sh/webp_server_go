@@ -33,9 +33,18 @@ func PrefetchImages() {
 			if info.IsDir() {
 				return nil
 			}
-			if !helper.CheckAllowedType(picAbsPath) {
+			// Only convert files with image extensions, use smaller of config.DefaultAllowedTypes and config.Config.AllowedTypes
+			if helper.CheckAllowedExtension(picAbsPath) {
+				// File type is allowed by user, check if it is an image
+				if helper.CheckImageExtension(picAbsPath) {
+					// File is an image, continue
+				} else {
+					return nil
+				}
+			} else {
 				return nil
 			}
+
 			// RawImagePath string, ImgFilename string, reqURI string
 			metadata := helper.ReadMetadata(picAbsPath, "", config.LocalHostAlias)
 			avifAbsPath, webpAbsPath, jxlAbsPath := helper.GenOptimizedAbsPath(metadata, config.LocalHostAlias)
