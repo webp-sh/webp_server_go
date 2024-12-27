@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
@@ -72,8 +72,8 @@ func Convert(c *fiber.Ctx) error {
 
 	// Check if the file extension is allowed and not with image extension
 	// In this case we will serve the file directly
+	// Since here we've already sent non-image file, "raw" is not supported by default in the following code
 	if helper.CheckAllowedExtension(filename) && !helper.CheckImageExtension(filename) {
-		fmt.Println("File extension is allowed and not with image extension")
 		return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
 	}
 
@@ -165,8 +165,11 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)
-	// resize itself and return if only raw(original format) is supported
-	if supportedFormats["raw"] == true &&
+	// resize itself and return if only raw(jpg,jpeg,png,gif) is supported
+	if supportedFormats["jpg"] == true &&
+		supportedFormats["jpeg"] == true &&
+		supportedFormats["png"] == true &&
+		supportedFormats["gif"] == true &&
 		supportedFormats["webp"] == false &&
 		supportedFormats["avif"] == false &&
 		supportedFormats["jxl"] == false &&
@@ -192,7 +195,11 @@ func Convert(c *fiber.Ctx) error {
 	// Do the convertion based on supported formats and config
 	encoder.ConvertFilter(rawImageAbs, jxlAbs, avifAbs, webpAbs, extraParams, supportedFormats, nil)
 
-	var availableFiles = []string{rawImageAbs}
+	var availableFiles = []string{}
+	// If source image is in jpg/jpeg/png/gif, we can add it to the available files
+	if slices.Contains([]string{"jpg", "jpeg", "png", "gif"}, helper.GetImageExtension(rawImageAbs)) {
+		availableFiles = append(availableFiles, rawImageAbs)
+	}
 	if supportedFormats["avif"] {
 		availableFiles = append(availableFiles, avifAbs)
 	}
@@ -201,12 +208,6 @@ func Convert(c *fiber.Ctx) error {
 	}
 	if supportedFormats["jxl"] {
 		availableFiles = append(availableFiles, jxlAbs)
-	}
-	// If raw format is not supported(e,g: heic), remove it from the list
-	// Because we shouldn't serve the heic format if it's not supported
-	if !supportedFormats["heic"] && helper.GetImageExtension(rawImageAbs) == "heic" {
-		// Remove the "raw" from the list
-		availableFiles = availableFiles[1:]
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)

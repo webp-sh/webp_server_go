@@ -135,17 +135,21 @@ func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 
 func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	var (
-		supported = map[string]bool{
-			"raw":  true,
-			"webp": false,
-			"avif": false,
-			"jxl":  false,
-			"heic": false,
-		}
-
-		ua     = string(header.Peek("user-agent"))
-		accept = strings.ToLower(string(header.Peek("accept")))
+		ua        = string(header.Peek("user-agent"))
+		accept    = strings.ToLower(string(header.Peek("accept")))
+		supported = map[string]bool{}
 	)
+	// Initialize all supported formats to false
+	for _, item := range config.DefaultAllowedTypes {
+		supported[item] = false
+	}
+	// raw format(jpg,jpeg,png,gif) is always supported
+	supported["jpg"] = true
+	supported["jpeg"] = true
+	supported["png"] = true
+	supported["gif"] = true
+	supported["svg"] = true
+	supported["bmp"] = true
 
 	if strings.Contains(accept, "image/webp") {
 		supported["webp"] = true
