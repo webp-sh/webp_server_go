@@ -22,7 +22,7 @@ jobs:
           sudo apt-get install -y docker-compose
 
       - name: Build image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
@@ -56,7 +56,7 @@ jobs:
           sudo apt-get install -y docker-compose
           
       - name: Build image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
