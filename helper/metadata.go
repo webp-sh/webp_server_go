@@ -67,7 +67,7 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 		data.Checksum = HashFile(filepath)
 	}
 
-	imageMeta := GetImageMeta(filepath)
+	imageMeta := getImageMeta(filepath)
 	data.ImageMeta = imageMeta
 
 	buf, _ := json.Marshal(data)
@@ -75,7 +75,7 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 	return data
 }
 
-func GetImageMeta(filePath string) (metadata config.ImageMeta) {
+func getImageMeta(filePath string) (metadata config.ImageMeta) {
 	boolFalse.Set(false)
 	intMinusOne.Set(-1)
 	img, err := vips.LoadImageFromFile(filePath, &vips.ImportParams{

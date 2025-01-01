@@ -33,7 +33,7 @@ func init() {
 	intMinusOne.Set(-1)
 }
 
-func LoadImage(filename string) (*vips.ImageRef, error) {
+func loadImage(filename string) (*vips.ImageRef, error) {
 	img, err := vips.LoadImageFromFile(filename, &vips.ImportParams{
 		FailOnError: boolFalse,
 		NumPages:    intMinusOne,
@@ -130,7 +130,7 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 	}
 
 	// Image is only opened here
-	img, err := LoadImage(rawPath)
+	img, err := loadImage(rawPath)
 	defer img.Close()
 
 	// Pre-process image(auto rotate, resize, etc.)
