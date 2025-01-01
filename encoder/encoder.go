@@ -33,6 +33,14 @@ func init() {
 	intMinusOne.Set(-1)
 }
 
+func loadImage(filename string) (*vips.ImageRef, error) {
+	img, err := vips.LoadImageFromFile(filename, &vips.ImportParams{
+		FailOnError: boolFalse,
+		NumPages:    intMinusOne,
+	})
+	return img, err
+}
+
 func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams config.ExtraParams, supportedFormats map[string]bool, c chan int) {
 	// Wait for the conversion to complete and return the converted image
 	retryDelay := 100 * time.Millisecond // Initial retry delay
@@ -122,30 +130,40 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 	}
 
 	// Image is only opened here
-	img, err := vips.LoadImageFromFile(rawPath, &vips.ImportParams{
-		FailOnError: boolFalse,
-		NumPages:    intMinusOne,
-	})
-	if err != nil {
-		log.Warnf("Can't open source image: %v", err)
-		return err
-	}
+	img, err := loadImage(rawPath)
 	defer img.Close()
 
 	// Pre-process image(auto rotate, resize, etc.)
 	err = preProcessImage(img, imageType, extraParams)
 	if err != nil {
 		log.Warnf("Can't pre-process source image: %v", err)
-		return err
 	}
+
+	// If image is already in the target format, just copy it
+	imageFormat := img.Format()
 
 	switch imageType {
 	case "webp":
-		err = webpEncoder(img, rawPath, optimizedPath)
+		if imageFormat == vips.ImageTypeWEBP {
+			log.Infof("Image is already in WebP format, copying %s to %s", rawPath, optimizedPath)
+			return helper.CopyFile(rawPath, optimizedPath)
+		} else {
+			err = webpEncoder(img, rawPath, optimizedPath)
+		}
 	case "avif":
-		err = avifEncoder(img, rawPath, optimizedPath)
+		if imageFormat == vips.ImageTypeAVIF {
+			log.Infof("Image is already in AVIF format, copying %s to %s", rawPath, optimizedPath)
+			return helper.CopyFile(rawPath, optimizedPath)
+		} else {
+			err = avifEncoder(img, rawPath, optimizedPath)
+		}
 	case "jxl":
-		err = jxlEncoder(img, rawPath, optimizedPath)
+		if imageFormat == vips.ImageTypeJXL {
+			log.Infof("Image is already in JXL format, copying %s to %s", rawPath, optimizedPath)
+			return helper.CopyFile(rawPath, optimizedPath)
+		} else {
+			err = jxlEncoder(img, rawPath, optimizedPath)
+		}
 	}
 
 	return err

@@ -1,0 +1,11 @@
+FROM golang:1.23-bookworm AS builder
+
+ARG IMG_PATH=/opt/pics
+ARG EXHAUST_PATH=/opt/exhaust
+RUN apt update && apt install --no-install-recommends libvips-dev -y && mkdir /build
+COPY go.mod /build
+RUN cd /build && go mod download
+
+COPY . /build
+
+RUN cd /build && make && make test

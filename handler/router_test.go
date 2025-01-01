@@ -32,7 +32,7 @@ func setupParam() {
 	// setup parameters here...
 	config.Config.ImgPath = "../pics"
 	config.Config.ExhaustPath = "../exhaust_test"
-	config.Config.AllowedTypes = []string{"jpg", "png", "jpeg", "bmp"}
+	config.Config.AllowedTypes = []string{"jpg", "png", "jpeg", "bmp", "heic", "avif"}
 	config.Config.MetadataPath = "../metadata"
 	config.Config.RemoteRawPath = "../remote-raw"
 	config.ProxyMode = false
@@ -128,6 +128,10 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/dir1/inside.jpg":                 "image/webp",
 		"http://127.0.0.1:3333/%e5%a4%aa%e7%a5%9e%e5%95%a6.png": "image/webp",
 		"http://127.0.0.1:3333/太神啦.png":                         "image/webp",
+		// Source: https://filesamples.com/formats/heic
+		"http://127.0.0.1:3333/sample3.heic": "image/webp", // webp because browser does not support heic
+		// Source: https://raw.githubusercontent.com/link-u/avif-sample-images/refs/heads/master/kimono.avif
+		"http://127.0.0.1:3333/kimono.avif": "image/webp", // webp because browser does not support avif
 	}
 
 	var testChromeAvifLink = map[string]string{
@@ -195,12 +199,33 @@ func TestConvertNotAllowed(t *testing.T) {
 	defer resp.Body.Close()
 	assert.Contains(t, string(data), "File extension not allowed")
 
+	// not allowed, but we have the file, this should return File extension not allowed
+	url = "http://127.0.0.1:3333/config.json"
+	resp, data = requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Contains(t, string(data), "File extension not allowed")
+
 	// not allowed, random file
 	url = url + "hagdgd"
 	resp, data = requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
 	assert.Contains(t, string(data), "File extension not allowed")
+}
 
+func TestConvertPassThrough(t *testing.T) {
+	setupParam()
+	config.Config.AllowedTypes = []string{"*"}
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	// not allowed, but we have the file, this should return File extension not allowed
+	url := "http://127.0.0.1:3333/config.json"
+	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
+	assert.Contains(t, string(data), "HOST")
 }
 
 func TestConvertProxyModeBad(t *testing.T) {

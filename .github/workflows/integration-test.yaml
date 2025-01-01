@@ -22,7 +22,7 @@ jobs:
           sudo apt-get install -y docker-compose
 
       - name: Build image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
@@ -37,7 +37,7 @@ jobs:
       - name: Send Requests to Server
         run: |
           cd pics
-          find * -type f -print | xargs -I {} curl -o /dev/null -H "Accept: image/webp" http://localhost:3333/{}
+          find * -type f -print | xargs -I {} curl -o /dev/null -H "Accept: image/webp" --silent http://localhost:3333/{}
 
       - name: Get container RAM stats
         run: |
@@ -56,7 +56,7 @@ jobs:
           sudo apt-get install -y docker-compose
           
       - name: Build image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
@@ -71,7 +71,7 @@ jobs:
       - name: Send Requests to Server
         run: |
           cd pics
-          find * -type f -print | xargs -I {} curl -o /dev/null -H "Accept: image/webp" http://localhost:3333/{}
+          find * -type f -print | xargs -I {} curl -o /dev/null -H "Accept: image/webp" --silent http://localhost:3333/{}
 
       - name: Get container RAM stats
         run: |

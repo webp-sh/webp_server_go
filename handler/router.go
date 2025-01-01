@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
@@ -45,6 +46,8 @@ func Convert(c *fiber.Ctx) error {
 		proxyMode      = config.ProxyMode
 		mapMode        = false
 
+		meta = c.Query("meta") // Meta request
+
 		width, _     = strconv.Atoi(c.Query("width"))      // Extra Params
 		height, _    = strconv.Atoi(c.Query("height"))     // Extra Params
 		maxHeight, _ = strconv.Atoi(c.Query("max_height")) // Extra Params
@@ -59,12 +62,19 @@ func Convert(c *fiber.Ctx) error {
 
 	log.Debugf("Incoming connection from %s %s %s", c.IP(), reqHostname, reqURIwithQuery)
 
-	if !helper.CheckAllowedType(filename) {
+	if !helper.CheckAllowedExtension(filename) {
 		msg := "File extension not allowed! " + filename
 		log.Warn(msg)
 		c.Status(http.StatusBadRequest)
-		_ = c.Send([]byte(msg))
+		_ = c.SendString(msg)
 		return nil
+	}
+
+	// Check if the file extension is allowed and not with image extension
+	// In this case we will serve the file directly
+	// Since here we've already sent non-image file, "raw" is not supported by default in the following code
+	if helper.CheckAllowedExtension(filename) && !helper.CheckImageExtension(filename) {
+		return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
 	}
 
 	// Rewrite the target backend if a mapping rule matches the hostname
@@ -141,12 +151,29 @@ func Convert(c *fiber.Ctx) error {
 		}
 	}
 
+	// If meta request, return the metadata
+	if meta == "full" {
+		return c.JSON(fiber.Map{
+			"height":     metadata.ImageMeta.Height,
+			"width":      metadata.ImageMeta.Width,
+			"size":       metadata.ImageMeta.Size,
+			"format":     metadata.ImageMeta.Format,
+			"colorspace": metadata.ImageMeta.Colorspace,
+			"num_pages":  metadata.ImageMeta.NumPages,
+			"blurhash":   metadata.ImageMeta.Blurhash,
+		})
+	}
+
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)
-	// resize itself and return if only raw(original format) is supported
-	if supportedFormats["raw"] == true &&
+	// resize itself and return if only raw(jpg,jpeg,png,gif) is supported
+	if supportedFormats["jpg"] == true &&
+		supportedFormats["jpeg"] == true &&
+		supportedFormats["png"] == true &&
+		supportedFormats["gif"] == true &&
 		supportedFormats["webp"] == false &&
 		supportedFormats["avif"] == false &&
-		supportedFormats["jxl"] == false {
+		supportedFormats["jxl"] == false &&
+		supportedFormats["heic"] == false {
 		dest := path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id)
 		if !helper.ImageExists(dest) {
 			encoder.ResizeItself(rawImageAbs, dest, extraParams)
@@ -168,7 +195,11 @@ func Convert(c *fiber.Ctx) error {
 	// Do the convertion based on supported formats and config
 	encoder.ConvertFilter(rawImageAbs, jxlAbs, avifAbs, webpAbs, extraParams, supportedFormats, nil)
 
-	var availableFiles = []string{rawImageAbs}
+	var availableFiles = []string{}
+	// If source image is in jpg/jpeg/png/gif, we can add it to the available files
+	if slices.Contains([]string{"jpg", "jpeg", "png", "gif"}, helper.GetImageExtension(rawImageAbs)) {
+		availableFiles = append(availableFiles, rawImageAbs)
+	}
 	if supportedFormats["avif"] {
 		availableFiles = append(availableFiles, avifAbs)
 	}

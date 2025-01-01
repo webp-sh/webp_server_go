@@ -1,35 +1,14 @@
 name: CI check on every PR
 on:
   pull_request:
-    branches:
-      - master
     paths-ignore:
       - '**.md'
       - 'Makefile'
       - 'config.json'
 
 jobs:
-  ci:
-    name: CI check on every push and PR
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-
-      - name: Setup necessary packages
-        run: |
-          sudo apt update && sudo apt install libvips-dev -y
-
-      - name: run test cases
-        run: make && make test
-        
   image-test:
-    name: Check for image build and CVE
+    name: Check for image build, testing and CVE
     runs-on: ubuntu-latest
     permissions: 
       pull-requests: write 
@@ -42,24 +21,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Cache Docker layers
-        uses: actions/cache@v2
+      - name: Make test
+        uses: docker/build-push-action@v6
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
+          context: .
+          file: ./Dockerfile.CI
+          load: true
+          tags: |
+            ghcr.io/${{ github.event.repository.full_name }}:latest
 
-      - name: Build and load image
-        uses: docker/build-push-action@v3
+      - name: Build image test
+        uses: docker/build-push-action@v6
         with:
           context: .
           load: true
           tags: |
             ghcr.io/${{ github.event.repository.full_name }}:latest
-
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
       - name: Install trivy
         run: |

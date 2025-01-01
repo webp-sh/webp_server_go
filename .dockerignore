@@ -1,10 +1,8 @@
 .github/*
 exhaust/*
-pics/*
 remote-raw/*
 scripts/*
 .git
 .dockerignore
 README.md
 LICENSE
-Makefile

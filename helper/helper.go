@@ -11,13 +11,20 @@ import (
 
 	"slices"
 
+	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/h2non/filetype"
+	"github.com/mileusna/useragent"
 
 	"github.com/cespare/xxhash"
 	"github.com/valyala/fasthttp"
 
 	svg "github.com/h2non/go-is-svg"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	boolFalse   vips.BoolParameter
+	intMinusOne vips.IntParameter
 )
 
 var _ = filetype.AddMatcher(filetype.NewType("svg", "image/svg+xml"), svgMatcher)
@@ -84,13 +91,21 @@ func ImageExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func CheckAllowedType(imgFilename string) bool {
+func GetImageExtension(filename string) string {
+	return strings.TrimPrefix(strings.ToLower(path.Ext(filename)), ".")
+}
+
+// CheckAllowedExtension checks if the image extension is in the user's allowed types
+func CheckAllowedExtension(imgFilename string) bool {
 	if config.Config.AllowedTypes[0] == "*" {
 		return true
 	}
-	imgFilenameExtension := strings.ToLower(path.Ext(imgFilename))
-	imgFilenameExtension = strings.TrimPrefix(imgFilenameExtension, ".") // .jpg -> jpg
-	return slices.Contains(config.Config.AllowedTypes, imgFilenameExtension)
+	return slices.Contains(config.Config.AllowedTypes, GetImageExtension(imgFilename))
+}
+
+// CheckImageExtension checks if the image extension is in the WebP Server Go's default types
+func CheckImageExtension(imgFilename string) bool {
+	return slices.Contains(config.DefaultAllowedTypes, GetImageExtension(imgFilename))
 }
 
 func GenOptimizedAbsPath(metadata config.MetaFile, subdir string) (string, string, string) {
@@ -120,16 +135,21 @@ func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 
 func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	var (
-		supported = map[string]bool{
-			"raw":  true,
-			"webp": false,
-			"avif": false,
-			"jxl":  false,
-		}
-
-		ua     = string(header.Peek("user-agent"))
-		accept = strings.ToLower(string(header.Peek("accept")))
+		ua        = string(header.Peek("user-agent"))
+		accept    = strings.ToLower(string(header.Peek("accept")))
+		supported = map[string]bool{}
 	)
+	// Initialize all supported formats to false
+	for _, item := range config.DefaultAllowedTypes {
+		supported[item] = false
+	}
+	// raw format(jpg,jpeg,png,gif) is always supported
+	supported["jpg"] = true
+	supported["jpeg"] = true
+	supported["png"] = true
+	supported["gif"] = true
+	supported["svg"] = true
+	supported["bmp"] = true
 
 	if strings.Contains(accept, "image/webp") {
 		supported["webp"] = true
@@ -140,37 +160,46 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	if strings.Contains(accept, "image/jxl") {
 		supported["jxl"] = true
 	}
+	parsedUA := useragent.Parse(ua)
 
-	supportedWebPs := []string{"iPhone OS 14", "CPU OS 14", "iPhone OS 15", "CPU OS 15", "iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17", "iPhone OS 18", "CPU OS 18"}
-	for _, version := range supportedWebPs {
-		if strings.Contains(ua, version) {
-			supported["webp"] = true
-			break
-		}
+	if parsedUA.IsIOS() && parsedUA.VersionNo.Major >= 14 {
+		supported["webp"] = true
 	}
 
-	supportedAVIFs := []string{"iPhone OS 16", "CPU OS 16", "iPhone OS 17", "CPU OS 17", "iPhone OS 18", "CPU OS 18"}
-	for _, version := range supportedAVIFs {
-		if strings.Contains(ua, version) {
-			supported["avif"] = true
-			break
-		}
+	if parsedUA.IsIOS() && parsedUA.VersionNo.Major >= 16 {
+		supported["avif"] = true
 	}
 
 	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 <- iPad
 	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15 <- Mac
 	// Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1 <- iPhone @ Safari
-	supportedJXLs := []string{"iPhone OS 17", "CPU OS 17", "Version/17", "iPhone OS 18", "CPU OS 18", "Version/18"}
-	if strings.Contains(ua, "iPhone") || strings.Contains(ua, "Macintosh") {
-		for _, version := range supportedJXLs {
-			if strings.Contains(ua, version) {
-				supported["jxl"] = true
-				break
-			}
-		}
+	if parsedUA.IsIOS() && parsedUA.VersionNo.Major >= 17 {
+		supported["jxl"] = true
+	}
+
+	if parsedUA.IsSafari() && parsedUA.VersionNo.Major >= 17 {
+		supported["heic"] = true
+	}
+
+	// Firefox will not send correct accept header on url without image extension, we need to check user agent to see if `Firefox/133` version is supported
+	// https://caniuse.com/webp
+	if parsedUA.IsFirefox() && parsedUA.VersionNo.Major >= 133 {
+		supported["webp"] = true
+	}
+
+	// https://caniuse.com/avif
+	if parsedUA.IsFirefox() && parsedUA.VersionNo.Major >= 93 {
+		supported["avif"] = true
 	}
 
 	return supported
+}
+
+func CopyFile(src, dst string) error {
+	// Read all content of src to data
+	data, _ := os.ReadFile(src)
+	// Write data to dst
+	return os.WriteFile(dst, data, 0644)
 }
 
 func FindSmallestFiles(files []string) string {

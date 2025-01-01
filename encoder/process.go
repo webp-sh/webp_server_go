@@ -114,6 +114,7 @@ func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
 
 	img, err := vips.LoadImageFromFile(raw, &vips.ImportParams{
 		FailOnError: boolFalse,
+		NumPages:    intMinusOne,
 	})
 	if err != nil {
 		log.Warnf("Could not load %s: %s", raw, err)
@@ -152,13 +153,18 @@ func preProcessImage(img *vips.ImageRef, imageType string, extraParams config.Ex
 		}
 	}
 
-	// Auto rotate
-	err := img.AutoRotate()
-	if err != nil {
-		return err
-	}
 	if config.Config.EnableExtraParams {
-		err = resizeImage(img, extraParams)
+		err := resizeImage(img, extraParams)
+		if err != nil {
+			return err
+		}
+	}
+	// Skip auto rotate for GIF/WebP
+	if img.Format() == vips.ImageTypeGIF || img.Format() == vips.ImageTypeWEBP {
+		return nil
+	} else {
+		// Auto rotate
+		err := img.AutoRotate()
 		if err != nil {
 			return err
 		}
