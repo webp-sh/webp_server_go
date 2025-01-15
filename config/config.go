@@ -45,6 +45,7 @@ const (
 var (
 	ConfigPath          string
 	Jobs                int
+	Verbosity           int
 	DumpSystemd         bool
 	DumpConfig          bool
 	ShowVersion         bool
@@ -53,7 +54,7 @@ var (
 	PrefetchForeground  bool // Standalone prefetch, prefetch and exit
 	AllowNonImage       bool
 	Config              = NewWebPConfig()
-	Version             = "0.13.0"
+	Version             = "0.13.1"
 	WriteLock           = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock         = cache.New(5*time.Minute, 10*time.Minute)
 	LocalHostAlias      = "local"
@@ -144,6 +145,12 @@ func init() {
 	flag.BoolVar(&Prefetch, "prefetch", false, "Prefetch and convert images to optimized format, with WebP Server Go launch normally")
 	flag.BoolVar(&PrefetchForeground, "prefetch-foreground", false, "Prefetch and convert image to optimized format in foreground, prefetch and exit")
 	flag.IntVar(&Jobs, "jobs", runtime.NumCPU(), "Prefetch thread, default is all.")
+	// 0 = silent (no log messages)
+	// 1 = error (error messages only)
+	// 2 = warn (error messages and warnings only)
+	// 3 = info (error messages, warnings and normal activity logs)
+	// 4 = debug (all info plus additional messages for debugging)
+	flag.IntVar(&Verbosity, "verbosity", 3, "Log level(0: silent, 1: error, 2: warn, 3:info, 4: debug), default to 3: info")
 	flag.BoolVar(&DumpConfig, "dump-config", false, "Print sample config.json.")
 	flag.BoolVar(&ShowVersion, "V", false, "Show version information.")
 }

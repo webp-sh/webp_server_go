@@ -40,13 +40,7 @@ func setupLogger() {
 		},
 	}
 	log.SetFormatter(formatter)
-	log.SetLevel(log.InfoLevel)
 
-	// fiber logger format
-	app.Use(logger.New(logger.Config{
-		Format:     config.FiberLogFormat,
-		TimeFormat: config.TimeDateFormat,
-	}))
 	app.Use(recover.New(recover.Config{}))
 	fmt.Println("Allowed file types as source:", config.Config.AllowedTypes)
 	fmt.Println("Convert to WebP Enabled:", config.Config.EnableWebP)
@@ -66,6 +60,29 @@ func init() {
 		Developed by WebP Server team. https://github.com/webp-sh`, config.Version)
 	// main init is the last one to be called
 	flag.Parse()
+	loglevel := config.Verbosity
+
+	// Only enable fiber logger if loglevel is greater than 0
+	if loglevel > 0 {
+		// fiber logger format
+		app.Use(logger.New(logger.Config{
+			Format:     config.FiberLogFormat,
+			TimeFormat: config.TimeDateFormat,
+		}))
+	}
+
+	switch loglevel {
+	case 0:
+		log.SetLevel(log.PanicLevel)
+	case 1:
+		log.SetLevel(log.ErrorLevel)
+	case 2:
+		log.SetLevel(log.WarnLevel)
+	case 3:
+		log.SetLevel(log.InfoLevel)
+	case 4:
+		log.SetLevel(log.DebugLevel)
+	}
 	// process cli params
 	if config.DumpConfig {
 		fmt.Println(config.SampleConfig)
