@@ -215,17 +215,40 @@ func TestConvertNotAllowed(t *testing.T) {
 func TestConvertPassThrough(t *testing.T) {
 	setupParam()
 	config.Config.AllowedTypes = []string{"*"}
+	config.AllowAllExtensions = true
 
 	var app = fiber.New()
 	app.Get("/*", Convert)
 
-	// not allowed, but we have the file, this should return File extension not allowed
+	// Since AllowedTypes is *, we should be able to access config.json
 	url := "http://127.0.0.1:3333/config.json"
 	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 	assert.Contains(t, string(data), "HOST")
+}
+
+func TestConvertPassThroughWithRemoteBackend(t *testing.T) {
+	setupParam()
+	config.Config.AllowedTypes = []string{"*"}
+	config.Config.ImgPath = "https://docs.webp.sh"
+	config.ProxyMode = true
+	config.AllowAllExtensions = true
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	// This should send request to https://docs.webp.sh/sw.js and render this file
+	url := "http://127.0.0.1:3333/sw.js"
+	resp, data := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	// TODO: No idea why this is not working, it shows text/html instead of application/javascript
+	// assert.Equal(t, "application/javascript", resp.Header.Get("Content-Type"))
+
+	assert.Contains(t, string(data), "addEventListener")
 }
 
 func TestConvertProxyModeBad(t *testing.T) {

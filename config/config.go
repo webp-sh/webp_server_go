@@ -50,11 +50,12 @@ var (
 	DumpConfig          bool
 	ShowVersion         bool
 	ProxyMode           bool
+	AllowAllExtensions  bool
 	Prefetch            bool // Prefech in go-routine, with WebP Server Go launch normally
 	PrefetchForeground  bool // Standalone prefetch, prefetch and exit
 	AllowNonImage       bool
 	Config              = NewWebPConfig()
-	Version             = "0.13.2"
+	Version             = "0.13.3"
 	WriteLock           = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock         = cache.New(5*time.Minute, 10*time.Minute)
 	LocalHostAlias      = "local"
@@ -298,6 +299,10 @@ func LoadConfig() {
 		} else {
 			Config.MaxCacheSize = maxCacheSize
 		}
+	}
+
+	if Config.AllowedTypes[0] == "*" {
+		AllowAllExtensions = true
 	}
 
 	log.Debugln("Config init complete")

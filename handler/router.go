@@ -70,13 +70,6 @@ func Convert(c *fiber.Ctx) error {
 		return nil
 	}
 
-	// Check if the file extension is allowed and not with image extension
-	// In this case we will serve the file directly
-	// Since here we've already sent non-image file, "raw" is not supported by default in the following code
-	if helper.CheckAllowedExtension(filename) && !helper.CheckImageExtension(filename) {
-		return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
-	}
-
 	// Rewrite the target backend if a mapping rule matches the hostname
 	if hostMap, hostMapFound := config.Config.ImageMap[reqHost]; hostMapFound {
 		log.Debugf("Found host mapping %s -> %s", reqHostname, hostMap)
@@ -107,11 +100,9 @@ func Convert(c *fiber.Ctx) error {
 				break
 			}
 		}
-
 	}
 
 	if proxyMode {
-
 		if !mapMode {
 			// Don't deal with the encoding to avoid upstream compatibilities
 			reqURI = c.Path()
@@ -124,6 +115,19 @@ func Convert(c *fiber.Ctx) error {
 		// realRemoteAddr = strings.Replace(reqURIwithQuery, reqHost, targetHost, 1)
 		realRemoteAddr = targetHost + reqURIwithQuery
 		log.Debugf("realRemoteAddr is %s", realRemoteAddr)
+	}
+
+	// Check if the file extension is allowed and not with image extension
+	// In this case we will serve the file directly
+	// Since here we've already sent non-image file, "raw" is not supported by default in the following code
+	if config.AllowAllExtensions && !helper.CheckImageExtension(filename) {
+		// If the file is not in the ImgPath, we'll have to use the proxy mode to download it
+		if !proxyMode {
+			return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
+		} else {
+			fetchRemoteImg(realRemoteAddr, targetHostName)
+			return c.SendFile(path.Join(config.Config.RemoteRawPath, targetHostName, helper.HashString(realRemoteAddr)))
+		}
 	}
 
 	var rawImageAbs string
