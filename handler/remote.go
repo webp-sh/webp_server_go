@@ -54,8 +54,8 @@ func downloadFile(filepath string, url string) {
 	// Check if remote content-type is image using check by filetype instead of content-type returned by origin
 	kind, _ := filetype.Match(bodyBytes.Bytes())
 	mime := kind.MIME.Value
-	if !strings.Contains(mime, "image") {
-		log.Errorf("remote file %s is not image, remote content has MIME type of %s", url, mime)
+	if !strings.Contains(mime, "image") && !config.AllowAllExtensions {
+		log.Errorf("remote file %s is not image and AllowedTypes is not '*', remote content has MIME type of %s", url, mime)
 		return
 	}
 
@@ -126,7 +126,7 @@ func pingURL(url string) string {
 	var etag, length string
 	resp, err := http.Head(url)
 	if err != nil {
-		log.Errorln("Connection to remote error when pingUrl!")
+		log.Errorln("Connection to remote error when pingUrl:"+url, err)
 		return ""
 	}
 	defer resp.Body.Close()
