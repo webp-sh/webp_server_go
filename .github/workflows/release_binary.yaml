@@ -61,6 +61,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: webp-server-linux-arm64
+          path: builds/webp-server-linux-arm64
   
   release-binary:
     name: Release Binary
