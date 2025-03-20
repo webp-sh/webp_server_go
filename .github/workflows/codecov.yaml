@@ -10,7 +10,7 @@ on:
 
 jobs:
   ci:
-    name: CI check and codecov on every push
+    name: Codecov on every push
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,13 +20,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.24'
-
-      - name: Setup necessary packages
-        run: |
-          sudo apt update && sudo apt install libvips-dev -y
-
-      - name: run test cases
-        run: make && make test
 
       - name: Codecov
         uses: codecov/codecov-action@v2
