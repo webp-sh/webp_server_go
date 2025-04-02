@@ -2,6 +2,7 @@ package helper
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -67,8 +68,16 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 		data.Checksum = HashFile(filepath)
 	}
 
-	imageMeta := getImageMeta(filepath)
-	data.ImageMeta = imageMeta
+	fmt.Println("p", p)
+	fmt.Println("getImageMeta(filepath)", filepath)
+
+	if config.ProxyMode {
+
+	} else {
+		imageMeta := getImageMeta(filepath)
+
+		data.ImageMeta = imageMeta
+	}
 
 	buf, _ := json.Marshal(data)
 	_ = os.WriteFile(path.Join(config.Config.MetadataPath, subdir, data.Id+".json"), buf, 0644)
