@@ -293,6 +293,24 @@ func TestConvertProxyModeWork(t *testing.T) {
 	assert.Equal(t, "image/jpeg", helper.GetContentType(data))
 }
 
+func TestConvertProxyModeNonImageWork(t *testing.T) {
+	setupParam()
+	config.ProxyMode = true
+	config.Config.AllowedTypes = []string{"*"}
+	config.AllowAllExtensions = true
+	config.Config.ImgPath = "https://docs.webp.sh"
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	url := "http://127.0.0.1:3333/sw.js"
+
+	resp, _ := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "text/javascript; charset=utf-8", resp.Header.Get("Content-Type"))
+}
+
 func TestConvertMapProxyModeWork(t *testing.T) {
 	setupParam()
 	config.ProxyMode = true
