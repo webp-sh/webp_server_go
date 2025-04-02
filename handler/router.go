@@ -125,9 +125,8 @@ func Convert(c *fiber.Ctx) error {
 			return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
 		} else {
 			// If the file is not in the ImgPath, we'll have to use the proxy mode to download it
-			_, respHeader := fetchRemoteImg(realRemoteAddr, targetHostName)
-			localFilename := path.Join(config.Config.RemoteRawPath, targetHostName, helper.HashString(realRemoteAddr))
-			c.Set("Content-Type", string(respHeader.Get("Content-Type")))
+			_ = fetchRemoteImg(realRemoteAddr, targetHostName)
+			localFilename := path.Join(config.Config.RemoteRawPath, targetHostName, helper.HashString(realRemoteAddr)) + path.Ext(realRemoteAddr)
 			return c.SendFile(localFilename)
 		}
 	}
@@ -138,7 +137,7 @@ func Convert(c *fiber.Ctx) error {
 		// this is proxyMode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
 		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 
-		metadata, _ = fetchRemoteImg(realRemoteAddr, targetHostName)
+		metadata = fetchRemoteImg(realRemoteAddr, targetHostName)
 		rawImageAbs = path.Join(config.Config.RemoteRawPath, targetHostName, metadata.Id) + path.Ext(realRemoteAddr)
 	} else {
 		// not proxyMode, we'll use local path

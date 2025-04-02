@@ -78,11 +78,10 @@ func downloadFile(filepath string, url string) http.Header {
 	return resp.Header
 }
 
-func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile, respHeader http.Header) {
+func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile) {
 	// url is https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	// How do we know if the remote img is changed? we're using hash(etag+length)
 	var etag string
-	var header http.Header
 
 	cacheKey := subdir + ":" + helper.HashString(url)
 
@@ -119,11 +118,11 @@ func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile, res
 			// local file not exists
 			log.Info("Remote file not found in remote-raw, re-fetching...")
 		}
-		header = downloadFile(localRawImagePath, url)
+		_ = downloadFile(localRawImagePath, url)
 		// Update metadata with newly downloaded file
 		helper.WriteMetadata(url, etag, subdir)
 	}
-	return metadata, header
+	return metadata
 }
 
 func pingURL(url string) string {

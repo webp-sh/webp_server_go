@@ -2,7 +2,6 @@ package helper
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -70,9 +69,6 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 		data.Path = sant
 		data.Checksum = HashFile(filepath)
 	}
-
-	fmt.Println("p", p)
-	fmt.Println("getImageMeta(filepath)", filepath)
 
 	imageMeta := getImageMeta(filepath)
 
