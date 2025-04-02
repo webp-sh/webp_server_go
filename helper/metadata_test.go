@@ -13,7 +13,7 @@ func TestGetId(t *testing.T) {
 	t.Run("proxy mode", func(t *testing.T) {
 		// Test case 1: Proxy mode
 		config.ProxyMode = true
-		id, jointPath, santizedPath := getId(p)
+		id, jointPath, santizedPath := getId(p, "")
 
 		// Verify the return values
 		expectedId := HashString(p)
@@ -28,7 +28,7 @@ func TestGetId(t *testing.T) {
 		// Test case 2: Non-proxy mode
 		config.ProxyMode = false
 		p = "/image.jpg?width=400&height=500"
-		id, jointPath, santizedPath := getId(p)
+		id, jointPath, santizedPath := getId(p, "")
 
 		// Verify the return values
 		parsed, _ := url.Parse(p)
