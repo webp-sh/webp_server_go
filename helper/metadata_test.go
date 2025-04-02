@@ -17,7 +17,7 @@ func TestGetId(t *testing.T) {
 
 		// Verify the return values
 		expectedId := HashString(p)
-		expectedPath := ""
+		expectedPath := "remote-raw/8d8576343c4cb816.jpg?width=200&height=300"
 		expectedSantizedPath := ""
 		if id != expectedId || jointPath != expectedPath || santizedPath != expectedSantizedPath {
 			t.Errorf("Test case 1 failed: Expected (%s, %s, %s), but got (%s, %s, %s)",
