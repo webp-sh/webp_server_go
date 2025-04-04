@@ -12,10 +12,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func getId(p string) (string, string, string) {
-	var id string
+// Get ID and filepath
+// For ProxyMode, pass in p the remote-raw path
+func getId(p string, subdir string) (id string, filePath string, santizedPath string) {
 	if config.ProxyMode {
-		return HashString(p), "", ""
+		fileID := HashString(p)
+		return fileID, path.Join(config.Config.RemoteRawPath, subdir, fileID) + path.Ext(p), ""
 	}
 	parsed, _ := url.Parse(p)
 	width := parsed.Query().Get("width")
@@ -24,16 +26,17 @@ func getId(p string) (string, string, string) {
 	max_height := parsed.Query().Get("max_height")
 	// santizedPath will be /webp_server.jpg?width=200\u0026height=\u0026max_width=\u0026max_height= in local mode when requesting /webp_server.jpg?width=200
 	// santizedPath will be https://docs.webp.sh/images/webp_server.jpg?width=400 in proxy mode when requesting /images/webp_server.jpg?width=400 with IMG_PATH = https://docs.webp.sh
-	santizedPath := parsed.Path + "?width=" + width + "&height=" + height + "&max_width=" + max_width + "&max_height=" + max_height
+	santizedPath = parsed.Path + "?width=" + width + "&height=" + height + "&max_width=" + max_width + "&max_height=" + max_height
 	id = HashString(santizedPath)
+	filePath = path.Join(config.Config.ImgPath, parsed.Path)
 
-	return id, path.Join(config.Config.ImgPath, parsed.Path), santizedPath
+	return id, filePath, santizedPath
 }
 
 func ReadMetadata(p, etag string, subdir string) config.MetaFile {
 	// try to read metadata, if we can't read, create one
 	var metadata config.MetaFile
-	var id, _, _ = getId(p)
+	var id, _, _ = getId(p, subdir)
 
 	if buf, err := os.ReadFile(path.Join(config.Config.MetadataPath, subdir, id+".json")); err != nil {
 		// First time reading metadata, create one
@@ -53,7 +56,7 @@ func ReadMetadata(p, etag string, subdir string) config.MetaFile {
 func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 	_ = os.MkdirAll(path.Join(config.Config.MetadataPath, subdir), 0755)
 
-	var id, filepath, sant = getId(p)
+	var id, filepath, sant = getId(p, subdir)
 
 	var data = config.MetaFile{
 		Id: id,
@@ -68,6 +71,7 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 	}
 
 	imageMeta := getImageMeta(filepath)
+
 	data.ImageMeta = imageMeta
 
 	buf, _ := json.Marshal(data)
@@ -166,7 +170,7 @@ func getImageMeta(filePath string) (metadata config.ImageMeta) {
 }
 
 func DeleteMetadata(p string, subdir string) {
-	var id, _, _ = getId(p)
+	var id, _, _ = getId(p, subdir)
 	metadataPath := path.Join(config.Config.MetadataPath, subdir, id+".json")
 	err := os.Remove(metadataPath)
 	if err != nil {

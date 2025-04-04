@@ -13,11 +13,11 @@ func TestGetId(t *testing.T) {
 	t.Run("proxy mode", func(t *testing.T) {
 		// Test case 1: Proxy mode
 		config.ProxyMode = true
-		id, jointPath, santizedPath := getId(p)
+		id, jointPath, santizedPath := getId(p, "")
 
 		// Verify the return values
 		expectedId := HashString(p)
-		expectedPath := ""
+		expectedPath := "remote-raw/8d8576343c4cb816.jpg?width=200&height=300"
 		expectedSantizedPath := ""
 		if id != expectedId || jointPath != expectedPath || santizedPath != expectedSantizedPath {
 			t.Errorf("Test case 1 failed: Expected (%s, %s, %s), but got (%s, %s, %s)",
@@ -28,7 +28,7 @@ func TestGetId(t *testing.T) {
 		// Test case 2: Non-proxy mode
 		config.ProxyMode = false
 		p = "/image.jpg?width=400&height=500"
-		id, jointPath, santizedPath := getId(p)
+		id, jointPath, santizedPath := getId(p, "")
 
 		// Verify the return values
 		parsed, _ := url.Parse(p)

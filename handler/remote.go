@@ -31,24 +31,25 @@ func cleanProxyCache(cacheImagePath string) {
 	}
 }
 
-func downloadFile(filepath string, url string) {
+// Download file and return response header
+func downloadFile(filepath string, url string) http.Header {
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Errorln("Connection to remote error when downloadFile!")
-		return
+		return nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != fiber.StatusOK {
 		log.Errorf("remote returned %s when fetching remote image", resp.Status)
-		return
+		return resp.Header
 	}
 
 	// Copy bytes here
 	bodyBytes := new(bytes.Buffer)
 	_, err = bodyBytes.ReadFrom(resp.Body)
 	if err != nil {
-		return
+		return nil
 	}
 
 	// Check if remote content-type is image using check by filetype instead of content-type returned by origin
@@ -56,7 +57,7 @@ func downloadFile(filepath string, url string) {
 	mime := kind.MIME.Value
 	if !strings.Contains(mime, "image") && !config.AllowAllExtensions {
 		log.Errorf("remote file %s is not image and AllowedTypes is not '*', remote content has MIME type of %s", url, mime)
-		return
+		return nil
 	}
 
 	_ = os.MkdirAll(path.Dir(filepath), 0755)
@@ -68,15 +69,16 @@ func downloadFile(filepath string, url string) {
 	err = os.WriteFile(filepath, bodyBytes.Bytes(), 0600)
 	if err != nil {
 		// not likely to happen
-		return
+		return nil
 	}
 
 	// Delete lock here
 	config.WriteLock.Delete(filepath)
 
+	return resp.Header
 }
 
-func fetchRemoteImg(url string, subdir string) config.MetaFile {
+func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile) {
 	// url is https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	// How do we know if the remote img is changed? we're using hash(etag+length)
 	var etag string
@@ -101,7 +103,8 @@ func fetchRemoteImg(url string, subdir string) config.MetaFile {
 	}
 
 	metadata := helper.ReadMetadata(url, etag, subdir)
-	localRawImagePath := path.Join(config.Config.RemoteRawPath, subdir, metadata.Id)
+	remoteFileExtension := path.Ext(url)
+	localRawImagePath := path.Join(config.Config.RemoteRawPath, subdir, metadata.Id) + remoteFileExtension
 	localExhaustImagePath := path.Join(config.Config.ExhaustPath, subdir, metadata.Id)
 
 	if !helper.ImageExists(localRawImagePath) || metadata.Checksum != helper.HashString(etag) {
@@ -115,7 +118,9 @@ func fetchRemoteImg(url string, subdir string) config.MetaFile {
 			// local file not exists
 			log.Info("Remote file not found in remote-raw, re-fetching...")
 		}
-		downloadFile(localRawImagePath, url)
+		_ = downloadFile(localRawImagePath, url)
+		// Update metadata with newly downloaded file
+		helper.WriteMetadata(url, etag, subdir)
 	}
 	return metadata
 }
