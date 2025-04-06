@@ -113,7 +113,8 @@ func Convert(c *fiber.Ctx) error {
 
 		// Replace host in the URL
 		// realRemoteAddr = strings.Replace(reqURIwithQuery, reqHost, targetHost, 1)
-		realRemoteAddr, _ = url.JoinPath(targetHost, reqURIwithQuery)
+		realRemoteAddr = targetHost + reqURIwithQuery
+
 		log.Debugf("realRemoteAddr is %s", realRemoteAddr)
 	}
 
