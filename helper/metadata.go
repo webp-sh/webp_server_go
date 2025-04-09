@@ -70,9 +70,11 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 		data.Checksum = HashFile(filepath)
 	}
 
-	imageMeta := getImageMeta(filepath)
-
-	data.ImageMeta = imageMeta
+	// Only get image metadata if the file has image extension
+	if CheckImageExtension(filepath) {
+		imageMeta := getImageMeta(filepath)
+		data.ImageMeta = imageMeta
+	}
 
 	buf, _ := json.Marshal(data)
 	_ = os.WriteFile(path.Join(config.Config.MetadataPath, subdir, data.Id+".json"), buf, 0644)
