@@ -303,9 +303,16 @@ func TestConvertProxyModeNonImageWork(t *testing.T) {
 	var app = fiber.New()
 	app.Get("/*", Convert)
 
-	url := "http://127.0.0.1:3333/sw.js"
+	url := "http://127.0.0.1:3333/sw.js?version=13"
 
 	resp, _ := requestToServer(url, app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "text/javascript; charset=utf-8", resp.Header.Get("Content-Type"))
+
+	url = "http://127.0.0.1:3333/sw.js"
+
+	resp, _ = requestToServer(url, app, chromeUA, acceptWebP)
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "text/javascript; charset=utf-8", resp.Header.Get("Content-Type"))
