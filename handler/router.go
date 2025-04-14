@@ -109,6 +109,10 @@ func Convert(c *fiber.Ctx) error {
 			reqURIwithQuery = c.OriginalURL()
 		}
 
+		// Remove first leading slash from reqURIwithQuery if present
+		if strings.HasPrefix(reqURIwithQuery, "/") {
+			reqURIwithQuery = reqURIwithQuery[1:]
+		}
 		realRemoteAddr = targetHost + "/" + reqURIwithQuery
 	}
 

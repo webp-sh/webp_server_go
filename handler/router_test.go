@@ -347,8 +347,9 @@ func TestConvertProxyImgMap(t *testing.T) {
 	config.ProxyMode = false
 	config.Config.ImageMap = map[string]string{
 		"/2":                            "../pics/dir1",
-		"/3":                            "../pics3",             // Invalid path, does not exists
-		"www.invalid-path.com":          "https://docs.webp.sh", // Invalid, it does not start with '/'
+		"/3":                            "../pics3",                 // Invalid path, does not exists
+		"/s3":                           "https://d1.awsstatic.com", // AWS S3 bucket for testing query
+		"www.invalid-path.com":          "https://docs.webp.sh",     // Invalid, it does not start with '/'
 		"/www.weird-path.com":           "https://docs.webp.sh",
 		"/www.even-more-werid-path.com": "https://docs.webp.sh/images",
 		"http://example.com":            "https://docs.webp.sh",
@@ -363,6 +364,8 @@ func TestConvertProxyImgMap(t *testing.T) {
 		"http://127.0.0.1:3333/www.weird-path.com/images/webp_server.jpg":    "image/webp",
 		"http://127.0.0.1:3333/www.even-more-werid-path.com/webp_server.jpg": "image/webp",
 		"http://example.com//images/webp_server.jpg":                         "image/webp",
+
+		"http://127.0.0.1:3333/s3/s3-pdp-redesign/product-page-diagram_Amazon-S3_HIW%402x.ee85671fe5c9ccc2ee5c5352a769d7b03d7c0f16.png": "image/webp",
 	}
 
 	var testUrlsLegacy = map[string]string{
