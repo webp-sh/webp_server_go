@@ -55,7 +55,7 @@ var (
 	PrefetchForeground  bool // Standalone prefetch, prefetch and exit
 	AllowNonImage       bool
 	Config              = NewWebPConfig()
-	Version             = "0.13.5"
+	Version             = "0.13.6"
 	WriteLock           = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock         = cache.New(5*time.Minute, 10*time.Minute)
 	LocalHostAlias      = "local"
@@ -164,8 +164,6 @@ func LoadConfig() {
 	decoder := json.NewDecoder(jsonObject)
 	_ = decoder.Decode(&Config)
 	_ = jsonObject.Close()
-	switchProxyMode()
-	Config.ImageMap = parseImgMap(Config.ImageMap)
 
 	if slices.Contains(Config.ConvertTypes, "webp") {
 		Config.EnableWebP = true
@@ -304,6 +302,8 @@ func LoadConfig() {
 	if Config.AllowedTypes[0] == "*" {
 		AllowAllExtensions = true
 	}
+	switchProxyMode()
+	Config.ImageMap = parseImgMap(Config.ImageMap)
 
 	log.Debugln("Config init complete")
 	log.Debugln("Config", Config)
