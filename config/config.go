@@ -164,8 +164,6 @@ func LoadConfig() {
 	decoder := json.NewDecoder(jsonObject)
 	_ = decoder.Decode(&Config)
 	_ = jsonObject.Close()
-	switchProxyMode()
-	Config.ImageMap = parseImgMap(Config.ImageMap)
 
 	if slices.Contains(Config.ConvertTypes, "webp") {
 		Config.EnableWebP = true
@@ -304,6 +302,8 @@ func LoadConfig() {
 	if Config.AllowedTypes[0] == "*" {
 		AllowAllExtensions = true
 	}
+	switchProxyMode()
+	Config.ImageMap = parseImgMap(Config.ImageMap)
 
 	log.Debugln("Config init complete")
 	log.Debugln("Config", Config)
