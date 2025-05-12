@@ -115,7 +115,7 @@ func CleanCache() {
 }
 
 func DeleteDeadCache() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	threshold := time.Now().Add(-10 * time.Minute)
 	for {
