@@ -26,3 +26,4 @@ coverage.txt
 .DS_Store
 /webp_server_go
 /metadata/*
+/.idea/inspectionProfiles/Project_Default.xml
