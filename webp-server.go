@@ -98,6 +98,7 @@ func init() {
 }
 
 func main() {
+	go schedule.DeleteDeadCache()
 	if config.Config.MaxCacheSize != 0 {
 		go schedule.CleanCache()
 	}

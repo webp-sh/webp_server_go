@@ -113,3 +113,27 @@ func CleanCache() {
 		}
 	}
 }
+
+func DeleteDeadCache() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	threshold := time.Now().Add(-10 * time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			_ = filepath.Walk(os.TempDir()+"vips-", func(path string, info os.FileInfo, err error) error {
+				log.Debugf("Checking possible dead cache: %s", path)
+				if err != nil {
+					return err
+				}
+				if info.IsDir() && info.ModTime().Before(threshold) {
+					// only delete directory
+					log.Warnf("Deleting: %s", path)
+					_ = os.RemoveAll(path)
+					return filepath.SkipDir
+				}
+				return nil
+			})
+		}
+	}
+}
