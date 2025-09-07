@@ -14,12 +14,7 @@ RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
 
 FROM debian:trixie-slim
 
-RUN apt update && apt install --no-install-recommends libvips ca-certificates libjemalloc2 libtcmalloc-minimal4 curl -y && rm -rf /var/lib/apt/lists/* &&  rm -rf /var/cache/apt/archives/*
-
-COPY ./assets /build/assets
-# Install libam with correct arch
-RUN dpkg -i /build/assets/libaom3_3.11.0-1_$(dpkg --print-architecture).deb && \
-    rm /build/assets/libaom3_3.11.0-1_$(dpkg --print-architecture).deb
+RUN apt update && apt install --no-install-recommends libvips ca-certificates libjemalloc2 libtcmalloc-minimal4 curl libheif-plugin-aomenc libheif-plugin-aomdec -y && rm -rf /var/lib/apt/lists/* &&  rm -rf /var/cache/apt/archives/*
 
 COPY --from=builder /build/webp-server  /usr/bin/webp-server
 COPY --from=builder /build/config.json /etc/config.json
