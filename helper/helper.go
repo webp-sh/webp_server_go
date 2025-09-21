@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 	"webp_server_go/config"
+	"webp_server_go/vips"
 
 	"slices"
 
-	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/h2non/filetype"
 	"github.com/mileusna/useragent"
 
@@ -22,15 +22,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var (
-	boolFalse   vips.BoolParameter
-	intMinusOne vips.IntParameter
-)
-
 var _ = filetype.AddMatcher(filetype.NewType("svg", "image/svg+xml"), svgMatcher)
 
 func svgMatcher(buf []byte) bool {
 	return svg.Is(buf)
+}
+
+func LoadImage(filename string) *vips.Image {
+	var (
+		img *vips.Image
+		err error
+	)
+
+	img, err = vips.NewImageFromFile(filename, &vips.LoadOptions{
+		FailOnError: true,
+		N:           -1,
+	})
+	if err != nil {
+		img, err = vips.NewImageFromFile(filename, &vips.LoadOptions{
+			FailOnError: true,
+		})
+	}
+	return img
 }
 
 func GetFileContentType(filename string) string {

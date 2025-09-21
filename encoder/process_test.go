@@ -3,8 +3,7 @@ package encoder
 import (
 	"testing"
 	"webp_server_go/config"
-
-	"github.com/davidbyttow/govips/v2/vips"
+	vips "webp_server_go/vips"
 )
 
 func TestResizeImage(t *testing.T) {

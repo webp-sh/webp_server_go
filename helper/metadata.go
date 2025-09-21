@@ -1,14 +1,17 @@
 package helper
 
 import (
+	"bytes"
 	"encoding/json"
+	"image"
 	"net/url"
 	"os"
 	"path"
 	"webp_server_go/config"
 
+	"webp_server_go/vips"
+
 	"github.com/buckket/go-blurhash"
-	"github.com/davidbyttow/govips/v2/vips"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -82,22 +85,13 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 }
 
 func getImageMeta(filePath string) (metadata config.ImageMeta) {
-	boolFalse.Set(false)
-	intMinusOne.Set(-1)
-	img, err := vips.LoadImageFromFile(filePath, &vips.ImportParams{
-		FailOnError: boolFalse,
-		NumPages:    intMinusOne,
-	})
-	if err != nil {
-		log.Warnf("Could not load %s: %s", filePath, err)
-		return metadata
-	}
+	img := LoadImage(filePath)
 	defer img.Close()
 	var colorspace string
 	switch img.Interpretation() {
-	case vips.InterpretationSRGB:
+	case vips.InterpretationSrgb:
 		colorspace = "sRGB"
-	case vips.InterpretationYXY:
+	case vips.InterpretationYxy:
 		colorspace = "YXY"
 	case vips.InterpretationFourier:
 		colorspace = "Fourier"
@@ -105,42 +99,52 @@ func getImageMeta(filePath string) (metadata config.ImageMeta) {
 		colorspace = "Grey16"
 	case vips.InterpretationMatrix:
 		colorspace = "Matrix"
-	case vips.InterpretationScRGB:
+	case vips.InterpretationScrgb:
 		colorspace = "scRGB"
-	case vips.InterpretationHSV:
+	case vips.InterpretationHsv:
 		colorspace = "HSV"
 	default:
 		colorspace = "Unknown"
 	}
 	// Get image size
-	height := img.Metadata().Height
-	width := img.Metadata().Width
-	numPages := img.Metadata().Pages
+	height := img.Height()
+	width := img.Width()
+	numPages := img.Pages()
 	if numPages > 1 {
 		height = height / numPages
 	}
-	var imgFormat string
+	var (
+		imgFormat string
+		imgBytes  []byte
+	)
 	switch img.Format() {
-	case vips.ImageTypeJPEG:
+	case vips.ImageTypeJpeg:
 		imgFormat = "jpeg"
-	case vips.ImageTypePNG:
+		imgBytes, _ = img.JpegsaveBuffer(nil)
+	case vips.ImageTypePng:
 		imgFormat = "png"
-	case vips.ImageTypeWEBP:
+		imgBytes, _ = img.PngsaveBuffer(nil)
+
+	case vips.ImageTypeWebp:
 		imgFormat = "webp"
-	case vips.ImageTypeAVIF:
+		imgBytes, _ = img.WebpsaveBuffer(nil)
+
+	case vips.ImageTypeAvif:
 		imgFormat = "avif"
-	case vips.ImageTypeGIF:
+		imgBytes, _ = img.HeifsaveBuffer(&vips.HeifsaveBufferOptions{
+			Encoder: vips.HeifEncoderSvt,
+		})
+
+	case vips.ImageTypeGif:
 		imgFormat = "gif"
-	case vips.ImageTypeBMP:
+		imgBytes, _ = img.GifsaveBuffer(nil)
+
+	case vips.ImageTypeBmp:
 		imgFormat = "bmp"
+		imgBytes, _ = img.MagicksaveBuffer(&vips.MagicksaveBufferOptions{Format: "bmp"})
+
 	default:
 		imgFormat = "unknown"
-	}
-
-	imgBytes, err := img.ToBytes()
-	if err != nil {
-		log.Error("Error in img.ToBytes", err)
-		return
 	}
 
 	metadata = config.ImageMeta{
@@ -149,17 +153,23 @@ func getImageMeta(filePath string) (metadata config.ImageMeta) {
 		Format:     imgFormat,
 		Colorspace: colorspace,
 		NumPages:   numPages,
-		Size:       len(imgBytes),
+		Size:       len(imgBytes), //TODO old algorithm: wrong way to calculate size?
 	}
 
 	// Get blurhash
-	_ = img.Thumbnail(32, 32, vips.InterestingAttention)
-	imageImage, err := img.ToImage(vips.NewDefaultExportParams())
+	_ = img.ThumbnailImage(32, &vips.ThumbnailImageOptions{
+		Height: 32,
+		Crop:   vips.InterestingAttention,
+	})
+
+	reader := bytes.NewReader(imgBytes)
+	imageImage, _, err := image.Decode(reader)
 	if err != nil {
 		log.Error("Error in img.ToImage", err)
 		return
 	}
 
+	// imageImage: image.Image
 	blurHash, err := blurhash.Encode(4, 3, imageImage)
 	if err != nil {
 		log.Error("Error in blurhash", err)

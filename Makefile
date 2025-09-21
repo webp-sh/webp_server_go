@@ -41,3 +41,7 @@ clean:
 
 docker:
 	DOCKER_BUILDKIT=1 docker build -t webpsh/webps .
+
+codegen:
+	go install github.com/cshum/vipsgen/cmd/vipsgen@latest
+	~/go/bin/vipsgen -out ./vips

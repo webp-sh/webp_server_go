@@ -10,7 +10,7 @@
 
 [Documentation](https://docs.webp.sh/) | [Website](https://webp.sh/) | [Blog](https://blog.webp.se/)
 
-This is a Server based on Golang, which allows you to serve WebP images on the fly.
+This is a Server based on Go, which allows you to serve WebP images on the fly.
 
 Currently supported image format: JPEG, PNG, BMP, GIF, SVG, HEIC, NEF, WEBP
 

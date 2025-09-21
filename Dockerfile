@@ -4,7 +4,7 @@ ARG IMG_PATH=/opt/pics
 ARG EXHAUST_PATH=/opt/exhaust
 RUN apt update && apt install --no-install-recommends libvips-dev -y && mkdir /build
 COPY go.mod /build
-RUN cd /build && go mod download
+RUN cd /build && go mod download && make codegen
 
 COPY . /build
 RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
