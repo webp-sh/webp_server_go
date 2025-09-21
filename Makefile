@@ -44,4 +44,4 @@ docker:
 
 codegen:
 	go install github.com/cshum/vipsgen/cmd/vipsgen@latest
-	~/go/bin/vipsgen -out ./vips
+	$$(go env GOPATH)/bin/vipsgen -out ./vips
