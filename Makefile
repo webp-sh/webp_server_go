@@ -14,6 +14,7 @@ endif
 
 default:
 	make clean
+	make codegen
 	go build -o builds/webp-server-$(OS)-$(ARCH) .
 	ls builds
 
