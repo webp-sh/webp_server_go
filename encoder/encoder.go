@@ -215,13 +215,16 @@ func avifEncoder(img *vips.Image, rawPath string, optimizedPath string) error {
 	}
 	if quality >= 100 {
 		buf, err = img.HeifsaveBuffer(&vips.HeifsaveBufferOptions{
-			Lossless: true,
-			Encoder:  vips.HeifEncoderSvt,
+			Lossless:    true,
+			Encoder:     vips.HeifEncoderSvt,
+			Compression: vips.HeifCompressionAv1,
 		})
 	} else {
 		buf, err = img.HeifsaveBuffer(&vips.HeifsaveBufferOptions{
-			Q:        quality,
-			Lossless: false,
+			Q:           quality,
+			Lossless:    false,
+			Encoder:     vips.HeifEncoderSvt,
+			Compression: vips.HeifCompressionAv1,
 		})
 	}
 
