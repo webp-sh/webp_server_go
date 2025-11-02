@@ -118,8 +118,10 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 		}
 	}
 
-	img := helper.LoadImage(rawPath)
-	defer img.Close()
+	img, err := helper.LoadImage(rawPath)
+	if err == nil {
+		defer img.Close()
+	}
 
 	// Pre-process image(auto rotate, resize, etc.)
 	err = preProcessImage(img, imageType, extraParams)

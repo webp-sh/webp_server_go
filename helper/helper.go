@@ -28,22 +28,25 @@ func svgMatcher(buf []byte) bool {
 	return svg.Is(buf)
 }
 
-func LoadImage(filename string) *vips.Image {
+func LoadImage(filename string) (*vips.Image, error) {
 	var (
 		img *vips.Image
 		err error
 	)
 
+	// N: N Number of pages to load, -1 for all, i.e. this is for gif
 	img, err = vips.NewImageFromFile(filename, &vips.LoadOptions{
 		FailOnError: true,
 		N:           -1,
 	})
+
 	if err != nil {
+		// all other images
 		img, err = vips.NewImageFromFile(filename, &vips.LoadOptions{
 			FailOnError: true,
 		})
 	}
-	return img
+	return img, err
 }
 
 func GetFileContentType(filename string) string {

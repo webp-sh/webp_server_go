@@ -85,8 +85,13 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 }
 
 func getImageMeta(filePath string) (metadata config.ImageMeta) {
-	img := LoadImage(filePath)
-	defer img.Close()
+	img, err := LoadImage(filePath)
+	if err == nil {
+		defer img.Close()
+	} else {
+		return
+	}
+
 	var colorspace string
 	switch img.Interpretation() {
 	case vips.InterpretationSrgb:

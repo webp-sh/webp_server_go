@@ -135,7 +135,7 @@ func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-	img := helper.LoadImage(raw)
+	img, err := helper.LoadImage(raw)
 	if err != nil {
 		log.Warnf("Could not load %s: %s", raw, err)
 		return
