@@ -169,7 +169,7 @@ func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
 	case vips.ImageTypeJxl:
 		buf, _ = img.JxlsaveBuffer(nil)
 	default:
-		buf, _ = img.JpegsaveBuffer(nil)
+		buf, _ = img.PngsaveBuffer(nil)
 	}
 	_ = os.WriteFile(dest, buf, 0600)
 	img.Close()
