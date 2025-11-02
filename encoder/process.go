@@ -211,7 +211,7 @@ func preProcessImage(img *vips.Image, imageType string, extraParams config.Extra
 		return nil
 	} else {
 		// Auto rotate
-		err := img.Autorot()
+		err := autorot(img)
 		if err != nil {
 			return err
 		}
