@@ -6,12 +6,13 @@ import (
 	"path"
 	"slices"
 	"webp_server_go/config"
+	"webp_server_go/helper"
+	"webp_server_go/vips"
 
-	"github.com/davidbyttow/govips/v2/vips"
 	log "github.com/sirupsen/logrus"
 )
 
-func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
+func resizeImage(img *vips.Image, extraParams config.ExtraParams) error {
 	imageHeight := img.Height()
 	imageWidth := img.Width()
 
@@ -35,12 +36,18 @@ func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 			// If height exceeds more, like 500x500 -> 200x100 (2.5 < 5)
 			// Take max_height as new height ,resize and retain ratio
 			if heightExceedRatio > widthExceedRatio {
-				err := img.Thumbnail(int(float32(extraParams.MaxHeight)/imgHeightWidthRatio), extraParams.MaxHeight, 0)
+				err := img.ThumbnailImage(int(float32(extraParams.MaxHeight)/imgHeightWidthRatio), &vips.ThumbnailImageOptions{
+					Height: extraParams.MaxHeight,
+					Crop:   vips.InterestingNone,
+				})
 				if err != nil {
 					return err
 				}
 			} else {
-				err := img.Thumbnail(extraParams.MaxWidth, int(float32(extraParams.MaxWidth)*imgHeightWidthRatio), 0)
+				err := img.ThumbnailImage(extraParams.MaxWidth, &vips.ThumbnailImageOptions{
+					Height: int(float32(extraParams.MaxWidth) * imgHeightWidthRatio),
+					Crop:   vips.InterestingNone,
+				})
 				if err != nil {
 					return err
 				}
@@ -49,14 +56,22 @@ func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 	}
 
 	if extraParams.MaxHeight > 0 && imageHeight > extraParams.MaxHeight && extraParams.MaxWidth == 0 {
-		err := img.Thumbnail(int(float32(extraParams.MaxHeight)/imgHeightWidthRatio), extraParams.MaxHeight, 0)
+
+		err := img.ThumbnailImage(int(float32(extraParams.MaxHeight)/imgHeightWidthRatio), &vips.ThumbnailImageOptions{
+			Height: extraParams.MaxHeight,
+			Crop:   vips.InterestingNone,
+		})
 		if err != nil {
 			return err
 		}
 	}
 
 	if extraParams.MaxWidth > 0 && imageWidth > extraParams.MaxWidth && extraParams.MaxHeight == 0 {
-		err := img.Thumbnail(extraParams.MaxWidth, int(float32(extraParams.MaxWidth)*imgHeightWidthRatio), 0)
+		err := img.ThumbnailImage(extraParams.MaxWidth,
+			&vips.ThumbnailImageOptions{
+				Height: int(float32(extraParams.MaxWidth) * imgHeightWidthRatio),
+				Crop:   vips.InterestingNone,
+			})
 		if err != nil {
 			return err
 		}
@@ -83,19 +98,28 @@ func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 			cropInteresting = vips.InterestingAttention
 		}
 
-		err := img.Thumbnail(extraParams.Width, extraParams.Height, cropInteresting)
+		err := img.ThumbnailImage(extraParams.Width, &vips.ThumbnailImageOptions{
+			Height: extraParams.Height,
+			Crop:   cropInteresting,
+		})
 		if err != nil {
 			return err
 		}
 	}
 	if extraParams.Width > 0 && extraParams.Height == 0 {
-		err := img.Thumbnail(extraParams.Width, int(float32(extraParams.Width)*imgHeightWidthRatio), 0)
+		err := img.ThumbnailImage(extraParams.Width, &vips.ThumbnailImageOptions{
+			Height: int(float32(extraParams.Width) * imgHeightWidthRatio),
+			Crop:   vips.InterestingNone,
+		})
 		if err != nil {
 			return err
 		}
 	}
 	if extraParams.Height > 0 && extraParams.Width == 0 {
-		err := img.Thumbnail(int(float32(extraParams.Height)/imgHeightWidthRatio), extraParams.Height, 0)
+		err := img.ThumbnailImage(int(float32(extraParams.Height)/imgHeightWidthRatio), &vips.ThumbnailImageOptions{
+			Height: extraParams.Height,
+			Crop:   vips.InterestingNone,
+		})
 		if err != nil {
 			return err
 		}
@@ -111,30 +135,53 @@ func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-
-	img, err := vips.LoadImageFromFile(raw, &vips.ImportParams{
-		FailOnError: boolFalse,
-		NumPages:    intMinusOne,
-	})
+	img, err := helper.LoadImage(raw)
 	if err != nil {
 		log.Warnf("Could not load %s: %s", raw, err)
 		return
 	}
 	_ = resizeImage(img, extraParams)
 	if config.Config.StripMetadata {
-		img.RemoveMetadata()
+		_ = img.RemoveExif()
 	}
-	buf, _, _ := img.ExportNative()
+
+	// ExportNative exports the image to a buffer based on its native format with default parameters.
+	var buf []byte
+	switch img.Format() {
+	case vips.ImageTypeJpeg:
+		buf, _ = img.JpegsaveBuffer(nil)
+	case vips.ImageTypePng:
+		buf, _ = img.PngsaveBuffer(nil)
+	case vips.ImageTypeWebp:
+		buf, _ = img.WebpsaveBuffer(nil)
+	case vips.ImageTypeHeif:
+		buf, _ = img.HeifsaveBuffer(nil)
+	case vips.ImageTypeTiff:
+		buf, _ = img.TiffsaveBuffer(nil)
+	case vips.ImageTypeAvif:
+		buf, _ = img.HeifsaveBuffer(&vips.HeifsaveBufferOptions{
+			Encoder: vips.HeifEncoderSvt,
+		})
+	case vips.ImageTypeJp2k:
+		buf, _ = img.Jp2ksaveBuffer(nil)
+	case vips.ImageTypeGif:
+		buf, _ = img.GifsaveBuffer(nil)
+	case vips.ImageTypeJxl:
+		buf, _ = img.JxlsaveBuffer(nil)
+	default:
+		buf, _ = img.PngsaveBuffer(nil)
+	}
 	_ = os.WriteFile(dest, buf, 0600)
 	img.Close()
 }
 
 // Pre-process image(auto rotate, resize, etc.)
-func preProcessImage(img *vips.ImageRef, imageType string, extraParams config.ExtraParams) error {
+func preProcessImage(img *vips.Image, imageType string, extraParams config.ExtraParams) error {
 	// Check Width/Height and ignore image formats
 	switch imageType {
 	case "webp":
-		if img.Metadata().Width > config.WebpMax || img.Metadata().Height > config.WebpMax {
+
+		if img.Width() > config.WebpMax || img.Height() > config.WebpMax {
 			return errors.New("WebP: image too large")
 		}
 		imageFormat := img.Format()
@@ -143,7 +190,7 @@ func preProcessImage(img *vips.ImageRef, imageType string, extraParams config.Ex
 			return errors.New("WebP encoder: ignore image type")
 		}
 	case "avif":
-		if img.Metadata().Width > config.AvifMax || img.Metadata().Height > config.AvifMax {
+		if img.Width() > config.AvifMax || img.Height() > config.AvifMax {
 			return errors.New("AVIF: image too large")
 		}
 		imageFormat := img.Format()
@@ -160,11 +207,11 @@ func preProcessImage(img *vips.ImageRef, imageType string, extraParams config.Ex
 		}
 	}
 	// Skip auto rotate for GIF/WebP
-	if img.Format() == vips.ImageTypeGIF || img.Format() == vips.ImageTypeWEBP {
+	if img.Format() == vips.ImageTypeGif || img.Format() == vips.ImageTypeWebp {
 		return nil
 	} else {
 		// Auto rotate
-		err := img.AutoRotate()
+		err := autorot(img)
 		if err != nil {
 			return err
 		}

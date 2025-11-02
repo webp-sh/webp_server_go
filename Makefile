@@ -14,6 +14,7 @@ endif
 
 default:
 	make clean
+	make codegen
 	go build -o builds/webp-server-$(OS)-$(ARCH) .
 	ls builds
 
@@ -41,3 +42,7 @@ clean:
 
 docker:
 	DOCKER_BUILDKIT=1 docker build -t webpsh/webps .
+
+codegen:
+	go install github.com/cshum/vipsgen/cmd/vipsgen@latest
+	$$(go env GOPATH)/bin/vipsgen -out ./vips

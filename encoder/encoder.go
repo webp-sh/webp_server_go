@@ -9,36 +9,25 @@ import (
 	"time"
 	"webp_server_go/config"
 	"webp_server_go/helper"
+	"webp_server_go/vips"
 
-	"github.com/davidbyttow/govips/v2/vips"
 	log "github.com/sirupsen/logrus"
 )
 
 var (
-	boolFalse   vips.BoolParameter
-	intMinusOne vips.IntParameter
 	// Source image encoder ignore list for WebP and AVIF
 	// We shouldn't convert Unknown and AVIF to WebP
-	webpIgnore = []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeAVIF}
+	webpIgnore = []vips.ImageType{vips.ImageTypeUnknown, vips.ImageTypeAvif}
 	// We shouldn't convert Unknown,AVIF and GIF to AVIF
-	avifIgnore = append(webpIgnore, vips.ImageTypeGIF)
+	avifIgnore = append(webpIgnore, vips.ImageTypeGif)
 )
 
 func init() {
-	vips.LoggingSettings(nil, vips.LogLevelError)
+
+	vips.SetLogging(nil, vips.LogLevelError)
 	vips.Startup(&vips.Config{
 		ConcurrencyLevel: runtime.NumCPU(),
 	})
-	boolFalse.Set(false)
-	intMinusOne.Set(-1)
-}
-
-func loadImage(filename string) (*vips.ImageRef, error) {
-	img, err := vips.LoadImageFromFile(filename, &vips.ImportParams{
-		FailOnError: boolFalse,
-		NumPages:    intMinusOne,
-	})
-	return img, err
 }
 
 func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams config.ExtraParams, supportedFormats map[string]bool, c chan int) {
@@ -129,9 +118,10 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 		}
 	}
 
-	// Image is only opened here
-	img, err := loadImage(rawPath)
-	defer img.Close()
+	img, err := helper.LoadImage(rawPath)
+	if err == nil {
+		defer img.Close()
+	}
 
 	// Pre-process image(auto rotate, resize, etc.)
 	err = preProcessImage(img, imageType, extraParams)
@@ -144,21 +134,21 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 
 	switch imageType {
 	case "webp":
-		if imageFormat == vips.ImageTypeWEBP {
+		if imageFormat == vips.ImageTypeWebp {
 			log.Infof("Image is already in WebP format, copying %s to %s", rawPath, optimizedPath)
 			return helper.CopyFile(rawPath, optimizedPath)
 		} else {
 			err = webpEncoder(img, rawPath, optimizedPath)
 		}
 	case "avif":
-		if imageFormat == vips.ImageTypeAVIF {
+		if imageFormat == vips.ImageTypeAvif {
 			log.Infof("Image is already in AVIF format, copying %s to %s", rawPath, optimizedPath)
 			return helper.CopyFile(rawPath, optimizedPath)
 		} else {
 			err = avifEncoder(img, rawPath, optimizedPath)
 		}
 	case "jxl":
-		if imageFormat == vips.ImageTypeJXL {
+		if imageFormat == vips.ImageTypeJxl {
 			log.Infof("Image is already in JXL format, copying %s to %s", rawPath, optimizedPath)
 			return helper.CopyFile(rawPath, optimizedPath)
 		} else {
@@ -169,7 +159,7 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 	return err
 }
 
-func jxlEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {
+func jxlEncoder(img *vips.Image, rawPath string, optimizedPath string) error {
 	var (
 		buf     []byte
 		quality = config.Config.Quality
@@ -178,17 +168,17 @@ func jxlEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error 
 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
-		buf, _, err = img.ExportJxl(&vips.JxlExportParams{
+		buf, err = img.JxlsaveBuffer(&vips.JxlsaveBufferOptions{
 			Effort:   1,
 			Tier:     4,
 			Lossless: true,
 			Distance: 1.0,
 		})
 	} else {
-		buf, _, err = img.ExportJxl(&vips.JxlExportParams{
+		buf, err = img.JxlsaveBuffer(&vips.JxlsaveBufferOptions{
 			Effort:   1,
 			Tier:     4,
-			Quality:  quality,
+			Q:        quality,
 			Lossless: false,
 			Distance: 1.0,
 		})
@@ -208,24 +198,33 @@ func jxlEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error 
 	return nil
 }
 
-func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {
+func avifEncoder(img *vips.Image, rawPath string, optimizedPath string) error {
 	var (
 		buf     []byte
 		quality = config.Config.Quality
 		err     error
 	)
 
+	// encoder: HeifEncoderSvt - intel & netflix
+	// HeifEncoderRav1e: Mozilla Rust
+	// HeifEncoderAom: Official
+	//StripMetadata: config.Config.StripMetadata,
 	// If quality >= 100, we use lossless mode
+	if config.Config.StripMetadata {
+		_ = img.RemoveExif()
+	}
 	if quality >= 100 {
-		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
-			Lossless:      true,
-			StripMetadata: config.Config.StripMetadata,
+		buf, err = img.HeifsaveBuffer(&vips.HeifsaveBufferOptions{
+			Lossless:    true,
+			Encoder:     vips.HeifEncoderSvt,
+			Compression: vips.HeifCompressionAv1,
 		})
 	} else {
-		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
-			Quality:       quality,
-			Lossless:      false,
-			StripMetadata: config.Config.StripMetadata,
+		buf, err = img.HeifsaveBuffer(&vips.HeifsaveBufferOptions{
+			Q:           quality,
+			Lossless:    false,
+			Encoder:     vips.HeifEncoderSvt,
+			Compression: vips.HeifCompressionAv1,
 		})
 	}
 
@@ -243,33 +242,36 @@ func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 	return nil
 }
 
-func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error {
+func webpEncoder(img *vips.Image, rawPath string, optimizedPath string) error {
 	var (
 		buf     []byte
 		quality = config.Config.Quality
 		err     error
 	)
-
+	if config.Config.StripMetadata {
+		_ = img.RemoveExif()
+	}
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		// Lossless mode will not encounter problems as below, because in libvips as code below
 		// 	config.method = ExUtilGetInt(argv[++c], 0, &parse_error);
 		//   use_lossless_preset = 0;   // disable -z option
-		buf, _, err = img.ExportWebp(&vips.WebpExportParams{
-			Lossless:      true,
-			StripMetadata: config.Config.StripMetadata,
+
+		buf, err = img.WebpsaveBuffer(&vips.WebpsaveBufferOptions{
+			Lossless: true,
+			//StripMetadata: config.Config.StripMetadata,
 		})
 	} else {
 		// If some special images cannot encode with default ReductionEffort(0), then retry from 0 to 6
 		// Example: https://github.com/webp-sh/webp_server_go/issues/234
-		ep := vips.WebpExportParams{
-			Quality:       quality,
-			Lossless:      false,
-			StripMetadata: config.Config.StripMetadata,
+		ep := vips.WebpsaveBufferOptions{
+			Q:        quality,
+			Lossless: false,
+			//StripMetadata: config.Config.StripMetadata,
 		}
 		for i := range 7 {
-			ep.ReductionEffort = i
-			buf, _, err = img.ExportWebp(&ep)
+			ep.Effort = i
+			buf, err = img.WebpsaveBuffer(&ep)
 			if err != nil && strings.Contains(err.Error(), "unable to encode") {
 				log.Warnf("Can't encode image to WebP with ReductionEffort %d, trying higher value...", i)
 			} else if err != nil {
@@ -278,7 +280,7 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 				break
 			}
 		}
-		buf, _, err = img.ExportWebp(&ep)
+		buf, err = img.WebpsaveBuffer(&ep)
 	}
 
 	if err != nil {

@@ -3,12 +3,11 @@ package encoder
 import (
 	"testing"
 	"webp_server_go/config"
-
-	"github.com/davidbyttow/govips/v2/vips"
+	vips "webp_server_go/vips"
 )
 
 func TestResizeImage(t *testing.T) {
-	img, _ := vips.Black(500, 500)
+	img, _ := vips.NewBlack(500, 500, nil)
 
 	// Define the parameters for the test cases
 	testCases := []struct {
