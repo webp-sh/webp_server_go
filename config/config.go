@@ -20,6 +20,7 @@ const (
 	FiberLogFormat = "${ip} - [${time}] ${method} ${url} ${status} ${referer} ${ua}\n"
 	WebpMax        = 16383
 	AvifMax        = 65536
+	RawImageMax    = 65535 // limited by jpeg
 	HttpRegexp     = `^https?://`
 	SampleConfig   = `
 {
