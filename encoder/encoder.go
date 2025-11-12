@@ -1,6 +1,7 @@
 package encoder
 
 import (
+	"errors"
 	"os"
 	"path"
 	"runtime"
@@ -215,6 +216,10 @@ func avifEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 		err     error
 	)
 
+	if img.Width() > config.AvifMax || img.Height() > config.AvifMax {
+		log.Warnf("Avif encoder: image too large %dx%d (max %d)", img.Width(), img.Height(), config.AvifMax)
+		return errors.New("avif encoder: image too large")
+	}
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {
 		buf, _, err = img.ExportAvif(&vips.AvifExportParams{
@@ -249,6 +254,11 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 		quality = config.Config.Quality
 		err     error
 	)
+
+	if img.Width() > config.WebpMax || img.Height() > config.WebpMax {
+		log.Warnf("WebP encoder: image too large %dx%d (max %d)", img.Width(), img.Height(), config.WebpMax)
+		return errors.New("webp encoder: image too large")
+	}
 
 	// If quality >= 100, we use lossless mode
 	if quality >= 100 {

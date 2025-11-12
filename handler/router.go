@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -215,6 +216,15 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	finalFilename := helper.FindSmallestFiles(availableFiles)
+
+	if finalFilename == "" {
+		msg := fmt.Sprintf("failed to handle request: %s\nNo optimized image generated!", reqURIwithQuery)
+		_ = c.Send([]byte(msg))
+		log.Warn(msg)
+		_ = c.SendStatus(http.StatusBadRequest)
+		return nil
+	}
+
 	contentType := helper.GetFileContentType(finalFilename)
 	c.Set("Content-Type", contentType)
 
