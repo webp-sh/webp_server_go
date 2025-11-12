@@ -116,17 +116,31 @@ func ResizeItself(raw, dest string, extraParams config.ExtraParams) {
 		FailOnError: boolFalse,
 		NumPages:    intMinusOne,
 	})
+
 	if err != nil {
 		log.Warnf("Could not load %s: %s", raw, err)
 		return
 	}
-	_ = resizeImage(img, extraParams)
+
+	defer img.Close()
+
+	if hasResizeExtraParams(extraParams) && !config.Config.EnableExtraParams {
+		log.Warnf("Extra params disabled, skip resizing for %s", raw)
+	}
+
+	applyResize := isResizeApplicable(extraParams, img, raw)
+
+	if applyResize {
+		if err := resizeImage(img, extraParams); err != nil {
+			log.Warnf("Failed to resize %s: %v", raw, err)
+		}
+	}
+
 	if config.Config.StripMetadata {
 		img.RemoveMetadata()
 	}
 	buf, _, _ := img.ExportNative()
 	_ = os.WriteFile(dest, buf, 0600)
-	img.Close()
 }
 
 // Pre-process image(auto rotate, resize, etc.)
@@ -171,4 +185,58 @@ func preProcessImage(img *vips.ImageRef, imageType string, extraParams config.Ex
 	}
 
 	return nil
+}
+
+func hasResizeExtraParams(extraParams config.ExtraParams) bool {
+	return extraParams.Width > 0 || extraParams.Height > 0 || extraParams.MaxWidth > 0 || extraParams.MaxHeight > 0
+}
+
+func isResizeApplicable(extraParams config.ExtraParams, img *vips.ImageRef, raw string) bool {
+	if !hasResizeExtraParams(extraParams) || !config.Config.EnableExtraParams {
+		return false
+	}
+
+	// Params out of bounds
+	if extraParams.Width > 0 && extraParams.Width > config.RawImageMax {
+		log.Warnf("Requested width %d exceeds limit %d for %s", extraParams.Width, config.RawImageMax, raw)
+		return false
+	}
+	if extraParams.Height > 0 && extraParams.Height > config.RawImageMax {
+		log.Warnf("Requested height %d exceeds limit %d for %s", extraParams.Height, config.RawImageMax, raw)
+		return false
+	}
+	if extraParams.MaxWidth > 0 && extraParams.MaxWidth > config.RawImageMax {
+		log.Warnf("Requested max width %d exceeds limit %d for %s", extraParams.MaxWidth, config.RawImageMax, raw)
+		return false
+	}
+	if extraParams.MaxHeight > 0 && extraParams.MaxHeight > config.RawImageMax {
+		log.Warnf("Requested max height %d exceeds limit %d for %s", extraParams.MaxHeight, config.RawImageMax, raw)
+		return false
+	}
+
+	// RawImage size out of bounds
+	meta := img.Metadata()
+	if meta.Width > config.RawImageMax || meta.Height > config.RawImageMax {
+		log.Warnf("Source image %s is %dx%d, exceeds resize limit %d", raw, meta.Width, meta.Height, config.RawImageMax)
+		return false
+	}
+
+	// Zoom out of bounds
+	if extraParams.Width > 0 && extraParams.Height == 0 && meta.Width > 0 {
+		targetHeight := int(float64(extraParams.Width) * float64(meta.Height) / float64(meta.Width))
+		if targetHeight > config.RawImageMax {
+			log.Warnf("Computed height %d exceeds limit %d for %s (requested width %d)", targetHeight, config.RawImageMax, raw, extraParams.Width)
+			return false
+		}
+	}
+
+	if extraParams.Height > 0 && extraParams.Width == 0 && meta.Height > 0 {
+		targetWidth := int(float64(extraParams.Height) * float64(meta.Width) / float64(meta.Height))
+		if targetWidth > config.RawImageMax {
+			log.Warnf("Computed width %d exceeds limit %d for %s (requested height %d)", targetWidth, config.RawImageMax, raw, extraParams.Height)
+			return false
+		}
+	}
+
+	return true
 }
