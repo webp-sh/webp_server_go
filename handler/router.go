@@ -136,10 +136,12 @@ func Convert(c *fiber.Ctx) error {
 		// this is proxyMode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
 		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 
+		helper.SetMetedataProxyMode(true)
 		metadata = fetchRemoteImg(realRemoteAddr, targetHostName)
 		rawImageAbs = path.Join(config.Config.RemoteRawPath, targetHostName, metadata.Id) + path.Ext(realRemoteAddr)
 	} else {
 		// not proxyMode, we'll use local path
+		helper.SetMetedataProxyMode(false)
 		metadata = helper.ReadMetadata(reqURIwithQuery, "", targetHostName)
 		if !mapMode {
 			// by default images are hosted in ImgPath

@@ -12,10 +12,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	ProxyMode = false
+)
 // Get ID and filepath
 // For ProxyMode, pass in p the remote-raw path
+
 func getId(p string, subdir string) (id string, filePath string, santizedPath string) {
-	if config.ProxyMode {
+	if ProxyMode {
 		fileID := HashString(p)
 		return fileID, path.Join(config.Config.RemoteRawPath, subdir, fileID) + path.Ext(p), ""
 	}
@@ -71,7 +75,9 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 	}
 
 	// Only get image metadata if the file has image extension
-	if CheckImageExtension(filepath) {
+	// extract path from URL
+	parsedURL, _ := url.Parse(filepath)
+	if CheckImageExtension(parsedURL.Path) {
 		imageMeta := getImageMeta(filepath)
 		data.ImageMeta = imageMeta
 	}
@@ -178,4 +184,8 @@ func DeleteMetadata(p string, subdir string) {
 	if err != nil {
 		log.Warnln("failed to delete metadata", err)
 	}
+}
+
+func SetMetedataProxyMode(proxy bool) {
+	ProxyMode = proxy
 }
