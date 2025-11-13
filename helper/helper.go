@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -25,6 +26,7 @@ import (
 var (
 	boolFalse   vips.BoolParameter
 	intMinusOne vips.IntParameter
+	ErrUpscaleNotAllowed = errors.New("requested resize exceeds source dimensions")
 )
 
 var _ = filetype.AddMatcher(filetype.NewType("svg", "image/svg+xml"), svgMatcher)
@@ -228,4 +230,24 @@ func HashString(uri string) string {
 func HashFile(filepath string) string {
 	buf, _ := os.ReadFile(filepath)
 	return fmt.Sprintf("%x", xxhash.Sum64(buf))
+}
+
+func HasResizeParams(extra config.ExtraParams) bool {
+	return extra.Width > 0 || extra.Height > 0 || extra.MaxWidth > 0 || extra.MaxHeight > 0
+}
+
+func ValidateNoUpscale(meta config.ImageMeta, extra config.ExtraParams) error {
+	if !HasResizeParams(extra) || meta.Width == 0 || meta.Height == 0 {
+		return nil
+	}
+
+	if extra.Width > 0 && extra.Width > meta.Width {
+		return fmt.Errorf("%w: requested width %d exceeds source width %d", ErrUpscaleNotAllowed, extra.Width, meta.Width)
+	}
+
+	if extra.Height > 0 && extra.Height > meta.Height {
+		return fmt.Errorf("%w: requested height %d exceeds source height %d", ErrUpscaleNotAllowed, extra.Height, meta.Height)
+	}
+
+	return nil
 }

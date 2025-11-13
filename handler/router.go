@@ -150,7 +150,7 @@ func Convert(c *fiber.Ctx) error {
 		// detect if source file has changed
 		if metadata.Checksum != helper.HashFile(rawImageAbs) {
 			log.Info("Source file has changed, re-encoding...")
-			helper.WriteMetadata(reqURIwithQuery, "", targetHostName)
+			metadata = helper.WriteMetadata(reqURIwithQuery, "", targetHostName)
 			cleanProxyCache(path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id))
 		}
 	}
@@ -166,6 +166,15 @@ func Convert(c *fiber.Ctx) error {
 			"num_pages":  metadata.ImageMeta.NumPages,
 			"blurhash":   metadata.ImageMeta.Blurhash,
 		})
+	}
+
+	if config.Config.EnableExtraParams && helper.HasResizeParams(extraParams) {
+		if err := helper.ValidateNoUpscale(metadata.ImageMeta, extraParams); err != nil {
+			log.Warnf("Blocked resize request for %s: %v", reqURIwithQuery, err)
+			c.Status(http.StatusBadRequest)
+			_ = c.SendString(err.Error())
+			return nil
+		}
 	}
 
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)
