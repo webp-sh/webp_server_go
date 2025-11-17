@@ -8,7 +8,6 @@ import (
 )
 
 func TestResizeImage(t *testing.T) {
-	img, _ := vips.Black(500, 500)
 
 	// Define the parameters for the test cases
 	testCases := []struct {
@@ -60,21 +59,33 @@ func TestResizeImage(t *testing.T) {
 				Width:  200,
 				Height: 200,
 			},
-			expectedH: 200,
 			expectedW: 200,
+			expectedH: 200,
 		},
 		{
 			extraParams: config.ExtraParams{
 				Width:  200,
 				Height: 500,
 			},
-			expectedH: 500,
 			expectedW: 200,
+			expectedH: 500,
+		},
+
+		// Test for Width and Height larger than original image, should not resize
+		{
+			extraParams: config.ExtraParams{
+				Width:  600,
+				Height: 600,
+			},
+			expectedH: 500,
+			expectedW: 500,
 		},
 	}
 
 	// Iterate through the test cases and perform the tests
 	for _, tc := range testCases {
+		img, _ := vips.Black(500, 500)
+		defer img.Close()
 		err := resizeImage(img, tc.extraParams)
 		if err != nil {
 			t.Errorf("resizeImage failed with error: %v", err)
