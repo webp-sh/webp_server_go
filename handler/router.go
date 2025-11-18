@@ -136,10 +136,12 @@ func Convert(c *fiber.Ctx) error {
 		// this is proxyMode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
 		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 
+		helper.SetMetedataProxyMode(true)
 		metadata = fetchRemoteImg(realRemoteAddr, targetHostName)
 		rawImageAbs = path.Join(config.Config.RemoteRawPath, targetHostName, metadata.Id) + path.Ext(realRemoteAddr)
 	} else {
 		// not proxyMode, we'll use local path
+		helper.SetMetedataProxyMode(false)
 		metadata = helper.ReadMetadata(reqURIwithQuery, "", targetHostName)
 		if !mapMode {
 			// by default images are hosted in ImgPath
@@ -150,7 +152,7 @@ func Convert(c *fiber.Ctx) error {
 		// detect if source file has changed
 		if metadata.Checksum != helper.HashFile(rawImageAbs) {
 			log.Info("Source file has changed, re-encoding...")
-			helper.WriteMetadata(reqURIwithQuery, "", targetHostName)
+			metadata = helper.WriteMetadata(reqURIwithQuery, "", targetHostName)
 			cleanProxyCache(path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id))
 		}
 	}
@@ -166,6 +168,15 @@ func Convert(c *fiber.Ctx) error {
 			"num_pages":  metadata.ImageMeta.NumPages,
 			"blurhash":   metadata.ImageMeta.Blurhash,
 		})
+	}
+
+	if config.Config.EnableExtraParams && helper.HasResizeParams(extraParams) {
+		if err := helper.ValidateNoUpscale(metadata.ImageMeta, extraParams); err != nil {
+			log.Warnf("Blocked resize request for %s: %v", reqURIwithQuery, err)
+			c.Status(http.StatusBadRequest)
+			_ = c.SendString(err.Error())
+			return nil
+		}
 	}
 
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)

@@ -113,14 +113,14 @@ func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile) {
 			// remote file has changed
 			log.Info("Remote file changed, updating metadata and fetching image source...")
 			helper.DeleteMetadata(url, subdir)
-			helper.WriteMetadata(url, etag, subdir)
+			metadata = helper.WriteMetadata(url, etag, subdir)
 		} else {
 			// local file not exists
 			log.Info("Remote file not found in remote-raw, re-fetching...")
 		}
 		_ = downloadFile(localRawImagePath, url)
 		// Update metadata with newly downloaded file
-		helper.WriteMetadata(url, etag, subdir)
+		metadata = helper.WriteMetadata(url, etag, subdir)
 	}
 	return metadata
 }

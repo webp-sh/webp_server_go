@@ -12,7 +12,7 @@ func TestGetId(t *testing.T) {
 
 	t.Run("proxy mode", func(t *testing.T) {
 		// Test case 1: Proxy mode
-		config.ProxyMode = true
+		SetMetedataProxyMode(true)
 		id, jointPath, santizedPath := getId(p, "")
 
 		// Verify the return values
@@ -26,7 +26,7 @@ func TestGetId(t *testing.T) {
 	})
 	t.Run("non-proxy mode", func(t *testing.T) {
 		// Test case 2: Non-proxy mode
-		config.ProxyMode = false
+		SetMetedataProxyMode(false)
 		p = "/image.jpg?width=400&height=500"
 		id, jointPath, santizedPath := getId(p, "")
 
