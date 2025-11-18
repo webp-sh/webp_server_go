@@ -24,6 +24,11 @@ func resizeImage(img *vips.ImageRef, extraParams config.ExtraParams) error {
 	// e.g, 500x500px image with max_width=200,max_height=100 will be resized to 100x100
 	// while smaller images are untouched
 
+	// If width or max is set and larger than original image, don't resize
+	if extraParams.Width > imageWidth || extraParams.Height > imageHeight {
+		return nil
+	}
+
 	// If both are used, we will use width and height
 
 	if extraParams.MaxHeight > 0 && extraParams.MaxWidth > 0 {
