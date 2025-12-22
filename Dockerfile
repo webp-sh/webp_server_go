@@ -8,11 +8,16 @@ RUN cd /build && go mod download
 
 COPY . /build
 RUN cd /build && sed -i "s|.\/pics|${IMG_PATH}|g" config.json  \
-    && sed -i "s|\"\"|\"${EXHAUST_PATH}\"|g" config.json  \
+    && sed -i "s|\"./exhaust\"|\"${EXHAUST_PATH}\"|g" config.json  \
     && sed -i 's/127.0.0.1/0.0.0.0/g' config.json  \
     && go build -ldflags="-s -w" -o webp-server .
 
 FROM debian:trixie-slim
+
+# 设置国内镜像
+RUN echo "deb http://mirrors.tencentyun.com/debian trixie main" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.tencentyun.com/debian trixie-updates main" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.tencentyun.com/debian-security trixie-security main" >> /etc/apt/sources.list
 
 RUN apt update && apt install --no-install-recommends libvips ca-certificates libjemalloc2 libtcmalloc-minimal4 curl libheif-plugin-aomenc libheif-plugin-aomdec -y && rm -rf /var/lib/apt/lists/* &&  rm -rf /var/cache/apt/archives/*
 

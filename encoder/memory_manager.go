@@ -27,7 +27,7 @@ type ConversionJob struct {
 	JxlPath       string
 	AvifPath      string
 	WebpPath      string
-	ExtraParams   ExtraParams
+	ExtraParams   config.ExtraParams
 	SupportedFormats map[string]bool
 	Chan          chan int
 }
