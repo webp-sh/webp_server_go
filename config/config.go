@@ -38,7 +38,9 @@ const (
   "CONCURRENCY": 262144,
   "DISABLE_KEEPALIVE": false,
   "CACHE_TTL": 259200,
-  "MAX_CACHE_SIZE": 0
+  "MAX_CACHE_SIZE": 0,
+  "MAX_CONCURRENT_CONVERSIONS": 8,
+  "MEMORY_LIMIT_MB": 200
 }`
 )
 
@@ -106,7 +108,9 @@ type WebpConfig struct {
 	DisableKeepalive bool `json:"DISABLE_KEEPALIVE"`
 	CacheTTL         int  `json:"CACHE_TTL"` // In minutes
 
-	MaxCacheSize int `json:"MAX_CACHE_SIZE"` // In MB, for max cached exhausted/metadata files(plus remote-raw if applicable), 0 means no limit
+	MaxCacheSize             int `json:"MAX_CACHE_SIZE"`             // In MB, for max cached exhausted/metadata files(plus remote-raw if applicable), 0 means no limit
+	MaxConcurrentConversions int `json:"MAX_CONCURRENT_CONVERSIONS"` // Maximum number of concurrent image conversions
+	MemoryLimitMB            int `json:"MEMORY_LIMIT_MB"`            // Memory limit for conversions in MB
 }
 
 func NewWebPConfig() *WebpConfig {
@@ -137,7 +141,9 @@ func NewWebPConfig() *WebpConfig {
 		DisableKeepalive:           false,
 		CacheTTL:                   259200,
 
-		MaxCacheSize: 0,
+		MaxCacheSize:              0,
+		MaxConcurrentConversions: 8,
+		MemoryLimitMB:            200,
 	}
 }
 
@@ -296,6 +302,24 @@ func LoadConfig() {
 			log.Warnf("WEBP_MAX_CACHE_SIZE is not a valid integer, using value in config.json %d", Config.MaxCacheSize)
 		} else {
 			Config.MaxCacheSize = maxCacheSize
+		}
+	}
+
+	if os.Getenv("WEBP_MAX_CONCURRENT_CONVERSIONS") != "" {
+		maxConcurrent, err := strconv.Atoi(os.Getenv("WEBP_MAX_CONCURRENT_CONVERSIONS"))
+		if err != nil {
+			log.Warnf("WEBP_MAX_CONCURRENT_CONVERSIONS is not a valid integer, using value in config.json %d", Config.MaxConcurrentConversions)
+		} else {
+			Config.MaxConcurrentConversions = maxConcurrent
+		}
+	}
+
+	if os.Getenv("WEBP_MEMORY_LIMIT_MB") != "" {
+		memLimit, err := strconv.Atoi(os.Getenv("WEBP_MEMORY_LIMIT_MB"))
+		if err != nil {
+			log.Warnf("WEBP_MEMORY_LIMIT_MB is not a valid integer, using value in config.json %d", Config.MemoryLimitMB)
+		} else {
+			Config.MemoryLimitMB = memLimit
 		}
 	}
 

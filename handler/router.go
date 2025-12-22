@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -219,5 +220,14 @@ func Convert(c *fiber.Ctx) error {
 	c.Set("Content-Type", contentType)
 
 	c.Set("X-Compression-Rate", helper.GetCompressionRate(rawImageAbs, finalFilename))
+	
+	// 添加内存管理状态到响应头
+	if memManager := encoder.GetMemoryManager(); memManager != nil {
+		currentJobs, currentMemory, queueSize := memManager.GetStats()
+		c.Set("X-Memory-Jobs", fmt.Sprintf("%d", currentJobs))
+		c.Set("X-Memory-Usage-MB", fmt.Sprintf("%d", currentMemory))
+		c.Set("X-Queue-Size", fmt.Sprintf("%d", queueSize))
+	}
+	
 	return c.SendFile(finalFilename)
 }

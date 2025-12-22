@@ -14,14 +14,10 @@ import (
 )
 
 func PrefetchImages() {
-	// maximum ongoing prefetch is depending on your core of CPU
+	// maximum ongoing prefetch is depending on your core of CPU and config
 	var sTime = time.Now()
-	log.Infof("Prefetching using %d cores", config.Jobs)
-	var finishChan = make(chan int, config.Jobs)
-	for range config.Jobs {
-		finishChan <- 1
-	}
-
+	memManager := GetMemoryManager()
+	
 	//prefetch, recursive through the dir
 	all := helper.FileCount(config.Config.ImgPath)
 	var bar = progressbar.Default(all, "Prefetching...")
@@ -62,8 +58,21 @@ func PrefetchImages() {
 				"jxl":  true,
 			}
 
-			go ConvertFilter(picAbsPath, jxlAbsPath, avifAbsPath, webpAbsPath, config.ExtraParams{Width: 0, Height: 0}, supported, finishChan)
-			_ = bar.Add(<-finishChan)
+			// 使用内存管理器进行预转换
+			finishChan := make(chan int, 1)
+			job := &ConversionJob{
+				RawPath:       picAbsPath,
+				JxlPath:       jxlAbsPath,
+				AvifPath:      avifAbsPath,
+				WebpPath:      webpAbsPath,
+				ExtraParams:   config.ExtraParams{Width: 0, Height: 0},
+				SupportedFormats: supported,
+				Chan:          finishChan,
+			}
+			
+			memManager.SubmitJob(job)
+			<-finishChan
+			_ = bar.Add(1)
 			return nil
 		})
 
@@ -72,5 +81,4 @@ func PrefetchImages() {
 	}
 	elapsed := time.Since(sTime)
 	_, _ = fmt.Fprintf(os.Stdout, "Prefetch complete in %s\n\n", elapsed)
-
 }
