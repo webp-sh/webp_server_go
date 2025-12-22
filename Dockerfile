@@ -2,6 +2,12 @@ FROM golang:1.25-trixie AS builder
 
 ARG IMG_PATH=/opt/pics
 ARG EXHAUST_PATH=/opt/exhaust
+
+# 设置国内镜像
+RUN echo "deb http://mirrors.tencentyun.com/debian trixie main" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.tencentyun.com/debian trixie-updates main" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.tencentyun.com/debian-security trixie-security main" >> /etc/apt/sources.list
+    
 RUN apt update && apt install --no-install-recommends libvips-dev -y && mkdir /build
 COPY go.mod /build
 RUN cd /build && go mod download
