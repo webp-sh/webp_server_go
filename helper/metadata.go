@@ -21,38 +21,36 @@ func getId(p string, subdir string) (id string, filePath string, santizedPath st
 		return fileID, path.Join(config.Config.RemoteRawPath, subdir, fileID) + path.Ext(p), ""
 	}
 	
-	// Check if p is already an absolute path
-	if path.IsAbs(p) {
-		// For absolute paths (like in prefetch), use the path directly
-		parsed, _ := url.Parse(p)
-		width := parsed.Query().Get("width")
-		height := parsed.Query().Get("height")
-		max_width := parsed.Query().Get("max_width")
-		max_height := parsed.Query().Get("max_height")
-		
-		// Remove the ImgPath prefix if present to avoid duplication
-		relativePath := strings.TrimPrefix(p, config.Config.ImgPath)
-		if strings.HasPrefix(relativePath, "/") {
-			relativePath = relativePath[1:] // Remove leading slash
-		}
-		if relativePath == "" {
-			relativePath = p // Fallback to original path if trimming removes everything
-		}
-		
-		parsedPath := "/" + relativePath
-		santizedPath = parsedPath + "?width=" + width + "&height=" + height + "&max_width=" + max_width + "&max_height=" + max_height
-		id = HashString(santizedPath)
-		filePath = p // Use the absolute path directly
-		
-		return id, filePath, santizedPath
-	}
-	
-	// For relative paths (like in web requests)
+	// Parse URL first to separate path and query
 	parsed, _ := url.Parse(p)
 	width := parsed.Query().Get("width")
 	height := parsed.Query().Get("height")
 	max_width := parsed.Query().Get("max_width")
 	max_height := parsed.Query().Get("max_height")
+	
+	// Check if the path part is a true absolute filesystem path (not just starting with /)
+	// True absolute paths are like /opt/pics/image.jpg (used in prefetch)
+	// Web request paths like /image.jpg should be treated as relative paths
+	if path.IsAbs(parsed.Path) && strings.HasPrefix(parsed.Path, config.Config.ImgPath) {
+		// For absolute paths (like in prefetch), use the path directly
+		// Remove the ImgPath prefix to get relative path
+		relativePath := strings.TrimPrefix(parsed.Path, config.Config.ImgPath)
+		if strings.HasPrefix(relativePath, "/") {
+			relativePath = relativePath[1:] // Remove leading slash
+		}
+		if relativePath == "" {
+			relativePath = parsed.Path // Fallback to original path if trimming removes everything
+		}
+		
+		parsedPath := "/" + relativePath
+		santizedPath = parsedPath + "?width=" + width + "&height=" + height + "&max_width=" + max_width + "&max_height=" + max_height
+		id = HashString(santizedPath)
+		filePath = parsed.Path // Use the absolute path directly
+		
+		return id, filePath, santizedPath
+	}
+	
+	// For relative paths (like in web requests)
 	// santizedPath will be /webp_server.jpg?width=200\u0026height=\u0026max_width=\u0026max_height= in local mode when requesting /webp_server.jpg?width=200
 	// santizedPath will be https://docs.webp.sh/images/webp_server.jpg?width=400 in proxy mode when requesting /images/webp_server.jpg?width=400 with IMG_PATH = https://docs.webp.sh
 	santizedPath = parsed.Path + "?width=" + width + "&height=" + height + "&max_width=" + max_width + "&max_height=" + max_height
