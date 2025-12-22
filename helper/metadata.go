@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 	"webp_server_go/config"
 
 	"github.com/buckket/go-blurhash"
@@ -19,6 +20,34 @@ func getId(p string, subdir string) (id string, filePath string, santizedPath st
 		fileID := HashString(p)
 		return fileID, path.Join(config.Config.RemoteRawPath, subdir, fileID) + path.Ext(p), ""
 	}
+	
+	// Check if p is already an absolute path
+	if path.IsAbs(p) {
+		// For absolute paths (like in prefetch), use the path directly
+		parsed, _ := url.Parse(p)
+		width := parsed.Query().Get("width")
+		height := parsed.Query().Get("height")
+		max_width := parsed.Query().Get("max_width")
+		max_height := parsed.Query().Get("max_height")
+		
+		// Remove the ImgPath prefix if present to avoid duplication
+		relativePath := strings.TrimPrefix(p, config.Config.ImgPath)
+		if strings.HasPrefix(relativePath, "/") {
+			relativePath = relativePath[1:] // Remove leading slash
+		}
+		if relativePath == "" {
+			relativePath = p // Fallback to original path if trimming removes everything
+		}
+		
+		parsedPath := "/" + relativePath
+		santizedPath = parsedPath + "?width=" + width + "&height=" + height + "&max_width=" + max_width + "&max_height=" + max_height
+		id = HashString(santizedPath)
+		filePath = p // Use the absolute path directly
+		
+		return id, filePath, santizedPath
+	}
+	
+	// For relative paths (like in web requests)
 	parsed, _ := url.Parse(p)
 	width := parsed.Query().Get("width")
 	height := parsed.Query().Get("height")
