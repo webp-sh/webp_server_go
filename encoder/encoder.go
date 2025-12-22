@@ -89,11 +89,7 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 
 	if err != nil || img == nil {
 		log.Errorf("Failed to load image %s: %v", rawPath, err)
-		// Notify channel that conversion is complete (with failure)
-		if c != nil {
-			c <- 1
-		}
-		return
+		return err
 	}
 
 	// Pre-process image(auto rotate, resize, etc.)

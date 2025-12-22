@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 	"webp_server_go/config"
 	"webp_server_go/helper"
@@ -29,6 +30,13 @@ func PrefetchImages() {
 			if info.IsDir() {
 				return nil
 			}
+			// Skip SVG files as they don't need WebP conversion and often cause dimension errors
+			if strings.ToLower(filepath.Ext(picAbsPath)) == ".svg" {
+				log.Infof("Skipping SVG file: %s", picAbsPath)
+				_ = bar.Add(1)
+				return nil
+			}
+			
 			// Only convert files with image extensions, use smaller of config.DefaultAllowedTypes and config.Config.AllowedTypes
 			if helper.CheckAllowedExtension(picAbsPath) {
 				// File type is allowed by user, check if it is an image
@@ -70,9 +78,25 @@ func PrefetchImages() {
 				Chan:          finishChan,
 			}
 			
+			// Add error recovery mechanism
+			defer func() {
+				if r := recover(); r != nil {
+					log.Errorf("Recovered from panic while processing %s: %v", picAbsPath, r)
+					_ = bar.Add(1)
+				}
+			}()
+			
 			memManager.SubmitJob(job)
-			<-finishChan
-			_ = bar.Add(1)
+			
+			// Add timeout to prevent hanging
+			select {
+			case <-finishChan:
+				_ = bar.Add(1)
+			case <-time.After(30 * time.Second):
+				log.Warnf("Timeout processing %s after 30 seconds, skipping...", picAbsPath)
+				_ = bar.Add(1)
+			}
+			
 			return nil
 		})
 
