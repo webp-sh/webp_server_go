@@ -83,7 +83,18 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 
 	// Image is only opened here
 	img, err := loadImage(rawPath)
-	defer img.Close()
+	if img != nil {
+		defer img.Close()
+	}
+
+	if err != nil || img == nil {
+		log.Errorf("Failed to load image %s: %v", rawPath, err)
+		// Notify channel that conversion is complete (with failure)
+		if c != nil {
+			c <- 1
+		}
+		return
+	}
 
 	// Pre-process image(auto rotate, resize, etc.)
 	err = preProcessImage(img, imageType, extraParams)
