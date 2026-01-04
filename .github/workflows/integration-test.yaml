@@ -4,9 +4,9 @@ on:
     branches:
       - master
     paths-ignore:
-    - '**.md'
-    - 'Makefile'
-    - 'config.json'
+      - '**.md'
+      - 'Makefile'
+      - 'config.json'
 
 jobs:
   glib_malloc:
@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install docker-compose
         run: |
           sudo apt-get update
@@ -33,7 +33,12 @@ jobs:
         run: |
           cp malloc_tests/glib_malloc/docker-compose.yml ./
           docker-compose up -d
-    
+          sleep 10
+
+      - name: Check health
+        run: |
+          curl http://localhost:3333/healthz
+
       - name: Send Requests to Server
         run: |
           cd pics
@@ -49,12 +54,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install docker-compose
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
-          
+
       - name: Build image
         uses: docker/build-push-action@v6
         with:
@@ -67,7 +72,12 @@ jobs:
         run: |
           cp malloc_tests/jemalloc/docker-compose.yml ./
           docker-compose up -d
-    
+          sleep 10
+
+      - name: Check health
+        run: |
+          curl http://localhost:3333/healthz
+
       - name: Send Requests to Server
         run: |
           cd pics
