@@ -2,12 +2,18 @@ package helper
 
 import (
 	"fmt"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 	"webp_server_go/config"
+
+	_ "golang.org/x/image/webp"
 
 	"slices"
 
@@ -65,12 +71,7 @@ func ImageExists(filename string) bool {
 	if os.IsNotExist(err) || err != nil {
 		return false
 	}
-	//  if file size is less than 100 bytes, we assume it's invalid file
-	// png starts with an 8-byte signature, follow by 4 chunks 58 bytes.
-	// JPG is 134 bytes.
-	// webp is 33 bytes.
-	if info.Size() < 100 {
-		// means something wrong in exhaust file system
+	if info.Size() == 0 {
 		return false
 	}
 
@@ -84,11 +85,27 @@ func ImageExists(filename string) bool {
 			time.Sleep(retryDelay)
 			retryDelay *= 2 // Exponential backoff
 		} else {
-			return !info.IsDir()
+			f, err := os.Open(filename)
+			if err != nil {
+				return false
+			}
+			defer f.Close()
+			head := make([]byte, 512)
+			n, err := f.Read(head)
+			if err != nil && err != io.EOF {
+				return false
+			}
+
+			kind, _ := filetype.Match(head[:n])
+
+			if kind != filetype.Unknown && strings.HasPrefix(kind.MIME.Value, "image/") {
+				return true
+			}
+
+			return false
 		}
 	}
-
-	return !info.IsDir()
+	return false
 }
 
 func GetImageExtension(filename string) string {

@@ -131,6 +131,10 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 
 	// Image is only opened here
 	img, err := loadImage(rawPath)
+	if err != nil {
+		log.Warnf("Can't load source image: %v", err)
+		return err
+	}
 	defer img.Close()
 
 	// Pre-process image(auto rotate, resize, etc.)

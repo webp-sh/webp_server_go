@@ -32,8 +32,24 @@ func TestImageExists(t *testing.T) {
 		assert.False(t, ImageExists("/tmp"))
 	})
 
-	t.Run("test file", func(t *testing.T) {
-		assert.True(t, ImageExists("./helper_test.go"))
+	t.Run("test non image file", func(t *testing.T) {
+		assert.False(t, ImageExists("./helper_test.go"))
+	})
+
+	t.Run("test image file", func(t *testing.T) {
+		assert.True(t, ImageExists("../pics/big.jpg"))
+	})
+
+	t.Run("test empty image file", func(t *testing.T) {
+		assert.False(t, ImageExists("../pics/empty.jpg"))
+	})
+
+	t.Run("test broken image file", func(t *testing.T) {
+		assert.True(t, ImageExists("../pics/invalid.png"))
+	})
+
+	t.Run("test heic image file", func(t *testing.T) {
+		assert.True(t, ImageExists("../pics/sample3.heic"))
 	})
 }
 
