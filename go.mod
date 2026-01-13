@@ -16,7 +16,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.68.0
-	golang.org/x/image v0.34.0
+	golang.org/x/image v0.35.0
 )
 
 require (
@@ -36,7 +36,7 @@ require (
 	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/term v0.36.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/text v0.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
