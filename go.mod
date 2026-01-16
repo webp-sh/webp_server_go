@@ -13,7 +13,7 @@ require (
 	github.com/mileusna/useragent v1.3.5
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/schollz/progressbar/v3 v3.18.0
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.68.0
 	golang.org/x/image v0.35.0
