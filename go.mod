@@ -1,6 +1,6 @@
 module webp_server_go
 
-go 1.25
+go 1.26
 
 require (
 	github.com/buckket/go-blurhash v1.1.0

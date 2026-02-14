@@ -55,7 +55,7 @@ var (
 	PrefetchForeground  bool // Standalone prefetch, prefetch and exit
 	AllowNonImage       bool
 	Config              = NewWebPConfig()
-	Version             = "0.14.3"
+	Version             = "0.14.4"
 	WriteLock           = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock         = cache.New(5*time.Minute, 10*time.Minute)
 	LocalHostAlias      = "local"
