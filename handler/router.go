@@ -73,10 +73,20 @@ func Convert(c *fiber.Ctx) error {
 	// Rewrite the target backend if a mapping rule matches the hostname
 	if hostMap, hostMapFound := config.Config.ImageMap[reqHost]; hostMapFound {
 		log.Debugf("Found host mapping %s -> %s", reqHostname, hostMap)
-		targetHostUrl, _ := url.Parse(hostMap)
-		targetHostName = targetHostUrl.Host
-		targetHost = targetHostUrl.Scheme + "://" + targetHostUrl.Host
-		proxyMode = true
+
+		// Check if hostMap is a URL or local path
+		if strings.HasPrefix(hostMap, "http://") || strings.HasPrefix(hostMap, "https://") {
+			// Remote URL mapping
+			targetHostUrl, _ := url.Parse(hostMap)
+			targetHostName = targetHostUrl.Host
+			targetHost = targetHostUrl.Scheme + "://" + targetHostUrl.Host
+			proxyMode = true
+		} else {
+			// Local path mapping
+			targetHost = hostMap
+			proxyMode = false
+			mapMode = true
+		}
 	} else {
 		// There's not matching host mapping, now check for any URI map that apply
 		httpRegexpMatcher := regexp.MustCompile(config.HttpRegexp)
@@ -121,7 +131,11 @@ func Convert(c *fiber.Ctx) error {
 	// Since here we've already sent non-image file, "raw" is not supported by default in the following code
 	if config.AllowAllExtensions && !helper.CheckImageExtension(filename) {
 		if !proxyMode {
-			return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
+			if !mapMode {
+				return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
+			} else {
+				return c.SendFile(path.Join(targetHost, reqURI))
+			}
 		} else {
 			// If the file is not in the ImgPath, we'll have to use the proxy mode to download it
 			_ = fetchRemoteImg(realRemoteAddr, targetHostName)
