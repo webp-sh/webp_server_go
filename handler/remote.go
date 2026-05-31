@@ -102,7 +102,8 @@ func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile) {
 		}
 	}
 
-	metadata := helper.ReadMetadata(url, etag, subdir)
+	remoteTarget := helper.MetadataTarget{RemoteURL: url}
+	metadata := helper.ReadMetadataForTarget(remoteTarget, etag, subdir)
 	remoteFileExtension := path.Ext(url)
 	localRawImagePath := path.Join(config.Config.RemoteRawPath, subdir, metadata.Id) + remoteFileExtension
 	localExhaustImagePath := path.Join(config.Config.ExhaustPath, subdir, metadata.Id)
@@ -112,15 +113,15 @@ func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile) {
 		if metadata.Checksum != helper.HashString(etag) {
 			// remote file has changed
 			log.Info("Remote file changed, updating metadata and fetching image source...")
-			helper.DeleteMetadata(url, subdir)
-			helper.WriteMetadata(url, etag, subdir)
+			helper.DeleteMetadataForTarget(remoteTarget, subdir)
+			helper.WriteMetadataForTarget(remoteTarget, etag, subdir)
 		} else {
 			// local file not exists
 			log.Info("Remote file not found in remote-raw, re-fetching...")
 		}
 		_ = downloadFile(localRawImagePath, url)
 		// Update metadata with newly downloaded file
-		helper.WriteMetadata(url, etag, subdir)
+		helper.WriteMetadataForTarget(remoteTarget, etag, subdir)
 	}
 	return metadata
 }

@@ -41,3 +41,25 @@ func TestGetId(t *testing.T) {
 		}
 	})
 }
+
+func TestBuildQueryKeyStable(t *testing.T) {
+	key := BuildQueryKey("200", "", "800", "")
+	expected := "width=200&height=&max_width=800&max_height="
+	if key != expected {
+		t.Fatalf("unexpected query key: got %q want %q", key, expected)
+	}
+}
+
+func TestGetLocalIdUsesCanonicalQueryKey(t *testing.T) {
+	relPath := "nested/image.jpg"
+	queryKey := BuildQueryKey("100", "200", "", "")
+	id, sanitizedPath := getLocalId(relPath, queryKey)
+
+	expectedPath := "/nested/image.jpg?width=100&height=200&max_width=&max_height="
+	if sanitizedPath != expectedPath {
+		t.Fatalf("unexpected sanitized path: got %q want %q", sanitizedPath, expectedPath)
+	}
+	if id != HashString(expectedPath) {
+		t.Fatalf("unexpected id: got %q want %q", id, HashString(expectedPath))
+	}
+}

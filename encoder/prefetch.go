@@ -46,7 +46,16 @@ func PrefetchImages() {
 			}
 
 			// RawImagePath string, ImgFilename string, reqURI string
-			metadata := helper.ReadMetadata(picAbsPath, "", config.LocalHostAlias)
+			relPath, relErr := helper.RelPathUnderBase(config.Config.ImgPath, picAbsPath)
+			if relErr != nil {
+				return nil
+			}
+			queryKey := helper.BuildQueryKey("", "", "", "")
+			metadata := helper.ReadMetadataForTarget(helper.MetadataTarget{
+				LocalRelPath:  relPath,
+				LocalQueryKey: queryKey,
+				LocalAbsPath:  picAbsPath,
+			}, "", config.LocalHostAlias)
 			avifAbsPath, webpAbsPath, jxlAbsPath := helper.GenOptimizedAbsPath(metadata, config.LocalHostAlias)
 
 			// Using avifAbsPath here is the same as using webpAbsPath/jxlAbsPath

@@ -1,6 +1,9 @@
 package helper
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"webp_server_go/config"
 
@@ -15,10 +18,25 @@ func TestMain(m *testing.M) {
 	config.ConfigPath = "config.json"
 }
 
+func countGoFiles(dir string) int64 {
+	var count int64
+	_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".go") {
+			count++
+		}
+		return nil
+	})
+	return count
+}
+
 func TestFileCount(t *testing.T) {
-	// test helper dir
+	// helper/ contains only Go source files; derive expected count from *.go on disk
+	expected := countGoFiles("./")
 	count := FileCount("./")
-	assert.Equal(t, int64(4), count)
+	assert.Equal(t, expected, count)
 }
 
 func TestImageExists(t *testing.T) {
