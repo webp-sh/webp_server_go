@@ -35,11 +35,11 @@ func setupParam() {
 	config.Config.AllowedTypes = []string{"jpg", "png", "jpeg", "bmp", "heic", "avif"}
 	config.Config.MetadataPath = "../metadata"
 	config.Config.RemoteRawPath = "../remote-raw"
-	config.ProxyMode = false
 	config.Config.EnableWebP = true
 	config.Config.EnableAVIF = false
 	config.Config.Quality = 80
 	config.Config.ImageMap = map[string]string{}
+	config.AllowAllExtensions = false
 	config.RemoteCache = cache.New(cache.NoExpiration, 10*time.Minute)
 }
 
@@ -50,6 +50,36 @@ func requestToServer(reqUrl string, app *fiber.App, ua, accept string) (*http.Re
 	req.Header.Set("Accept", accept)
 	req.Header.Set("Host", parsedUrl.Host)
 	req.Host = parsedUrl.Host
+	resp, err := app.Test(req, 120000)
+	if err != nil {
+		return nil, nil
+	}
+	data, _ := io.ReadAll(resp.Body)
+	return resp, data
+}
+
+func requestRawPathToServer(rawPath string, host string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
+	req := httptest.NewRequest("GET", rawPath, nil)
+	req.Header.Set("User-Agent", ua)
+	req.Header.Set("Accept", accept)
+	req.Header.Set("Host", host)
+	req.Host = host
+	resp, err := app.Test(req, 120000)
+	if err != nil {
+		return nil, nil
+	}
+	data, _ := io.ReadAll(resp.Body)
+	return resp, data
+}
+
+func requestMalformedPathToServer(rawPath string, host string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
+	req := httptest.NewRequest("GET", "http://"+host+"/", nil)
+	req.URL.Path = rawPath
+	req.RequestURI = rawPath
+	req.Header.Set("User-Agent", ua)
+	req.Header.Set("Accept", accept)
+	req.Header.Set("Host", host)
+	req.Host = host
 	resp, err := app.Test(req, 120000)
 	if err != nil {
 		return nil, nil
@@ -229,11 +259,79 @@ func TestConvertPassThrough(t *testing.T) {
 	assert.Contains(t, string(data), "HOST")
 }
 
+func TestConvertPathTraversalBlocked(t *testing.T) {
+	setupParam()
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	cases := []string{
+		"/../config.json",
+		"/../../config.json",
+		"/%2e%2e%2fconfig.json",
+		"/%252e%252e%252fconfig.json",
+	}
+
+	for _, requestPath := range cases {
+		resp, data := requestRawPathToServer(requestPath, "127.0.0.1:3333", app, chromeUA, acceptWebP)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode, requestPath)
+		assert.NotContains(t, string(data), "HOST", requestPath)
+	}
+}
+
+func TestConvertMalformedPathReturnsNotFound(t *testing.T) {
+	setupParam()
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	resp, _ := requestMalformedPathToServer("webp_server.jpg", "127.0.0.1:3333", app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestConvertMetaRequestRequiresExistingImage(t *testing.T) {
+	setupParam()
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	resp, _ := requestRawPathToServer("/%252e%252e%252f%252e%252e%252fDesktop/4951333.png?meta=full", "127.0.0.1:3333", app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+}
+
+func TestConvertPassThroughBlocksTraversal(t *testing.T) {
+	setupParam()
+	config.Config.AllowedTypes = []string{"*"}
+	config.AllowAllExtensions = true
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	resp, data := requestRawPathToServer("/../config.json", "127.0.0.1:3333", app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	assert.NotContains(t, string(data), "HOST")
+}
+
+func TestConvertEncodedUnicodeFilenameStillWorks(t *testing.T) {
+	setupParam()
+
+	var app = fiber.New()
+	app.Get("/*", Convert)
+
+	resp, data := requestRawPathToServer("/%e5%a4%aa%e7%a5%9e%e5%95%a6.png", "127.0.0.1:3333", app, chromeUA, acceptWebP)
+	defer resp.Body.Close()
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, "image/webp", helper.GetContentType(data))
+}
+
 func TestConvertPassThroughWithRemoteBackend(t *testing.T) {
 	setupParam()
 	config.Config.AllowedTypes = []string{"*"}
 	config.Config.ImgPath = "https://docs.webp.sh"
-	config.ProxyMode = true
 	config.AllowAllExtensions = true
 
 	var app = fiber.New()
@@ -253,7 +351,7 @@ func TestConvertPassThroughWithRemoteBackend(t *testing.T) {
 
 func TestConvertProxyModeBad(t *testing.T) {
 	setupParam()
-	config.ProxyMode = true
+	config.Config.ImgPath = "https://docs.webp.sh"
 
 	var app = fiber.New()
 	app.Get("/*", Convert)
@@ -273,7 +371,6 @@ func TestConvertProxyModeBad(t *testing.T) {
 
 func TestConvertProxyModeWork(t *testing.T) {
 	setupParam()
-	config.ProxyMode = true
 	config.Config.ImgPath = "https://docs.webp.sh"
 
 	var app = fiber.New()
@@ -295,7 +392,6 @@ func TestConvertProxyModeWork(t *testing.T) {
 
 func TestConvertProxyModeNonImageWork(t *testing.T) {
 	setupParam()
-	config.ProxyMode = true
 	config.Config.AllowedTypes = []string{"*"}
 	config.AllowAllExtensions = true
 	config.Config.ImgPath = "https://docs.webp.sh"
@@ -320,7 +416,6 @@ func TestConvertProxyModeNonImageWork(t *testing.T) {
 
 func TestConvertMapProxyModeWork(t *testing.T) {
 	setupParam()
-	config.ProxyMode = true
 	config.Config.ImageMap = map[string]string{
 		"/": "https://docs.webp.sh",
 	}
@@ -344,7 +439,6 @@ func TestConvertMapProxyModeWork(t *testing.T) {
 
 func TestConvertProxyImgMap(t *testing.T) {
 	setupParam()
-	config.ProxyMode = false
 	config.Config.ImageMap = map[string]string{
 		"/2":                            "../pics/dir1",
 		"/3":                            "../pics3",                 // Invalid path, does not exists
@@ -404,7 +498,6 @@ func TestConvertProxyImgMap(t *testing.T) {
 
 func TestConvertProxyImgMapCWD(t *testing.T) {
 	setupParam()
-	config.ProxyMode = false
 	config.Config.ImgPath = ".." // equivalent to "" when not testing
 	config.Config.ImageMap = map[string]string{
 		"/1":                     "../pics/dir1",

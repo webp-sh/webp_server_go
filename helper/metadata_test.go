@@ -8,11 +8,12 @@ import (
 )
 
 func TestGetId(t *testing.T) {
+	config.Config.ImgPath = "./pics"
+	config.Config.RemoteRawPath = "remote-raw"
 	p := "https://example.com/image.jpg?width=200&height=300"
 
-	t.Run("proxy mode", func(t *testing.T) {
-		// Test case 1: Proxy mode
-		config.ProxyMode = true
+	t.Run("remote url", func(t *testing.T) {
+		// Test case 1: Remote URL
 		id, jointPath, santizedPath := getId(p, "")
 
 		// Verify the return values
@@ -24,9 +25,8 @@ func TestGetId(t *testing.T) {
 				expectedId, expectedPath, expectedSantizedPath, id, jointPath, santizedPath)
 		}
 	})
-	t.Run("non-proxy mode", func(t *testing.T) {
-		// Test case 2: Non-proxy mode
-		config.ProxyMode = false
+	t.Run("local path", func(t *testing.T) {
+		// Test case 2: Local path
 		p = "/image.jpg?width=400&height=500"
 		id, jointPath, santizedPath := getId(p, "")
 

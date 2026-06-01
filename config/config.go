@@ -49,13 +49,12 @@ var (
 	DumpSystemd         bool
 	DumpConfig          bool
 	ShowVersion         bool
-	ProxyMode           bool
 	AllowAllExtensions  bool
 	Prefetch            bool // Prefech in go-routine, with WebP Server Go launch normally
 	PrefetchForeground  bool // Standalone prefetch, prefetch and exit
 	AllowNonImage       bool
 	Config              = NewWebPConfig()
-	Version             = "0.14.4"
+	Version             = "0.15.0"
 	WriteLock           = cache.New(5*time.Minute, 10*time.Minute)
 	ConvertLock         = cache.New(5*time.Minute, 10*time.Minute)
 	LocalHostAlias      = "local"
@@ -219,30 +218,45 @@ func LoadConfig() {
 
 	if os.Getenv("WEBP_ENABLE_EXTRA_PARAMS") != "" {
 		enableExtraParams := os.Getenv("WEBP_ENABLE_EXTRA_PARAMS")
-		if enableExtraParams == "true" {
+		switch enableExtraParams {
+		case "true":
 			Config.EnableExtraParams = true
-		} else if enableExtraParams == "false" {
+		case "false":
 			Config.EnableExtraParams = false
-		} else {
+		default:
 			log.Warnf("WEBP_ENABLE_EXTRA_PARAMS is not a valid boolean, using value in config.json %t", Config.EnableExtraParams)
 		}
 	}
 	if os.Getenv("WEBP_EXTRA_PARAMS_CROP_INTERESTING") != "" {
-		availableInteresting := []string{"InterestingNone", "InterestingEntropy", "InterestingCentre", "InterestingAttention", "InterestringLow", "InterestingHigh", "InterestingAll"}
-		if slices.Contains(availableInteresting, os.Getenv("WEBP_EXTRA_PARAMS_CROP_INTERESTING")) {
-			Config.ExtraParamsCropInteresting = os.Getenv("WEBP_EXTRA_PARAMS_CROP_INTERESTING")
-		} else {
+		cropInteresting := os.Getenv("WEBP_EXTRA_PARAMS_CROP_INTERESTING")
+		switch cropInteresting {
+		case "InterestingNone":
+			Config.ExtraParamsCropInteresting = "InterestingNone"
+		case "InterestingEntropy":
+			Config.ExtraParamsCropInteresting = "InterestingEntropy"
+		case "InterestingCentre":
+			Config.ExtraParamsCropInteresting = "InterestingCentre"
+		case "InterestingAttention":
+			Config.ExtraParamsCropInteresting = "InterestingAttention"
+		case "InterestingLow":
+			Config.ExtraParamsCropInteresting = "InterestingLow"
+		case "InterestingHigh":
+			Config.ExtraParamsCropInteresting = "InterestingHigh"
+		case "InterestingAll":
+			Config.ExtraParamsCropInteresting = "InterestingAll"
+		default:
 			log.Warnf("WEBP_EXTRA_PARAMS_CROP_INTERESTING is not a valid interesting, using value in config.json %s", Config.ExtraParamsCropInteresting)
 		}
 	}
 
 	if os.Getenv("WEBP_STRIP_METADATA") != "" {
 		stripMetadata := os.Getenv("WEBP_STRIP_METADATA")
-		if stripMetadata == "true" {
+		switch stripMetadata {
+		case "true":
 			Config.StripMetadata = true
-		} else if stripMetadata == "false" {
+		case "false":
 			Config.StripMetadata = false
-		} else {
+		default:
 			log.Warnf("WEBP_STRIP_METADATA is not a valid boolean, using value in config.json %t", Config.StripMetadata)
 		}
 	}
@@ -267,11 +281,12 @@ func LoadConfig() {
 	}
 	if os.Getenv("WEBP_DISABLE_KEEPALIVE") != "" {
 		disableKeepalive := os.Getenv("WEBP_DISABLE_KEEPALIVE")
-		if disableKeepalive == "true" {
+		switch disableKeepalive {
+		case "true":
 			Config.DisableKeepalive = true
-		} else if disableKeepalive == "false" {
+		case "false":
 			Config.DisableKeepalive = false
-		} else {
+		default:
 			log.Warnf("WEBP_DISABLE_KEEPALIVE is not a valid boolean, using value in config.json %t", Config.DisableKeepalive)
 		}
 	}
@@ -302,7 +317,6 @@ func LoadConfig() {
 	if Config.AllowedTypes[0] == "*" {
 		AllowAllExtensions = true
 	}
-	switchProxyMode()
 	Config.ImageMap = parseImgMap(Config.ImageMap)
 
 	log.Debugln("Config init complete")
@@ -329,13 +343,4 @@ type ExtraParams struct {
 	Height    int // in px
 	MaxWidth  int // in px
 	MaxHeight int // in px
-}
-
-func switchProxyMode() {
-	matched, _ := regexp.MatchString(HttpRegexp, Config.ImgPath)
-	if matched {
-		// Enable proxy based on ImgPath should be deprecated in future versions
-		log.Warn("Enable proxy based on ImgPath will be deprecated in future versions. Use IMG_MAP config options instead")
-		ProxyMode = true
-	}
 }
