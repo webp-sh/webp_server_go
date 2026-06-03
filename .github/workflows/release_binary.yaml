@@ -12,7 +12,7 @@ on:
 jobs:
   build-amd64:
     name: Create AMD64 Binary
-    runs-on: ubuntu-22.04 # Using 22.04 of ubuntu to get the lowest version of glibc
+    runs-on: ubuntu-22.04 # Using 22.04 of ubuntu to get the lowest version of glibc while compiles govips 2.18
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
 
   build-arm64:
     name: Create ARM64 Binary
-    runs-on: ubuntu-22.04-arm # Using 22.04 of ubuntu to get the lowest version of glibc
+    runs-on: ubuntu-24.04-arm # Using 22.04 of ubuntu to get the lowest version of glibc while compiles govips 2.18
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
