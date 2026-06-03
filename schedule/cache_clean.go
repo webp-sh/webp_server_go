@@ -3,23 +3,30 @@ package schedule
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 	"webp_server_go/config"
 
 	log "github.com/sirupsen/logrus"
 )
 
+// getDirSize returns total size in bytes of all regular files under path.
+// If path does not exist, returns 0 without error.
 func getDirSize(path string) (int64, error) {
-	// Check if path is a directory and exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return 0, nil
 	}
+
 	var size int64
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(path, func(_ string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
+		if !d.IsDir() {
+			info, err := d.Info()
+			if err != nil {
+				return err
+			}
 			size += info.Size()
 		}
 		return nil
@@ -27,113 +34,132 @@ func getDirSize(path string) (int64, error) {
 	return size, err
 }
 
-// Delete the oldest file in the given path
-func clearDirForOldestFiles(path string) error {
-	oldestFile := ""
-	oldestModTime := time.Now()
+// fileInfo holds path and modification time for sorting.
+type fileInfo struct {
+	path string
+	mod  time.Time
+	size int64
+}
 
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+// listFiles returns a slice of regular files under path with their mod times.
+// If path does not exist, returns empty slice and nil error.
+func listFiles(path string) ([]fileInfo, error) {
+	var files []fileInfo
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return files, nil
+	}
+
+	err := filepath.WalkDir(path, func(p string, d os.DirEntry, err error) error {
 		if err != nil {
-			log.Errorf("Error accessing path %s: %s\n", path, err.Error())
+			// log and continue walking
+			log.Debugf("walk error %s: %v", p, err)
 			return nil
 		}
-
-		if !info.IsDir() && info.ModTime().Before(oldestModTime) {
-			oldestFile = path
-			oldestModTime = info.ModTime()
+		if d.IsDir() {
+			return nil
 		}
+		info, err := d.Info()
+		if err != nil {
+			log.Debugf("stat error %s: %v", p, err)
+			return nil
+		}
+		files = append(files, fileInfo{path: p, mod: info.ModTime(), size: info.Size()})
 		return nil
 	})
+	return files, err
+}
 
+// removeOldest removes files from the directory in ascending mod-time order
+// until the total size is <= maxCacheSizeBytes.
+func removeOldest(dir string, maxCacheSizeBytes int64) error {
+	dirSize, err := getDirSize(dir)
 	if err != nil {
-		log.Errorf("Error traversing directory: %s\n", err.Error())
 		return err
 	}
+	if dirSize <= maxCacheSizeBytes {
+		return nil
+	}
 
-	if oldestFile != "" {
-		err := os.Remove(oldestFile)
-		if err != nil {
-			log.Errorf("Error deleting file %s: %s\n", oldestFile, err.Error())
-			return err
+	files, err := listFiles(dir)
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return nil
+	}
+
+	// sort by modification time ascending (oldest first)
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].mod.Before(files[j].mod)
+	})
+
+	for _, f := range files {
+		if dirSize <= maxCacheSizeBytes {
+			break
 		}
-		log.Infof("Deleted oldest file: %s\n", oldestFile)
-	} else {
-		log.Infoln("No files found in the directory.")
+		if err := os.Remove(f.path); err != nil {
+			log.Errorf("failed to delete file %s: %v", f.path, err)
+			// continue trying other files
+			continue
+		}
+		dirSize -= f.size
+		log.Infof("deleted cached file: %s", f.path)
 	}
 	return nil
 }
 
-// Clear cache, size is in bytes that needs to be cleared out
-// Will delete oldest files first, then second oldest, etc.
-// Until all files size are less than maxCacheSizeBytes
-func clearCacheFiles(path string, maxCacheSizeBytes int64) error {
-	dirSize, err := getDirSize(path)
-	if err != nil {
-		log.Errorf("Error getting directory size: %s\n", err.Error())
-		return err
-	}
-
-	for dirSize > maxCacheSizeBytes {
-		err := clearDirForOldestFiles(path)
-		if err != nil {
-			log.Errorf("Error clearing directory: %s\n", err.Error())
-			return err
-		}
-		dirSize, err = getDirSize(path)
-		if err != nil {
-			log.Errorf("Error getting directory size: %s\n", err.Error())
-			return err
-		}
-	}
-	return nil
-}
-
+// CleanCache periodically enforces MaxCacheSize on configured cache paths.
+// Runs until the process exits.
 func CleanCache() {
-	log.Info("MaxCacheSize is not 0, starting cache cleaning service")
+	if config.Config.MaxCacheSize == 0 {
+		return
+	}
+	log.Info("starting cache cleaning service")
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			// MB to bytes
-			maxCacheSizeBytes := int64(config.Config.MaxCacheSize) * 1024 * 1024
-			err := clearCacheFiles(config.Config.RemoteRawPath, maxCacheSizeBytes)
-			if err != nil {
-				log.Warn("Failed to clear remote raw cache")
-			}
-			err = clearCacheFiles(config.Config.ExhaustPath, maxCacheSizeBytes)
-			if err != nil && err != os.ErrNotExist {
-				log.Warn("Failed to clear remote raw cache")
-			}
-			err = clearCacheFiles(config.Config.MetadataPath, maxCacheSizeBytes)
-			if err != nil && err != os.ErrNotExist {
-				log.Warn("Failed to clear remote raw cache")
+	for range ticker.C {
+		maxBytes := int64(config.Config.MaxCacheSize) * 1024 * 1024
+		paths := []string{
+			config.Config.RemoteRawPath,
+			config.Config.ExhaustPath,
+			config.Config.MetadataPath,
+		}
+		for _, p := range paths {
+			if err := removeOldest(p, maxBytes); err != nil {
+				// ignore not-exist errors, warn on others
+				if !os.IsNotExist(err) {
+					log.Warnf("failed to clear cache at %s: %v", p, err)
+				}
 			}
 		}
 	}
 }
 
+// DeleteDeadCache removes stale temporary vips-* directories older than threshold.
 func DeleteDeadCache() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	threshold := time.Now().Add(-10 * time.Minute)
-	for {
-		select {
-		case <-ticker.C:
-			_ = filepath.Walk(os.TempDir()+"vips-", func(path string, info os.FileInfo, err error) error {
-				log.Debugf("Checking possible dead cache: %s", path)
+	tempBase := filepath.Join(os.TempDir(), "vips-")
+
+	for range ticker.C {
+		_ = filepath.WalkDir(tempBase, func(p string, d os.DirEntry, err error) error {
+			if err != nil {
+				return nil
+			}
+			if d.IsDir() {
+				info, err := d.Info()
 				if err != nil {
-					return err
+					return nil
 				}
-				if info.IsDir() && info.ModTime().Before(threshold) {
-					// only delete directory
-					log.Warnf("Deleting: %s", path)
-					_ = os.RemoveAll(path)
+				if info.ModTime().Before(threshold) {
+					log.Warnf("deleting stale temp dir: %s", p)
+					_ = os.RemoveAll(p)
 					return filepath.SkipDir
 				}
-				return nil
-			})
-		}
+			}
+			return nil
+		})
 	}
 }
