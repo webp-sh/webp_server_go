@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 	"net/url"
-	"regexp"
 	"slices"
 	"strings"
 	"webp_server_go/config"
@@ -23,10 +22,11 @@ func Convert(c *fiber.Ctx) error {
 	// 2. generate rawImagePath, could be local path or remote url(possible with query string)
 	// 3. pass it to encoder, get the result, send it back
 
-	// normal http request will start with /
-	if !strings.HasPrefix(c.Path(), "/") {
-		_ = c.SendStatus(http.StatusBadRequest)
-		return nil
+	requestPath := c.Path()
+	requestPathDecoded, _ := url.QueryUnescape(requestPath)
+	// For invalid or traversal-like paths, always return 404.
+	if !strings.HasPrefix(requestPath, "/") || hasTraversalSegments(requestPathDecoded) {
+		return sendNotFound(c)
 	}
 
 	var (
@@ -39,12 +39,7 @@ func Convert(c *fiber.Ctx) error {
 		reqURI                = path.Clean(reqURIRaw)              // delete ../ in reqURI to mitigate directory traversal
 		reqURIwithQuery       = path.Clean(reqURIwithQueryRaw)     // Sometimes reqURIwithQuery can be https://example.tld/mypic/123.jpg?someother=200&somebugs=200, we need to extract it
 
-		filename       = path.Base(reqURI)
-		realRemoteAddr = ""
-		targetHostName = config.LocalHostAlias
-		targetHost     = config.Config.ImgPath
-		proxyMode      = config.ProxyMode
-		mapMode        = false
+		filename = path.Base(reqURI)
 
 		meta = c.Query("meta") // Meta request
 
@@ -70,88 +65,73 @@ func Convert(c *fiber.Ctx) error {
 		return nil
 	}
 
-	// Rewrite the target backend if a mapping rule matches the hostname
-	if hostMap, hostMapFound := config.Config.ImageMap[reqHost]; hostMapFound {
-		log.Debugf("Found host mapping %s -> %s", reqHostname, hostMap)
-		targetHostUrl, _ := url.Parse(hostMap)
-		targetHostName = targetHostUrl.Host
-		targetHost = targetHostUrl.Scheme + "://" + targetHostUrl.Host
-		proxyMode = true
-	} else {
-		// There's not matching host mapping, now check for any URI map that apply
-		httpRegexpMatcher := regexp.MustCompile(config.HttpRegexp)
-		for uriMap, uriMapTarget := range config.Config.ImageMap {
-			if strings.HasPrefix(reqURI, uriMap) {
-				log.Debugf("Found URI mapping %s -> %s", uriMap, uriMapTarget)
-				mapMode = true
+	state := requestState{
+		mode:            requestModeLocalDefault,
+		reqURI:          reqURI,
+		reqURIWithQuery: reqURIwithQuery,
+		targetHostName:  config.LocalHostAlias,
+		targetHost:      config.Config.ImgPath,
+	}
+	if isRemoteTarget(config.Config.ImgPath) {
+		state.mode = requestModeRemoteDefault
+	}
+	resolveRequestState(reqHost, reqHostname, &state)
 
-				// if uriMapTarget we use the proxy mode to fetch the remote
-				if httpRegexpMatcher.Match([]byte(uriMapTarget)) {
-					targetHostUrl, _ := url.Parse(uriMapTarget)
-					targetHostName = targetHostUrl.Host
-					targetHost = targetHostUrl.Scheme + "://" + targetHostUrl.Host
-					reqURI = strings.Replace(reqURI, uriMap, targetHostUrl.Path, 1)
-					reqURIwithQuery = strings.Replace(reqURIwithQuery, uriMap, targetHostUrl.Path, 1)
-					proxyMode = true
-				} else {
-					reqURI = strings.Replace(reqURI, uriMap, uriMapTarget, 1)
-					reqURIwithQuery = strings.Replace(reqURIwithQuery, uriMap, uriMapTarget, 1)
-				}
-				break
-			}
-		}
+	if state.mode == requestModeRemoteDefault {
+		// Don't deal with the encoding to avoid upstream compatibilities
+		state.reqURI = c.Path()
+		state.reqURIWithQuery = c.OriginalURL()
 	}
 
-	if proxyMode {
-		if !mapMode {
-			// Don't deal with the encoding to avoid upstream compatibilities
-			reqURI = c.Path()
-			reqURIwithQuery = c.OriginalURL()
-		}
-
+	if state.isRemote() {
 		// Remove first leading slash from reqURIwithQuery if present
-		if strings.HasPrefix(reqURIwithQuery, "/") {
-			reqURIwithQuery = reqURIwithQuery[1:]
-		}
-		realRemoteAddr = targetHost + "/" + reqURIwithQuery
+		state.reqURIWithQuery = strings.TrimPrefix(state.reqURIWithQuery, "/")
+		state.realRemoteAddr = state.targetHost + "/" + state.reqURIWithQuery
 	}
 
 	// Check if the file extension is allowed and not with image extension
 	// In this case we will serve the file directly
 	// Since here we've already sent non-image file, "raw" is not supported by default in the following code
 	if config.AllowAllExtensions && !helper.CheckImageExtension(filename) {
-		if !proxyMode {
-			return c.SendFile(path.Join(config.Config.ImgPath, reqURI))
+		if !state.isRemote() {
+			localFilename, err := resolveLocalRequestPath(state)
+			if err != nil {
+				return sendNotFound(c)
+			}
+			return c.SendFile(localFilename)
 		} else {
 			// If the file is not in the ImgPath, we'll have to use the proxy mode to download it
-			_ = fetchRemoteImg(realRemoteAddr, targetHostName)
-			localFilename := path.Join(config.Config.RemoteRawPath, targetHostName, helper.HashString(realRemoteAddr)) + path.Ext(realRemoteAddr)
+			_ = fetchRemoteImg(state.realRemoteAddr, state.targetHostName)
+			localFilename := path.Join(config.Config.RemoteRawPath, state.targetHostName, helper.HashString(state.realRemoteAddr)) + path.Ext(state.realRemoteAddr)
 			return c.SendFile(localFilename)
 		}
 	}
 
 	var rawImageAbs string
 	var metadata = config.MetaFile{}
-	if proxyMode {
-		// this is proxyMode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
+	if state.isRemote() {
+		// this is remote mode, we'll have to use this url to download and save it to local path, which also gives us rawImageAbs
 		// https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 
-		metadata = fetchRemoteImg(realRemoteAddr, targetHostName)
-		rawImageAbs = path.Join(config.Config.RemoteRawPath, targetHostName, metadata.Id) + path.Ext(realRemoteAddr)
+		metadata = fetchRemoteImg(state.realRemoteAddr, state.targetHostName)
+		rawImageAbs = path.Join(config.Config.RemoteRawPath, state.targetHostName, metadata.Id) + path.Ext(state.realRemoteAddr)
 	} else {
-		// not proxyMode, we'll use local path
-		metadata = helper.ReadMetadata(reqURIwithQuery, "", targetHostName)
-		if !mapMode {
-			// by default images are hosted in ImgPath
-			rawImageAbs = path.Join(config.Config.ImgPath, reqURI)
-		} else {
-			rawImageAbs = reqURI
-		}
+		rawImageAbs, _ = resolveLocalRequestPath(state)
+	}
+
+	// Check the original image for existence,
+	if rawImageAbs == "" || !helper.ImageExists(rawImageAbs) {
+		helper.DeleteMetadata(state.reqURIWithQuery, state.targetHostName)
+		return sendNotFound(c)
+	}
+
+	if !state.isRemote() {
+		metadata = helper.ReadMetadata(state.reqURIWithQuery, "", state.targetHostName)
 		// detect if source file has changed
 		if metadata.Checksum != helper.HashFile(rawImageAbs) {
 			log.Info("Source file has changed, re-encoding...")
-			helper.WriteMetadata(reqURIwithQuery, "", targetHostName)
-			cleanProxyCache(path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id))
+			metadata = helper.WriteMetadata(state.reqURIWithQuery, "", state.targetHostName)
+			cleanProxyCache(path.Join(config.Config.ExhaustPath, state.targetHostName, metadata.Id))
 		}
 	}
 
@@ -178,24 +158,14 @@ func Convert(c *fiber.Ctx) error {
 		supportedFormats["avif"] == false &&
 		supportedFormats["jxl"] == false &&
 		supportedFormats["heic"] == false {
-		dest := path.Join(config.Config.ExhaustPath, targetHostName, metadata.Id)
+		dest := path.Join(config.Config.ExhaustPath, state.targetHostName, metadata.Id)
 		if !helper.ImageExists(dest) {
 			encoder.ResizeItself(rawImageAbs, dest, extraParams)
 		}
 		return c.SendFile(dest)
 	}
 
-	// Check the original image for existence,
-	if !helper.ImageExists(rawImageAbs) {
-		helper.DeleteMetadata(reqURIwithQuery, targetHostName)
-		msg := "Image not found!"
-		_ = c.Send([]byte(msg))
-		log.Warn(msg)
-		_ = c.SendStatus(404)
-		return nil
-	}
-
-	avifAbs, webpAbs, jxlAbs := helper.GenOptimizedAbsPath(metadata, targetHostName)
+	avifAbs, webpAbs, jxlAbs := helper.GenOptimizedAbsPath(metadata, state.targetHostName)
 	// Do the convertion based on supported formats and config
 	encoder.ConvertFilter(rawImageAbs, jxlAbs, avifAbs, webpAbs, extraParams, supportedFormats, nil)
 

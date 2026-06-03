@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"regexp"
 	"webp_server_go/config"
 
 	"github.com/buckket/go-blurhash"
@@ -13,9 +14,10 @@ import (
 )
 
 // Get ID and filepath
-// For ProxyMode, pass in p the remote-raw path
+// For remote URLs, metadata id is generated from full URL.
 func getId(p string, subdir string) (id string, filePath string, santizedPath string) {
-	if config.ProxyMode {
+	httpRegexpMatcher := regexp.MustCompile(config.HttpRegexp)
+	if httpRegexpMatcher.MatchString(p) {
 		fileID := HashString(p)
 		return fileID, path.Join(config.Config.RemoteRawPath, subdir, fileID) + path.Ext(p), ""
 	}

@@ -25,14 +25,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, Config.MaxCacheSize, 0)
 }
 
-func TestSwitchProxyMode(t *testing.T) {
-	switchProxyMode()
-	assert.False(t, ProxyMode)
-	Config.ImgPath = "https://picsum.photos"
-	switchProxyMode()
-	assert.True(t, ProxyMode)
-}
-
 func TestParseImgMap(t *testing.T) {
 	empty := map[string]string{}
 	good := map[string]string{
