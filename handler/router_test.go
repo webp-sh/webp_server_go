@@ -178,7 +178,7 @@ func TestConvert(t *testing.T) {
 
 	var testSafariLink = map[string]string{
 		"http://127.0.0.1:3333/webp_server.jpg": "image/jpeg",
-		"http://127.0.0.1:3333/webp_server.bmp": "image/png", // png instead oft bmp because ResizeItself() uses ExportNative()
+		"http://127.0.0.1:3333/webp_server.bmp": "image/jpeg", // BMP: govips ExportNative() falls back to JPEG at https://github.com/davidbyttow/govips/pull/466
 		"http://127.0.0.1:3333/webp_server.png": "image/png",
 		"http://127.0.0.1:3333/empty.jpg":       "",
 		"http://127.0.0.1:3333/png.jpg":         "image/png",
