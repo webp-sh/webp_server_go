@@ -22,6 +22,34 @@ Currently supported image format: JPEG, PNG, BMP, GIF, SVG, HEIC, NEF, WEBP
 
 We strongly recommend using Docker to run WebP Server Go because running it directly with the binary may encounter issues with `glibc` and some dependency libraries, which can be quite tricky to resolve.
 
+```mermaid
+flowchart LR
+client["Client\nGET /some-images/tsuki.jpg"] --> server["WebP Server Go\n:3333"]
+
+subgraph host["Host machine"]
+hostPics["/path/to/pics"]
+hostExhaust["./exhaust"]
+hostMeta["./metadata"]
+end
+
+subgraph container["Docker container"]
+cPics["/opt/pics (source images)"]
+cExhaust["/opt/exhaust (optimized cache)"]
+cMeta["/opt/metadata (source metadata)"]
+end
+
+hostPics <-- "volume mount" --> cPics
+hostExhaust <-- "volume mount" --> cExhaust
+hostMeta <-- "volume mount" --> cMeta
+
+server --> cPics
+server --> cExhaust
+server --> cMeta
+server --> response["Return optimized image\n(webp/avif/jxl)"]
+```
+
+> This helps separate responsibilities clearly: `pics` stores original files, `exhaust` stores converted outputs, and `metadata` stores source metadata used for cache validation.
+
 Make sure you've got Docker and `docker-compose` installed, create a directory and create `docker-compose.yml` file inside it like this:
 
 ```yml
@@ -62,7 +90,7 @@ Now the server should be running on `127.0.0.1:3333`, visiting `http://127.0.0.1
 
 ## Custom config
 
-If you'd like to use a customized `config.json`, you can follow the steps in [Configuration | WebP Server Documentation](https://docs.webp.sh/usage/configuration/) to genereate one, and mount it into the container's `/etc/config.json`, example `docker-compose.yml` as follows:
+If you'd like to use a customized `config.json`, you can follow the steps in [Configuration | WebP Server Documentation](https://docs.webp.sh/configuration/configuration/) to genereate one, and mount it into the container's `/etc/config.json`, example `docker-compose.yml` as follows:
 
 ```yml
 version: '3'
@@ -81,11 +109,13 @@ services:
       - 127.0.0.1:3333:3333
 ```
 
-You can refer to [Configuration | WebP Server Documentation](https://docs.webp.sh/usage/configuration/) for more info, such as custom config, AVIF support etc.
+You can refer to [Configuration | WebP Server Documentation](https://docs.webp.sh/configuration/configuration/) for more info, such as custom config, AVIF support etc.
+
+Or, if you need some examples, you can refer to [Configuration Examples | WebP Server Documentation](https://docs.webp.sh/configuration/examples/).
 
 ## Advanced Usage
 
-If you'd like to use with binary, please consult to [Use with Binary(Advanced) | WebP Server Documentation](https://docs.webp.sh/usage/usage-with-binary/)
+If you'd like to use with binary, please consult to [Use with Binary(Advanced) | WebP Server Documentation](https://docs.webp.sh/deployment/binary/)
 
 > spoiler alert: you may encounter issues with `glibc` and some dependency libraries.
 
@@ -118,3 +148,7 @@ For detailed information, please visit [WebP Cloud Services Website](https://web
 ## License
 
 WebP Server is under the GPLv3. See the [LICENSE](./LICENSE) file for details.
+
+## Security
+
+Please refer to [SECURITY.md](./SECURITY.md) for more information.
