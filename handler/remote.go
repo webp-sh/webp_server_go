@@ -102,7 +102,14 @@ func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile) {
 		}
 	}
 
-	metadata := helper.ReadMetadata(url, etag, subdir)
+	metadata, err := helper.ReadMetadata(url, etag, subdir)
+	if err != nil {
+		log.Warnf("failed to read metadata for %s, rebuilding directly: %s", url, err)
+		metadata, err = helper.WriteMetadata(url, etag, subdir)
+		if err != nil {
+			log.Warnf("failed to write metadata for %s: %s", url, err)
+		}
+	}
 	remoteFileExtension := path.Ext(url)
 	localRawImagePath := path.Join(config.Config.RemoteRawPath, subdir, metadata.Id) + remoteFileExtension
 	localExhaustImagePath := path.Join(config.Config.ExhaustPath, subdir, metadata.Id)
@@ -113,14 +120,18 @@ func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile) {
 			// remote file has changed
 			log.Info("Remote file changed, updating metadata and fetching image source...")
 			helper.DeleteMetadata(url, subdir)
-			helper.WriteMetadata(url, etag, subdir)
+			if _, err := helper.WriteMetadata(url, etag, subdir); err != nil {
+				log.Warnf("failed to update metadata for changed remote file %s: %s", url, err)
+			}
 		} else {
 			// local file not exists
 			log.Info("Remote file not found in remote-raw, re-fetching...")
 		}
 		_ = downloadFile(localRawImagePath, url)
 		// Update metadata with newly downloaded file
-		helper.WriteMetadata(url, etag, subdir)
+		if _, err := helper.WriteMetadata(url, etag, subdir); err != nil {
+			log.Warnf("failed to update metadata after downloading %s: %s", url, err)
+		}
 	}
 	return metadata
 }

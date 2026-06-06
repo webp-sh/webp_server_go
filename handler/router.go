@@ -30,6 +30,7 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	var (
+		err         error
 		reqHostname = c.Hostname()
 		reqHost     = c.Protocol() + "://" + reqHostname // http://www.example.com:8000
 		reqHeader   = &c.Request().Header
@@ -126,11 +127,21 @@ func Convert(c *fiber.Ctx) error {
 	}
 
 	if !state.isRemote() {
-		metadata = helper.ReadMetadata(state.reqURIWithQuery, "", state.targetHostName)
+		metadata, err = helper.ReadMetadata(state.reqURIWithQuery, "", state.targetHostName)
+		if err != nil {
+			log.Warnf("failed to read metadata for %s: %s", state.reqURIWithQuery, err)
+			metadata, err = helper.WriteMetadata(state.reqURIWithQuery, "", state.targetHostName)
+			if err != nil {
+				log.Warnf("failed to build metadata for %s: %s", state.reqURIWithQuery, err)
+			}
+		}
 		// detect if source file has changed
 		if metadata.Checksum != helper.HashFile(rawImageAbs) {
 			log.Info("Source file has changed, re-encoding...")
-			metadata = helper.WriteMetadata(state.reqURIWithQuery, "", state.targetHostName)
+			metadata, err = helper.WriteMetadata(state.reqURIWithQuery, "", state.targetHostName)
+			if err != nil {
+				log.Warnf("failed to refresh metadata for %s: %s", state.reqURIWithQuery, err)
+			}
 			cleanProxyCache(path.Join(config.Config.ExhaustPath, state.targetHostName, metadata.Id))
 		}
 	}
