@@ -2,6 +2,7 @@ package helper
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -35,28 +36,43 @@ func getId(p string, subdir string) (id string, filePath string, santizedPath st
 	return id, filePath, santizedPath
 }
 
-func ReadMetadata(p, etag string, subdir string) config.MetaFile {
-	// try to read metadata, if we can't read, create one
+func ReadMetadata(p, etag string, subdir string) (config.MetaFile, error) {
+	// Try to read metadata. If missing/corrupt, rebuild once.
 	var metadata config.MetaFile
 	var id, _, _ = getId(p, subdir)
+	metadataPath := path.Join(config.Config.MetadataPath, subdir, id+".json")
 
-	if buf, err := os.ReadFile(path.Join(config.Config.MetadataPath, subdir, id+".json")); err != nil {
-		// First time reading metadata, create one
-		WriteMetadata(p, etag, subdir)
-		return ReadMetadata(p, etag, subdir)
-	} else {
-		err = json.Unmarshal(buf, &metadata)
+	readAndUnmarshal := func() (config.MetaFile, error) {
+		buf, err := os.ReadFile(metadataPath)
 		if err != nil {
-			log.Warnf("unmarshal metadata error, possible corrupt file, re-building...: %s", err)
-			WriteMetadata(p, etag, subdir)
-			return ReadMetadata(p, etag, subdir)
+			return config.MetaFile{}, err
 		}
-		return metadata
+		if err := json.Unmarshal(buf, &metadata); err != nil {
+			return config.MetaFile{}, err
+		}
+		return metadata, nil
 	}
+
+	if data, err := readAndUnmarshal(); err == nil {
+		return data, nil
+	} else {
+		log.Warnf("read metadata failed, rebuilding: %s", err)
+	}
+
+	// Rebuild metadata once, then try reading again.
+	rebuilt, err := WriteMetadata(p, etag, subdir)
+	if err != nil {
+		return rebuilt, fmt.Errorf("failed to rebuild metadata at %s: %w", metadataPath, err)
+	}
+	data, err := readAndUnmarshal()
+	if err != nil {
+		return config.MetaFile{}, fmt.Errorf("failed to read metadata at %s after rebuild: %w", metadataPath, err)
+	}
+	return data, nil
 }
 
-func WriteMetadata(p, etag string, subdir string) config.MetaFile {
-	_ = os.MkdirAll(path.Join(config.Config.MetadataPath, subdir), 0755)
+func WriteMetadata(p, etag string, subdir string) (config.MetaFile, error) {
+	metadataDir := path.Join(config.Config.MetadataPath, subdir)
 
 	var id, filepath, sant = getId(p, subdir)
 
@@ -78,9 +94,20 @@ func WriteMetadata(p, etag string, subdir string) config.MetaFile {
 		data.ImageMeta = imageMeta
 	}
 
-	buf, _ := json.Marshal(data)
-	_ = os.WriteFile(path.Join(config.Config.MetadataPath, subdir, data.Id+".json"), buf, 0644)
-	return data
+	if err := os.MkdirAll(metadataDir, 0755); err != nil {
+		return data, fmt.Errorf("create metadata dir %s: %w", metadataDir, err)
+	}
+
+	buf, err := json.Marshal(data)
+	if err != nil {
+		return data, fmt.Errorf("marshal metadata %s: %w", data.Id, err)
+	}
+
+	metadataPath := path.Join(config.Config.MetadataPath, subdir, data.Id+".json")
+	if err := os.WriteFile(metadataPath, buf, 0644); err != nil {
+		return data, fmt.Errorf("write metadata file %s: %w", metadataPath, err)
+	}
+	return data, nil
 }
 
 func getImageMeta(filePath string) (metadata config.ImageMeta) {

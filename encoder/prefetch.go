@@ -46,7 +46,11 @@ func PrefetchImages() {
 			}
 
 			// RawImagePath string, ImgFilename string, reqURI string
-			metadata := helper.ReadMetadata(picAbsPath, "", config.LocalHostAlias)
+			metadata, err := helper.ReadMetadata(picAbsPath, "", config.LocalHostAlias)
+			if err != nil {
+				log.Warnf("failed to read metadata for %s, skipping prefetch: %s", picAbsPath, err)
+				return nil
+			}
 			avifAbsPath, webpAbsPath, jxlAbsPath := helper.GenOptimizedAbsPath(metadata, config.LocalHostAlias)
 
 			// Using avifAbsPath here is the same as using webpAbsPath/jxlAbsPath
