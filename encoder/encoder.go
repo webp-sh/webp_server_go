@@ -61,41 +61,28 @@ func ConvertFilter(rawPath, jxlPath, avifPath, webpPath string, extraParams conf
 	defer config.ConvertLock.Delete(rawPath)
 
 	var wg sync.WaitGroup
-	wg.Add(3)
 	if !helper.ImageExists(avifPath) && config.Config.EnableAVIF && supportedFormats["avif"] {
-		go func() {
-			err := convertImage(rawPath, avifPath, "avif", extraParams)
-			if err != nil {
+		wg.Go(func() {
+			if err := convertImage(rawPath, avifPath, "avif", extraParams); err != nil {
 				log.Errorln(err)
 			}
-			defer wg.Done()
-		}()
-	} else {
-		wg.Done()
+		})
 	}
 
 	if !helper.ImageExists(webpPath) && config.Config.EnableWebP && supportedFormats["webp"] {
-		go func() {
-			err := convertImage(rawPath, webpPath, "webp", extraParams)
-			if err != nil {
+		wg.Go(func() {
+			if err := convertImage(rawPath, webpPath, "webp", extraParams); err != nil {
 				log.Errorln(err)
 			}
-			defer wg.Done()
-		}()
-	} else {
-		wg.Done()
+		})
 	}
 
 	if !helper.ImageExists(jxlPath) && config.Config.EnableJXL && supportedFormats["jxl"] {
-		go func() {
-			err := convertImage(rawPath, jxlPath, "jxl", extraParams)
-			if err != nil {
+		wg.Go(func() {
+			if err := convertImage(rawPath, jxlPath, "jxl", extraParams); err != nil {
 				log.Errorln(err)
 			}
-			defer wg.Done()
-		}()
-	} else {
-		wg.Done()
+		})
 	}
 
 	wg.Wait()

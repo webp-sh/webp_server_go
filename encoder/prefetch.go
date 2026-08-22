@@ -25,12 +25,12 @@ func PrefetchImages() {
 	//prefetch, recursive through the dir
 	all := helper.FileCount(config.Config.ImgPath)
 	var bar = progressbar.Default(all, "Prefetching...")
-	err := filepath.Walk(config.Config.ImgPath,
-		func(picAbsPath string, info os.FileInfo, err error) error {
+	err := filepath.WalkDir(config.Config.ImgPath,
+		func(picAbsPath string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if info.IsDir() {
+			if d.IsDir() {
 				return nil
 			}
 			// Only convert files with image extensions, use smaller of config.DefaultAllowedTypes and config.Config.AllowedTypes

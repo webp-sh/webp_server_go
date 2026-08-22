@@ -53,12 +53,12 @@ func GetContentType(buf []byte) string {
 
 func FileCount(dir string) int64 {
 	var count int64 = 0
-	_ = filepath.Walk(dir,
-		func(path string, info os.FileInfo, err error) error {
+	_ = filepath.WalkDir(dir,
+		func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if !info.IsDir() {
+			if !d.IsDir() {
 				count += 1
 			}
 			return nil
@@ -79,31 +79,31 @@ func ImageExists(filename string) bool {
 	maxRetries := 3
 	retryDelay := 100 * time.Millisecond // Initial retry delay
 
-	for retry := 0; retry < maxRetries; retry++ {
+	for range maxRetries {
 		if _, found := config.WriteLock.Get(filename); found {
 			log.Infof("file %s is locked, retrying in %s", filename, retryDelay)
 			time.Sleep(retryDelay)
 			retryDelay *= 2 // Exponential backoff
-		} else {
-			f, err := os.Open(filename)
-			if err != nil {
-				return false
-			}
-			defer f.Close()
-			head := make([]byte, 512)
-			n, err := f.Read(head)
-			if err != nil && err != io.EOF {
-				return false
-			}
-
-			kind, _ := filetype.Match(head[:n])
-
-			if kind != filetype.Unknown && strings.HasPrefix(kind.MIME.Value, "image/") {
-				return true
-			}
-
+			continue
+		}
+		f, err := os.Open(filename)
+		if err != nil {
 			return false
 		}
+		head := make([]byte, 512)
+		n, err := f.Read(head)
+		_ = f.Close()
+		if err != nil && err != io.EOF {
+			return false
+		}
+
+		kind, _ := filetype.Match(head[:n])
+
+		if kind != filetype.Unknown && strings.HasPrefix(kind.MIME.Value, "image/") {
+			return true
+		}
+
+		return false
 	}
 	return false
 }
