@@ -76,3 +76,11 @@ func hasTraversalSegments(pathValue string) bool {
 	}
 	return false
 }
+
+func invalidRequestPath(requestPath string) bool {
+	decoded, err := url.QueryUnescape(requestPath)
+	if err != nil {
+		return true
+	}
+	return !strings.HasPrefix(requestPath, "/") || hasTraversalSegments(decoded)
+}

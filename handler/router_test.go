@@ -72,22 +72,6 @@ func requestRawPathToServer(rawPath string, host string, app *fiber.App, ua, acc
 	return resp, data
 }
 
-func requestMalformedPathToServer(rawPath string, host string, app *fiber.App, ua, accept string) (*http.Response, []byte) {
-	req := httptest.NewRequest("GET", "http://"+host+"/", nil)
-	req.URL.Path = rawPath
-	req.RequestURI = rawPath
-	req.Header.Set("User-Agent", ua)
-	req.Header.Set("Accept", accept)
-	req.Header.Set("Host", host)
-	req.Host = host
-	resp, err := app.Test(req, 120000)
-	if err != nil {
-		return nil, nil
-	}
-	data, _ := io.ReadAll(resp.Body)
-	return resp, data
-}
-
 func TestServerHeaders(t *testing.T) {
 	setupParam()
 	var app = fiber.New()
@@ -105,6 +89,7 @@ func TestServerHeaders(t *testing.T) {
 
 	assert.NotEqual(t, "", ratio)
 	assert.NotEqual(t, "", etag)
+	assert.Equal(t, "Accept", response.Header.Get("Vary"))
 
 	// test for safari
 	response, _ = requestToServer(url, app, safariUA, acceptLegacy)
@@ -113,6 +98,7 @@ func TestServerHeaders(t *testing.T) {
 	etag = response.Header.Get("Etag")
 
 	assert.NotEqual(t, "", etag)
+	assert.Equal(t, "Accept", response.Header.Get("Vary"))
 }
 
 func TestConvertDuplicates(t *testing.T) {
@@ -280,15 +266,24 @@ func TestConvertPathTraversalBlocked(t *testing.T) {
 	}
 }
 
-func TestConvertMalformedPathReturnsNotFound(t *testing.T) {
-	setupParam()
+func TestInvalidRequestPath(t *testing.T) {
+	tests := []struct {
+		name        string
+		requestPath string
+		invalid     bool
+	}{
+		{name: "missing leading slash", requestPath: "webp_server.jpg", invalid: true},
+		{name: "path traversal", requestPath: "/../config.json", invalid: true},
+		{name: "encoded path traversal", requestPath: "/%2e%2e%2fconfig.json", invalid: true},
+		{name: "invalid escape", requestPath: "/%zz", invalid: true},
+		{name: "valid path", requestPath: "/webp_server.jpg", invalid: false},
+	}
 
-	var app = fiber.New()
-	app.Get("/*", Convert)
-
-	resp, _ := requestMalformedPathToServer("webp_server.jpg", "127.0.0.1:3333", app, chromeUA, acceptWebP)
-	defer resp.Body.Close()
-	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.invalid, invalidRequestPath(test.requestPath))
+		})
+	}
 }
 
 func TestConvertMetaRequestRequiresExistingImage(t *testing.T) {

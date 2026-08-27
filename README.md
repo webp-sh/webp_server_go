@@ -82,7 +82,7 @@ Then
 
 Start the container using:
 
-```
+```bash
 docker-compose up -d
 ```
 

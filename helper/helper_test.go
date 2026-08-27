@@ -71,7 +71,7 @@ func TestGuessSupportedFormat(t *testing.T) {
 		expected  map[string]bool
 	}{
 		{
-			name:      "WebP/AVIF/JXL Supported",
+			name:      "WebP and AVIF explicitly accepted",
 			userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15", // iPad
 			accept:    "image/webp, image/avif",
 			expected: map[string]bool{
@@ -85,7 +85,7 @@ func TestGuessSupportedFormat(t *testing.T) {
 				"avif": true,
 				"jxl":  false,
 				"nef":  false,
-				"heic": true,
+				"heic": false,
 			},
 		},
 		{
@@ -179,4 +179,83 @@ func TestGuessSupportedFormat(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGuessSupportedFormatAcceptNegotiation(t *testing.T) {
+	tests := []struct {
+		name     string
+		accept   string
+		expected map[string]bool
+	}{
+		{
+			name:   "explicit modern formats",
+			accept: "image/webp, image/avif;q=0.8, image/jxl;q=0.5",
+			expected: map[string]bool{
+				"webp": true,
+				"avif": true,
+				"jxl":  true,
+			},
+		},
+		{
+			name:   "zero quality means not acceptable",
+			accept: "image/webp;q=0, image/avif;q=0.0, image/jxl;q=0",
+			expected: map[string]bool{
+				"webp": false,
+				"avif": false,
+				"jxl":  false,
+			},
+		},
+		{
+			name:   "wildcards do not advertise modern formats",
+			accept: "image/*;q=0.9, */*;q=0.8, image/jxl;q=0",
+			expected: map[string]bool{
+				"webp": false,
+				"avif": false,
+				"jxl":  false,
+			},
+		},
+		{
+			name:   "media types are case insensitive",
+			accept: "IMAGE/WEBP;Q=0.4, IMAGE/JXL",
+			expected: map[string]bool{
+				"webp": true,
+				"avif": false,
+				"jxl":  true,
+			},
+		},
+		{
+			name:   "invalid quality is ignored",
+			accept: "image/webp;q=2, image/avif;q=invalid, image/jxl;q=-1",
+			expected: map[string]bool{
+				"webp": false,
+				"avif": false,
+				"jxl":  false,
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			header := &fasthttp.RequestHeader{}
+			header.Set("Accept", test.accept)
+
+			result := GuessSupportedFormat(header)
+			for format, expected := range test.expected {
+				assert.Equal(t, expected, result[format], format)
+			}
+		})
+	}
+}
+
+func TestGuessSupportedFormatIgnoresUserAgent(t *testing.T) {
+	header := &fasthttp.RequestHeader{}
+	header.Set("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) Version/17.4 Mobile/15E148 Safari/604.1 Firefox/133.0")
+	header.Set("Accept", "image/jpeg,image/png,image/*;q=0.8,*/*;q=0.5")
+
+	result := GuessSupportedFormat(header)
+
+	assert.False(t, result["webp"])
+	assert.False(t, result["avif"])
+	assert.False(t, result["jxl"])
+	assert.False(t, result["heic"])
 }

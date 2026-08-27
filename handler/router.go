@@ -23,9 +23,8 @@ func Convert(c *fiber.Ctx) error {
 	// 3. pass it to encoder, get the result, send it back
 
 	requestPath := c.Path()
-	requestPathDecoded, _ := url.QueryUnescape(requestPath)
 	// For invalid or traversal-like paths, always return 404.
-	if !strings.HasPrefix(requestPath, "/") || hasTraversalSegments(requestPathDecoded) {
+	if invalidRequestPath(requestPath) {
 		return sendNotFound(c)
 	}
 
@@ -159,6 +158,7 @@ func Convert(c *fiber.Ctx) error {
 		})
 	}
 
+	c.Vary(fiber.HeaderAccept)
 	supportedFormats := helper.GuessSupportedFormat(reqHeader)
 	// resize itself and return if only raw(jpg,jpeg,png,gif) is supported
 	if supportedFormats["jpg"] == true &&

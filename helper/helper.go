@@ -6,9 +6,11 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"mime"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 	"webp_server_go/config"
@@ -19,7 +21,6 @@ import (
 
 	"github.com/davidbyttow/govips/v2/vips"
 	"github.com/h2non/filetype"
-	"github.com/mileusna/useragent"
 
 	"github.com/cespare/xxhash"
 	"github.com/valyala/fasthttp"
@@ -152,8 +153,7 @@ func GetCompressionRate(RawImagePath string, optimizedImg string) string {
 
 func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	var (
-		ua        = string(header.Peek("user-agent"))
-		accept    = strings.ToLower(string(header.Peek("accept")))
+		accept    = string(header.Peek("accept"))
 		supported = map[string]bool{}
 	)
 	// Initialize all supported formats to false
@@ -168,48 +168,39 @@ func GuessSupportedFormat(header *fasthttp.RequestHeader) map[string]bool {
 	supported["svg"] = true
 	supported["bmp"] = true
 
-	if strings.Contains(accept, "image/webp") {
-		supported["webp"] = true
-	}
-	if strings.Contains(accept, "image/avif") {
-		supported["avif"] = true
-	}
-	if strings.Contains(accept, "image/jxl") {
-		supported["jxl"] = true
-	}
-	parsedUA := useragent.Parse(ua)
-
-	if parsedUA.IsIOS() && parsedUA.VersionNo.Major >= 14 {
-		supported["webp"] = true
-	}
-
-	if parsedUA.IsIOS() && parsedUA.VersionNo.Major >= 16 {
-		supported["avif"] = true
-	}
-
-	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 <- iPad
-	// Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3.1 Safari/605.1.15 <- Mac
-	// Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1 <- iPhone @ Safari
-	if parsedUA.IsIOS() && parsedUA.VersionNo.Major >= 17 {
-		supported["jxl"] = true
-	}
-
-	if parsedUA.IsSafari() && parsedUA.VersionNo.Major >= 17 {
-		supported["heic"] = true
-	}
-
-	// Firefox will not send correct accept header on url without image extension, we need to check user agent to see if `Firefox/133` version is supported
-	// https://caniuse.com/webp
-	if parsedUA.IsFirefox() && parsedUA.VersionNo.Major >= 133 {
-		supported["webp"] = true
-	}
-
-	// https://caniuse.com/avif
-	if parsedUA.IsFirefox() && parsedUA.VersionNo.Major >= 93 {
-		supported["avif"] = true
-	}
+	supported["webp"] = explicitlyAcceptsMediaType(accept, "image/webp")
+	supported["avif"] = explicitlyAcceptsMediaType(accept, "image/avif")
+	supported["jxl"] = explicitlyAcceptsMediaType(accept, "image/jxl")
 
 	return supported
+}
+
+// explicitlyAcceptsMediaType reports whether Accept explicitly lists mediaType
+// with a positive quality value. Wildcards are intentionally ignored so that
+// clients which do not advertise a modern image format receive a safe fallback.
+
+// image/* -> fallback to raw format
+// image/jxl,q=0 -> return false on JXL
+func explicitlyAcceptsMediaType(accept, mediaType string) bool {
+	for _, value := range strings.Split(accept, ",") {
+		parsedType, params, err := mime.ParseMediaType(strings.TrimSpace(value))
+		if err != nil || !strings.EqualFold(parsedType, mediaType) {
+			continue
+		}
+
+		quality := 1.0
+		if rawQuality, ok := params["q"]; ok {
+			quality, err = strconv.ParseFloat(rawQuality, 64)
+			if err != nil || quality < 0 || quality > 1 {
+				continue
+			}
+		}
+		if quality > 0 {
+			return true
+		}
+	}
+
+	return false
 }
 
 func CopyFile(src, dst string) error {
