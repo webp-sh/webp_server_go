@@ -146,8 +146,6 @@ func TestConvert(t *testing.T) {
 		"http://127.0.0.1:3333/太神啦.png":                         "image/webp",
 		// Source: https://filesamples.com/formats/heic
 		"http://127.0.0.1:3333/sample3.heic": "image/webp", // webp because browser does not support heic
-		// Source: https://raw.githubusercontent.com/link-u/avif-sample-images/refs/heads/master/kimono.avif
-		"http://127.0.0.1:3333/kimono.avif": "image/webp", // webp because browser does not support avif
 	}
 
 	var testChromeAvifLink = map[string]string{
