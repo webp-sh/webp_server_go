@@ -1,11 +1,30 @@
 package encoder
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"webp_server_go/config"
 
 	"github.com/davidbyttow/govips/v2/vips"
 )
+
+func TestConvertImageStopsAfterPreProcessError(t *testing.T) {
+	destination := filepath.Join(t.TempDir(), "oversized.webp")
+	err := convertImage(
+		filepath.Join("..", "pics", "img_over_16383px.jpg"),
+		destination,
+		"webp",
+		config.ExtraParams{},
+	)
+
+	if err == nil || err.Error() != "WebP: image too large" {
+		t.Fatalf("expected WebP size error, got %v", err)
+	}
+	if _, statErr := os.Stat(destination); !os.IsNotExist(statErr) {
+		t.Fatalf("expected no output after preprocessing failure, stat error: %v", statErr)
+	}
+}
 
 func TestResizeImage(t *testing.T) {
 

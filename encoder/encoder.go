@@ -128,6 +128,7 @@ func convertImage(rawPath, optimizedPath, imageType string, extraParams config.E
 	err = preProcessImage(img, imageType, extraParams)
 	if err != nil {
 		log.Warnf("Can't pre-process source image: %v", err)
+		return err
 	}
 
 	// If image is already in the target format, just copy it
@@ -269,7 +270,6 @@ func webpEncoder(img *vips.ImageRef, rawPath string, optimizedPath string) error
 				break
 			}
 		}
-		buf, _, err = img.ExportWebp(&ep)
 	}
 
 	if err != nil {
