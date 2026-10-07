@@ -14,7 +14,11 @@ import (
 	"github.com/h2non/filetype"
 	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/singleflight"
 )
+
+// remoteFetchGroup collapses concurrent fetches of the same remote URL.
+var remoteFetchGroup singleflight.Group
 
 // Given /path/to/node.png
 // Delete /path/to/node.png*
@@ -78,7 +82,16 @@ func downloadFile(filepath string, url string) http.Header {
 	return resp.Header
 }
 
-func fetchRemoteImg(url string, subdir string) (metaContent config.MetaFile) {
+func fetchRemoteImg(url string, subdir string) config.MetaFile {
+	// Key matches RemoteCache: one in-flight fetch per host + URL.
+	v, _, _ := remoteFetchGroup.Do(subdir+":"+helper.HashString(url), func() (any, error) {
+		return fetchRemoteImgOnce(url, subdir), nil
+	})
+	meta, _ := v.(config.MetaFile)
+	return meta
+}
+
+func fetchRemoteImgOnce(url string, subdir string) (metaContent config.MetaFile) {
 	// url is https://test.webp.sh/mypic/123.jpg?someother=200&somebugs=200
 	// How do we know if the remote img is changed? we're using hash(etag+length)
 	var etag string

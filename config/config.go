@@ -54,9 +54,8 @@ var (
 	PrefetchForeground  bool // Standalone prefetch, prefetch and exit
 	AllowNonImage       bool
 	Config              = NewWebPConfig()
-	Version             = "0.16.2"
+	Version             = "0.16.3"
 	WriteLock           = cache.New(5*time.Minute, 10*time.Minute)
-	ConvertLock         = cache.New(5*time.Minute, 10*time.Minute)
 	LocalHostAlias      = "local"
 	RemoteCache         *cache.Cache
 	DefaultAllowedTypes = []string{"jpg", "png", "jpeg", "bmp", "gif", "svg", "nef", "heic", "webp", "avif", "jxl"} // Default allowed image types
