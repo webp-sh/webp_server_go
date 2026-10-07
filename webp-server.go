@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"webp_server_go/config"
 	"webp_server_go/encoder"
 	"webp_server_go/handler"
@@ -17,16 +18,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// https://docs.gofiber.io/api/fiber
-var app = fiber.New(fiber.Config{
-	ServerHeader:          "WebP Server Go",
-	AppName:               "WebP Server Go",
-	DisableStartupMessage: true,
-	ProxyHeader:           "X-Real-IP",
-	ReadBufferSize:        config.Config.ReadBufferSize,   // per-connection buffer size for requests' reading. This also limits the maximum header size. Increase this buffer if your clients send multi-KB RequestURIs and/or multi-KB headers (for example, BIG cookies).
-	Concurrency:           config.Config.Concurrency,      // Maximum number of concurrent connections.
-	DisableKeepalive:      config.Config.DisableKeepalive, // Disable keep-alive connections, the server will close incoming connections after sending the first response to the client
-})
+var app *fiber.App
 
 func setupLogger() {
 	log.SetOutput(os.Stdout)
@@ -58,18 +50,12 @@ func init() {
 		
 		WebP Server Go - v%s
 		Developed by WebP Server team. https://github.com/webp-sh`, config.Version)
-	// main init is the last one to be called
-	flag.Parse()
-	loglevel := config.Verbosity
-
-	// Only enable fiber logger if loglevel is greater than 0
-	if loglevel > 0 {
-		// fiber logger format
-		app.Use(logger.New(logger.Config{
-			Format:     config.FiberLogFormat,
-			TimeFormat: config.TimeDateFormat,
-		}))
+	// main init is the last one to be called.
+	// go test passes -test.* before those flags exist, and flag.Parse would exit.
+	if !runningUnderGoTest() {
+		flag.Parse()
 	}
+	loglevel := config.Verbosity
 
 	switch loglevel {
 	case 0:
@@ -93,8 +79,34 @@ func init() {
 		os.Exit(0)
 	}
 	config.LoadConfig()
+	app = fiber.New(fiber.Config{
+		ServerHeader:          "WebP Server Go",
+		AppName:               "WebP Server Go",
+		DisableStartupMessage: true,
+		ProxyHeader:           "X-Real-IP",
+		ReadBufferSize:        config.Config.ReadBufferSize,   // per-connection buffer size for requests' reading. This also limits the maximum header size. Increase this buffer if your clients send multi-KB RequestURIs and/or multi-KB headers (for example, BIG cookies).
+		Concurrency:           config.Config.Concurrency,      // Maximum number of concurrent connections.
+		DisableKeepalive:      config.Config.DisableKeepalive, // Disable keep-alive connections, the server will close incoming connections after sending the first response to the client
+	})
+	// Only enable fiber logger if loglevel is greater than 0
+	if loglevel > 0 {
+		// fiber logger format
+		app.Use(logger.New(logger.Config{
+			Format:     config.FiberLogFormat,
+			TimeFormat: config.TimeDateFormat,
+		}))
+	}
 	fmt.Printf("\n %c[1;32m%s%c[0m\n\n", 0x1B, banner, 0x1B)
 	setupLogger()
+}
+
+func runningUnderGoTest() bool {
+	for _, arg := range os.Args[1:] {
+		if strings.HasPrefix(arg, "-test.") {
+			return true
+		}
+	}
+	return false
 }
 
 func main() {
