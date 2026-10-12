@@ -16,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.12.0
 	github.com/valyala/fasthttp v1.73.0
 	golang.org/x/image v0.46.0
-	golang.org/x/sync v0.23.0
+	golang.org/x/sync v0.24.0
 )
 
 require (
